@@ -1,4 +1,4 @@
-export type FetchModelsProxyProvider = 'openai' | 'claude' | 'gemini' | 'codex';
+export type FetchModelsProxyProvider = 'openai' | 'zai' | 'claude' | 'gemini' | 'codex';
 
 const storageKey = (provider: FetchModelsProxyProvider) =>
   `ppap.fetchModelsUseKeyProxy.${provider}`;

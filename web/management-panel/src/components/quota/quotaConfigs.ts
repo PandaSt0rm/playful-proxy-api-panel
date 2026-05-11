@@ -28,6 +28,8 @@ import type {
   GeminiCliUserTier,
   KimiQuotaRow,
   KimiQuotaState,
+  ZaiQuotaRow,
+  ZaiQuotaState,
 } from '@/types';
 import { apiCallApi, authFilesApi, getApiCallErrorMessage } from '@/services/api';
 import { useQuotaStore } from '@/stores';
@@ -45,6 +47,8 @@ import {
   GEMINI_CLI_REQUEST_HEADERS,
   KIMI_USAGE_URL,
   KIMI_REQUEST_HEADERS,
+  ZAI_QUOTA_URL,
+  ZAI_REQUEST_HEADERS,
   normalizeGeminiCliModelId,
   normalizeNumberValue,
   normalizePlanType,
@@ -56,15 +60,18 @@ import {
   parseGeminiCliQuotaPayload,
   parseGeminiCliCodeAssistPayload,
   parseKimiUsagePayload,
+  parseZaiQuotaPayload,
   resolveCodexChatgptAccountId,
   resolveCodexPlanType,
   resolveGeminiCliProjectId,
   formatCodexResetLabel,
   formatQuotaResetTime,
   formatKimiResetHint,
+  formatZaiResetHint,
   buildAntigravityQuotaGroups,
   buildGeminiCliQuotaBuckets,
   buildKimiQuotaRows,
+  buildZaiQuotaRows,
   createStatusError,
   getStatusFromError,
   isAntigravityFile,
@@ -73,6 +80,7 @@ import {
   isDisabledAuthFile,
   isGeminiCliFile,
   isKimiFile,
+  isZaiFile,
   isRuntimeOnlyAuthFile,
 } from '@/utils/quota';
 import { normalizeAuthIndex } from '@/utils/authIndex';
@@ -81,7 +89,7 @@ import styles from '@/pages/QuotaPage.module.scss';
 
 type QuotaUpdater<T> = T | ((prev: T) => T);
 
-type QuotaType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi';
+type QuotaType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi' | 'zai';
 
 const DEFAULT_ANTIGRAVITY_PROJECT_ID = 'bamboo-precept-lgxtn';
 const QUOTA_PROGRESS_HIGH_THRESHOLD = 70;
@@ -98,11 +106,13 @@ export interface QuotaStore {
   codexQuota: Record<string, CodexQuotaState>;
   geminiCliQuota: Record<string, GeminiCliQuotaState>;
   kimiQuota: Record<string, KimiQuotaState>;
+  zaiQuota: Record<string, ZaiQuotaState>;
   setAntigravityQuota: (updater: QuotaUpdater<Record<string, AntigravityQuotaState>>) => void;
   setClaudeQuota: (updater: QuotaUpdater<Record<string, ClaudeQuotaState>>) => void;
   setCodexQuota: (updater: QuotaUpdater<Record<string, CodexQuotaState>>) => void;
   setGeminiCliQuota: (updater: QuotaUpdater<Record<string, GeminiCliQuotaState>>) => void;
   setKimiQuota: (updater: QuotaUpdater<Record<string, KimiQuotaState>>) => void;
+  setZaiQuota: (updater: QuotaUpdater<Record<string, ZaiQuotaState>>) => void;
   clearQuotaCache: () => void;
 }
 
@@ -1244,6 +1254,114 @@ export const GEMINI_CLI_CONFIG: QuotaConfig<
   controlClassName: styles.geminiCliControl,
   gridClassName: styles.geminiCliGrid,
   renderQuotaItems: renderGeminiCliItems,
+};
+
+const fetchZaiQuota = async (
+  file: AuthFileItem,
+  t: TFunction
+): Promise<ZaiQuotaRow[]> => {
+  const rawAuthIndex = file['auth_index'] ?? file.authIndex;
+  const authIndex = normalizeAuthIndex(rawAuthIndex);
+  if (!authIndex) {
+    throw new Error(t('zai_quota.missing_auth_index'));
+  }
+
+  const result = await apiCallApi.request({
+    authIndex,
+    method: 'GET',
+    url: ZAI_QUOTA_URL,
+    header: { ...ZAI_REQUEST_HEADERS },
+  });
+
+  if (result.statusCode < 200 || result.statusCode >= 300) {
+    throw createStatusError(getApiCallErrorMessage(result), result.statusCode);
+  }
+
+  const payload = parseZaiQuotaPayload(result.body ?? result.bodyText);
+  if (!payload) {
+    throw new Error(t('zai_quota.empty_data'));
+  }
+
+  return buildZaiQuotaRows(payload);
+};
+
+const formatZaiAmount = (value: number): string => new Intl.NumberFormat().format(value);
+
+const renderZaiItems = (
+  quota: ZaiQuotaState,
+  t: TFunction,
+  helpers: QuotaRenderHelpers
+): ReactNode => {
+  const { styles: styleMap, QuotaProgressBar } = helpers;
+  const { createElement: h } = React;
+  const rows = quota.rows ?? [];
+
+  if (rows.length === 0) {
+    return h('div', { className: styleMap.quotaMessage }, t('zai_quota.empty_data'));
+  }
+
+  return rows.map((row) => {
+    const remaining = row.remainingPercent;
+    const remainingLabel = remaining === null ? '--' : `${Math.round(remaining)}%`;
+    const usedLabel =
+      row.usedPercent === null
+        ? null
+        : t('zai_quota.used_percent', { percent: Math.round(row.usedPercent) });
+    const amountLabel =
+      row.currentValue !== null && row.limit !== null
+        ? `${formatZaiAmount(row.currentValue)} / ${formatZaiAmount(row.limit)}`
+        : row.currentValue !== null
+          ? formatZaiAmount(row.currentValue)
+          : null;
+    const rowLabel = row.labelKey ? t(row.labelKey) : row.label ?? '';
+    const resetLabel = formatZaiResetHint(t, row.resetHint);
+
+    return h(
+      'div',
+      { key: row.id, className: styleMap.quotaRow },
+      h(
+        'div',
+        { className: styleMap.quotaRowHeader },
+        h('span', { className: styleMap.quotaModel }, rowLabel),
+        h(
+          'div',
+          { className: styleMap.quotaMeta },
+          h('span', { className: styleMap.quotaPercent }, remainingLabel),
+          usedLabel ? h('span', { className: styleMap.quotaAmount }, usedLabel) : null,
+          amountLabel ? h('span', { className: styleMap.quotaAmount }, amountLabel) : null,
+          resetLabel ? h('span', { className: styleMap.quotaReset }, resetLabel) : null
+        )
+      ),
+      h(QuotaProgressBar, {
+        percent: remaining,
+        highThreshold: QUOTA_PROGRESS_HIGH_THRESHOLD,
+        mediumThreshold: QUOTA_PROGRESS_MEDIUM_THRESHOLD,
+      })
+    );
+  });
+};
+
+export const ZAI_CONFIG: QuotaConfig<ZaiQuotaState, ZaiQuotaRow[]> = {
+  type: 'zai',
+  i18nPrefix: 'zai_quota',
+  cardIdleMessageKey: 'quota_management.card_idle_hint',
+  filterFn: (file) => isZaiFile(file) && !isDisabledAuthFile(file),
+  fetchQuota: fetchZaiQuota,
+  storeSelector: (state) => state.zaiQuota,
+  storeSetter: 'setZaiQuota',
+  buildLoadingState: () => ({ status: 'loading', rows: [] }),
+  buildSuccessState: (rows) => ({ status: 'success', rows }),
+  buildErrorState: (message, status) => ({
+    status: 'error',
+    rows: [],
+    error: message,
+    errorStatus: status,
+  }),
+  cardClassName: styles.zaiCard,
+  controlsClassName: styles.zaiControls,
+  controlClassName: styles.zaiControl,
+  gridClassName: styles.zaiGrid,
+  renderQuotaItems: renderZaiItems,
 };
 
 const fetchKimiQuota = async (

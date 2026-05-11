@@ -101,6 +101,7 @@ export function AiProvidersOpenAIEditPage() {
   const navigate = useNavigate();
   const { showNotification } = useNotificationStore();
   const {
+    providerMode,
     hasIndexParam,
     invalidIndexParam,
     invalidIndex,
@@ -123,9 +124,10 @@ export function AiProvidersOpenAIEditPage() {
     handleSave,
   } = useOutletContext<OpenAIEditOutletContext>();
 
+  const providerI18nPrefix = providerMode === 'zai' ? 'zai' : 'openai';
   const title = hasIndexParam
-    ? t('ai_providers.openai_edit_modal_title')
-    : t('ai_providers.openai_add_modal_title');
+    ? t(`ai_providers.${providerI18nPrefix}_edit_modal_title`)
+    : t(`ai_providers.${providerI18nPrefix}_add_modal_title`);
 
   const swipeRef = useEdgeSwipeBack({ onBack: handleBack });
   const [isTestingKeys, setIsTestingKeys] = useState(false);
@@ -582,8 +584,9 @@ export function AiProvidersOpenAIEditPage() {
         ) : (
           <div className={styles.openaiEditForm}>
             <Input
-              label={t('ai_providers.openai_add_modal_name_label')}
+              label={t(`ai_providers.${providerI18nPrefix}_add_modal_name_label`)}
               value={form.name}
+              placeholder={t(`ai_providers.${providerI18nPrefix}_add_modal_name_placeholder`)}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
               disabled={saving || disableControls || isTestingKeys}
             />
@@ -612,8 +615,9 @@ export function AiProvidersOpenAIEditPage() {
               disabled={saving || disableControls || isTestingKeys}
             />
             <Input
-              label={t('ai_providers.openai_add_modal_url_label')}
+              label={t(`ai_providers.${providerI18nPrefix}_add_modal_url_label`)}
               value={form.baseUrl}
+              placeholder={t(`ai_providers.${providerI18nPrefix}_add_modal_url_placeholder`)}
               onChange={(e) => setForm((prev) => ({ ...prev, baseUrl: e.target.value }))}
               disabled={saving || disableControls || isTestingKeys}
             />

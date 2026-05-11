@@ -27,6 +27,7 @@ export function AiProvidersOpenAIModelsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const {
+    providerMode,
     disableControls,
     loading: initialLoading,
     saving,
@@ -47,12 +48,12 @@ export function AiProvidersOpenAIModelsPage() {
   );
   const firstEntryProxyUrl = (firstKeyEntry?.proxyUrl ?? '').trim();
   const [useKeyProxy, setUseKeyProxy] = useState<boolean>(() =>
-    fetchModelsProxyPreference.read('openai', Boolean(firstEntryProxyUrl))
+    fetchModelsProxyPreference.read(providerMode, Boolean(firstEntryProxyUrl))
   );
   const handleUseKeyProxyChange = useCallback((value: boolean) => {
     setUseKeyProxy(value);
-    fetchModelsProxyPreference.write('openai', value);
-  }, []);
+    fetchModelsProxyPreference.write(providerMode, value);
+  }, [providerMode]);
   const effectiveProxyUrl = useKeyProxy ? firstEntryProxyUrl : '';
 
   const filteredModels = useMemo(() => {

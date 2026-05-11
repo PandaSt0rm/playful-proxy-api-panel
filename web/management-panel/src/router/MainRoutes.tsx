@@ -65,6 +65,22 @@ const mainRoutes = [
       { path: 'models', element: <AiProvidersOpenAIModelsPage /> },
     ],
   },
+  {
+    path: '/ai-providers/zai/new',
+    element: <AiProvidersOpenAIEditLayout providerMode="zai" />,
+    children: [
+      { index: true, element: <AiProvidersOpenAIEditPage /> },
+      { path: 'models', element: <AiProvidersOpenAIModelsPage /> },
+    ],
+  },
+  {
+    path: '/ai-providers/zai/:index',
+    element: <AiProvidersOpenAIEditLayout providerMode="zai" />,
+    children: [
+      { index: true, element: <AiProvidersOpenAIEditPage /> },
+      { path: 'models', element: <AiProvidersOpenAIModelsPage /> },
+    ],
+  },
   { path: '/ai-providers/ampcode', element: <AiProvidersAmpcodeEditPage /> },
   { path: '/ai-providers', element: <AiProvidersPage /> },
   { path: '/ai-providers/*', element: <AiProvidersPage /> },

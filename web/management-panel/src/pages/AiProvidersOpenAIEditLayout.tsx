@@ -11,12 +11,15 @@ import type { ModelInfo } from '@/utils/models';
 import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/utils/headers';
 import { areKeyValueEntriesEqual, areModelEntriesEqual } from '@/utils/compare';
 import { buildApiKeyEntry } from '@/components/providers/utils';
+import { buildDefaultZaiProvider, isZaiOpenAIProvider } from '@/utils/zaiProvider';
 import type { ModelEntry, OpenAIFormState } from '@/components/providers/types';
 import type { KeyTestStatus, OpenAIEditBaseline } from '@/stores/useOpenAIEditDraftStore';
 
 type LocationState = { fromAiProviders?: boolean } | null;
+export type OpenAIProviderEditorMode = 'openai' | 'zai';
 
 export type OpenAIEditOutletContext = {
+  providerMode: OpenAIProviderEditorMode;
   hasIndexParam: boolean;
   editIndex: number | null;
   invalidIndexParam: boolean;
@@ -41,16 +44,32 @@ export type OpenAIEditOutletContext = {
   mergeDiscoveredModels: (selectedModels: ModelInfo[]) => void;
 };
 
-const buildEmptyForm = (): OpenAIFormState => ({
-  name: '',
-  priority: undefined,
-  prefix: '',
-  baseUrl: '',
-  headers: [],
-  apiKeyEntries: [buildApiKeyEntry()],
-  modelEntries: [{ name: '', alias: '' }],
-  testModel: undefined,
+const providerToForm = (provider: OpenAIProviderConfig): OpenAIFormState => ({
+  name: provider.name,
+  priority: provider.priority,
+  prefix: provider.prefix ?? '',
+  baseUrl: provider.baseUrl,
+  headers: headersToEntries(provider.headers),
+  testModel: provider.testModel,
+  apiKeyEntries: provider.apiKeyEntries?.length ? provider.apiKeyEntries : [buildApiKeyEntry()],
+  modelEntries: modelsToEntries(provider.models),
 });
+
+const buildEmptyForm = (providerMode: OpenAIProviderEditorMode): OpenAIFormState => {
+  if (providerMode === 'zai') {
+    return providerToForm(buildDefaultZaiProvider());
+  }
+  return {
+    name: '',
+    priority: undefined,
+    prefix: '',
+    baseUrl: '',
+    headers: [],
+    apiKeyEntries: [buildApiKeyEntry()],
+    modelEntries: [{ name: '', alias: '' }],
+    testModel: undefined,
+  };
+};
 
 const parseIndexParam = (value: string | undefined) => {
   if (!value) return null;
@@ -132,7 +151,13 @@ const areNormalizedApiKeyEntriesEqual = (
   return true;
 };
 
-export function AiProvidersOpenAIEditLayout() {
+interface AiProvidersOpenAIEditLayoutProps {
+  providerMode?: OpenAIProviderEditorMode;
+}
+
+export function AiProvidersOpenAIEditLayout({
+  providerMode = 'openai',
+}: AiProvidersOpenAIEditLayoutProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -160,10 +185,10 @@ export function AiProvidersOpenAIEditLayout() {
   const [saving, setSaving] = useState(false);
 
   const draftKey = useMemo(() => {
-    if (invalidIndexParam) return `openai:invalid:${params.index ?? 'unknown'}`;
-    if (editIndex === null) return 'openai:new';
-    return `openai:${editIndex}`;
-  }, [editIndex, invalidIndexParam, params.index]);
+    if (invalidIndexParam) return `${providerMode}:invalid:${params.index ?? 'unknown'}`;
+    if (editIndex === null) return `${providerMode}:new`;
+    return `${providerMode}:${editIndex}`;
+  }, [editIndex, invalidIndexParam, params.index, providerMode]);
 
   const draft = useOpenAIEditDraftStore((state) => state.drafts[draftKey]);
   const acquireDraft = useOpenAIEditDraftStore((state) => state.acquireDraft);
@@ -177,7 +202,7 @@ export function AiProvidersOpenAIEditLayout() {
   const setDraftKeyTestStatus = useOpenAIEditDraftStore((state) => state.setDraftKeyTestStatus);
   const resetDraftKeyTestStatuses = useOpenAIEditDraftStore((state) => state.resetDraftKeyTestStatuses);
 
-  const form = draft?.form ?? buildEmptyForm();
+  const form = draft?.form ?? buildEmptyForm(providerMode);
   const testModel = draft?.testModel ?? '';
   const testStatus = draft?.testStatus ?? 'idle';
   const testMessage = draft?.testMessage ?? '';
@@ -232,6 +257,13 @@ export function AiProvidersOpenAIEditLayout() {
   }, [editIndex, providers]);
 
   const invalidIndex = editIndex !== null && !initialData;
+
+  useEffect(() => {
+    if (providerMode !== 'openai') return;
+    if (loading || editIndex === null || !initialData) return;
+    if (!isZaiOpenAIProvider(initialData)) return;
+    navigate(`/ai-providers/zai/${editIndex}`, { replace: true, state: location.state });
+  }, [editIndex, initialData, loading, location.state, navigate, providerMode]);
 
   const availableModels = useMemo(
     () => form.modelEntries.map((entry) => entry.name.trim()).filter(Boolean),
@@ -294,19 +326,8 @@ export function AiProvidersOpenAIEditLayout() {
     if (draft?.initialized) return;
 
     if (initialData) {
-      const modelEntries = modelsToEntries(initialData.models);
-      const seededForm: OpenAIFormState = {
-        name: initialData.name,
-        priority: initialData.priority,
-        prefix: initialData.prefix ?? '',
-        baseUrl: initialData.baseUrl,
-        headers: headersToEntries(initialData.headers),
-        testModel: initialData.testModel,
-        modelEntries,
-        apiKeyEntries: initialData.apiKeyEntries?.length
-          ? initialData.apiKeyEntries
-          : [buildApiKeyEntry()],
-      };
+      const seededForm = providerToForm(initialData);
+      const modelEntries = seededForm.modelEntries;
 
       const available = modelEntries.map((entry) => entry.name.trim()).filter(Boolean);
       const initialTestModel =
@@ -323,7 +344,7 @@ export function AiProvidersOpenAIEditLayout() {
         keyTestStatuses: [],
       });
     } else {
-      const emptyForm = buildEmptyForm();
+      const emptyForm = buildEmptyForm(providerMode);
       initDraft(draftKey, {
         baseline: buildOpenAIBaseline(emptyForm, ''),
         form: emptyForm,
@@ -333,7 +354,7 @@ export function AiProvidersOpenAIEditLayout() {
         keyTestStatuses: [],
       });
     }
-  }, [draft?.initialized, draftKey, initDraft, initialData, loading]);
+  }, [draft?.initialized, draftKey, initDraft, initialData, loading, providerMode]);
 
   useEffect(() => {
     if (loading) return;
@@ -430,10 +451,10 @@ export function AiProvidersOpenAIEditLayout() {
       isModelsDirty);
   const editorRootPath = useMemo(() => {
     if (hasIndexParam) {
-      return `/ai-providers/openai/${params.index ?? ''}`;
+      return `/ai-providers/${providerMode}/${params.index ?? ''}`;
     }
-    return '/ai-providers/openai/new';
-  }, [hasIndexParam, params.index]);
+    return `/ai-providers/${providerMode}/new`;
+  }, [hasIndexParam, params.index, providerMode]);
   const canGuard = !resolvedLoading && !saving && !invalidIndexParam && !invalidIndex;
 
   const { allowNextNavigation } = useUnsavedChangesGuard({
@@ -458,7 +479,7 @@ export function AiProvidersOpenAIEditLayout() {
     const baseUrl = form.baseUrl.trim();
 
     if (!name || !baseUrl) {
-      showNotification(t('notification.openai_provider_required'), 'error');
+      showNotification(t(`notification.${providerMode}_provider_required`), 'error');
       return;
     }
 
@@ -504,8 +525,8 @@ export function AiProvidersOpenAIEditLayout() {
       updateConfigValue('openai-compatibility', syncedProviders);
       showNotification(
         editIndex !== null
-          ? t('notification.openai_provider_updated')
-          : t('notification.openai_provider_added'),
+          ? t(`notification.${providerMode}_provider_updated`)
+          : t(`notification.${providerMode}_provider_added`),
         'success'
       );
       allowNextNavigation();
@@ -524,6 +545,7 @@ export function AiProvidersOpenAIEditLayout() {
     handleBack,
     initialData?.disabled,
     providers,
+    providerMode,
     setDraftBaseline,
     showNotification,
     t,
@@ -535,6 +557,7 @@ export function AiProvidersOpenAIEditLayout() {
     <Outlet
       context={{
         hasIndexParam,
+        providerMode,
         editIndex,
         invalidIndexParam,
         invalidIndex,

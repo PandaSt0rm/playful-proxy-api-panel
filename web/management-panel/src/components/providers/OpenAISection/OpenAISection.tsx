@@ -50,6 +50,7 @@ interface OpenAISectionProps {
   disableControls: boolean;
   isSwitching: boolean;
   resolvedTheme: string;
+  filterProvider?: (provider: OpenAIProviderConfig) => boolean;
   onAdd: () => void;
   onEdit: (index: number) => void;
   onDelete: (index: number) => void;
@@ -76,6 +77,7 @@ export function OpenAISection({
   disableControls,
   isSwitching,
   resolvedTheme,
+  filterProvider,
   onAdd,
   onEdit,
   onDelete,
@@ -229,9 +231,15 @@ export function OpenAISection({
     };
   }, [floatingToolbarStyle.visible, isDropdownOpen]);
 
+  const indexedConfigs = useMemo<IndexedOpenAIProvider[]>(() => {
+    return configs
+      .map((config, originalIndex) => ({ config, originalIndex }))
+      .filter(({ config }) => (filterProvider ? filterProvider(config) : true));
+  }, [configs, filterProvider]);
+
   const allModelNames = useMemo(() => {
     const modelSet = new Set<string>();
-    configs.forEach((provider) => {
+    indexedConfigs.forEach(({ config: provider }) => {
       provider.models?.forEach((model) => {
         if (model.name) {
           modelSet.add(model.name);
@@ -239,7 +247,7 @@ export function OpenAISection({
       });
     });
     return Array.from(modelSet).sort();
-  }, [configs]);
+  }, [indexedConfigs]);
   const selectedModelNames = useMemo(() => Array.from(selectedModels).sort(), [selectedModels]);
   const modelFilterActive = selectedModelNames.length > 0;
   const modelFilterLabel = modelFilterActive
@@ -252,13 +260,13 @@ export function OpenAISection({
   const statusBarCache = useMemo(() => {
     const cache = new Map<string, ReturnType<typeof statusBarDataFromRecentRequests>>();
 
-    configs.forEach((provider, index) => {
-      const providerKey = getOpenAIProviderKey(provider, index);
+    indexedConfigs.forEach(({ config: provider, originalIndex }) => {
+      const providerKey = getOpenAIProviderKey(provider, originalIndex);
       cache.set(providerKey, getOpenAIProviderRecentStatusData(provider, usageByProvider));
     });
 
     return cache;
-  }, [configs, usageByProvider]);
+  }, [indexedConfigs, usageByProvider]);
 
   const sortOptions = useMemo(
     () => [
@@ -270,8 +278,7 @@ export function OpenAISection({
   );
 
   const sortedConfigs = useMemo<IndexedOpenAIProvider[]>(() => {
-    const indexed = configs.map((config, originalIndex) => ({ config, originalIndex }));
-    const filtered = indexed.filter(({ config }) => {
+    const filtered = indexedConfigs.filter(({ config }) => {
       if (selectedModels.size === 0) return true;
       return config.models?.some((model) => selectedModels.has(model.name));
     });
@@ -323,7 +330,7 @@ export function OpenAISection({
     }
 
     return sorted;
-  }, [configs, sortOption, sortDirection, usageByProvider, selectedModels]);
+  }, [indexedConfigs, sortOption, sortDirection, usageByProvider, selectedModels]);
 
   const toggleModelSelection = (modelName: string) => {
     setSelectedModels((prev) => {
@@ -685,9 +692,9 @@ export function OpenAISection({
             </div>
           }
         >
-          {loading && sortedConfigs.length === 0 ? (
+          {loading && indexedConfigs.length === 0 ? (
             <div className="hint">{t('common.loading')}</div>
-          ) : configs.length > 0 && sortedConfigs.length === 0 ? (
+          ) : indexedConfigs.length > 0 && sortedConfigs.length === 0 ? (
             <EmptyState
               title={t('ai_providers.openai_filtered_empty_title')}
               description={t('ai_providers.openai_filtered_empty_desc')}

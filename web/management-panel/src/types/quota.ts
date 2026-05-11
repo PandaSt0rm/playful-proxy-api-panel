@@ -306,3 +306,54 @@ export interface KimiQuotaState {
   error?: string;
   errorStatus?: number;
 }
+
+// Z.AI API payload types
+export interface ZaiQuotaLimit {
+  type?: string;
+  percentage?: number | string;
+  currentValue?: number | string;
+  current_value?: number | string;
+  currentUsage?: number | string;
+  current_usage?: number | string;
+  usage?: number | string;
+  remaining?: number | string;
+  total?: number | string;
+  limit?: number | string;
+  totol?: number | string;
+  nextResetTime?: number | string;
+  next_reset_time?: number | string;
+  resetTime?: number | string;
+  reset_time?: number | string;
+  resetAt?: number | string;
+  reset_at?: number | string;
+  resetIn?: number | string;
+  reset_in?: number | string;
+  ttl?: number | string;
+  usageDetails?: unknown;
+  usage_details?: unknown;
+}
+
+export interface ZaiQuotaPayload {
+  data?: {
+    limits?: ZaiQuotaLimit[];
+  };
+  limits?: ZaiQuotaLimit[];
+}
+
+export interface ZaiQuotaRow {
+  id: string;
+  label?: string;
+  labelKey?: string;
+  usedPercent: number | null;
+  remainingPercent: number | null;
+  currentValue: number | null;
+  limit: number | null;
+  resetHint?: string;
+}
+
+export interface ZaiQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  rows: ZaiQuotaRow[];
+  error?: string;
+  errorStatus?: number;
+}

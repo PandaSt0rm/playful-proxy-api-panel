@@ -3,6 +3,7 @@ import iconAntigravity from '@/assets/icons/antigravity.svg';
 import iconClaude from '@/assets/icons/claude.svg';
 import iconCodex from '@/assets/icons/codex.svg';
 import iconGemini from '@/assets/icons/gemini.svg';
+import iconGlm from '@/assets/icons/glm.svg';
 import iconIflow from '@/assets/icons/iflow.svg';
 import iconKimiDark from '@/assets/icons/kimi-dark.svg';
 import iconKimiLight from '@/assets/icons/kimi-light.svg';
@@ -22,7 +23,7 @@ export type AuthFileModelItem = {
 };
 export type AuthFileIconAsset = string | { light: string; dark: string };
 
-export type QuotaProviderType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi';
+export type QuotaProviderType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi' | 'zai';
 
 export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
   'antigravity',
@@ -30,6 +31,7 @@ export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
   'codex',
   'gemini-cli',
   'kimi',
+  'zai',
 ]);
 
 export const MIN_CARD_PAGE_SIZE = 3;
@@ -51,6 +53,11 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
   kimi: {
     light: { bg: '#dce8ff', text: '#0560cf' },
     dark: { bg: '#003880', text: '#70b5ff' },
+  },
+  // Z.AI / GLM: crisp blue matching the GLM family mark.
+  zai: {
+    light: { bg: '#e5f4ff', text: '#075a9f' },
+    dark: { bg: '#073763', text: '#8fd0ff' },
   },
   // Gemini logo: 多色蓝 #3186FF（偏柔和的蓝）
   gemini: {
@@ -113,6 +120,7 @@ export const AUTH_FILE_ICONS: Record<string, AuthFileIconAsset> = {
   kimi: { light: iconKimiLight, dark: iconKimiDark },
   qwen: iconQwen,
   vertex: iconVertex,
+  zai: iconGlm,
 };
 
 export const clampCardPageSize = (value: number) =>

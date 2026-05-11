@@ -14,13 +14,16 @@ import type {
   KimiLimitItem,
   KimiLimitWindow,
   KimiQuotaRow,
+  ZaiQuotaLimit,
+  ZaiQuotaPayload,
+  ZaiQuotaRow,
 } from '@/types';
 import {
   ANTIGRAVITY_QUOTA_GROUPS,
   GEMINI_CLI_GROUP_LOOKUP,
   GEMINI_CLI_GROUP_ORDER,
 } from './constants';
-import { normalizeQuotaFraction } from './parsers';
+import { normalizeNumberValue, normalizeQuotaFraction, normalizeStringValue } from './parsers';
 import { isIgnoredGeminiCliModel } from './validators';
 
 export function pickEarlierResetTime(current?: string, next?: string): string | undefined {
@@ -404,4 +407,139 @@ export function buildKimiQuotaRows(payload: KimiUsagePayload): KimiQuotaRow[] {
   }
 
   return rows;
+}
+
+const ZAI_QUOTA_LABEL_KEYS: Record<string, string> = {
+  TOKENS_LIMIT: 'zai_quota.tokens_5h',
+  TIME_LIMIT: 'zai_quota.mcp_monthly',
+};
+
+function normalizeZaiPercent(value: unknown): number | null {
+  const normalized = normalizeNumberValue(value);
+  if (normalized === null) return null;
+  return normalized <= 1 ? normalized * 100 : normalized;
+}
+
+function zaiDurationHint(ms: number): string | undefined {
+  if (!Number.isFinite(ms) || ms <= 0) return undefined;
+  const totalSeconds = Math.floor(ms / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  if (days > 0 && hours > 0) return `${days}d ${hours}h`;
+  if (days > 0) return `${days}d`;
+  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h`;
+  if (minutes > 0) return `${minutes}m`;
+  return '<1m';
+}
+
+function zaiResetHint(data: Record<string, unknown>): string | undefined {
+  const absoluteKeys = [
+    'nextResetTime',
+    'next_reset_time',
+    'resetTime',
+    'reset_time',
+    'resetAt',
+    'reset_at',
+  ];
+  for (const key of absoluteKeys) {
+    const value = normalizeNumberValue(data[key]);
+    if (value !== null && value > 0) {
+      const targetMs = value > 1e12 ? value : value > 1e9 ? value * 1000 : Date.now() + value * 1000;
+      const hint = zaiDurationHint(targetMs - Date.now());
+      if (hint) return hint;
+    }
+
+    const raw = normalizeStringValue(data[key]);
+    if (!raw) continue;
+    const asNumber = normalizeNumberValue(raw);
+    if (asNumber !== null && asNumber > 0) {
+      const targetMs =
+        asNumber > 1e12 ? asNumber : asNumber > 1e9 ? asNumber * 1000 : Date.now() + asNumber * 1000;
+      const hint = zaiDurationHint(targetMs - Date.now());
+      if (hint) return hint;
+      continue;
+    }
+
+    const parsed = new Date(raw).getTime();
+    if (!Number.isNaN(parsed)) {
+      const hint = zaiDurationHint(parsed - Date.now());
+      if (hint) return hint;
+    }
+  }
+
+  for (const key of ['resetIn', 'reset_in', 'ttl']) {
+    const value = normalizeNumberValue(data[key]);
+    if (value !== null && value > 0) {
+      return zaiDurationHint(value * 1000);
+    }
+  }
+
+  return undefined;
+}
+
+function zaiFallbackLabel(type: string, index: number): Pick<ZaiQuotaRow, 'label' | 'labelKey'> {
+  const labelKey = ZAI_QUOTA_LABEL_KEYS[type];
+  if (labelKey) return { labelKey };
+
+  const normalized = type
+    .toLowerCase()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (match) => match.toUpperCase());
+  return { label: normalized || `Limit #${index + 1}` };
+}
+
+function toZaiQuotaRow(item: ZaiQuotaLimit, index: number): ZaiQuotaRow | null {
+  const record = item as Record<string, unknown>;
+  const type = normalizeStringValue(item.type)?.toUpperCase() ?? `LIMIT_${index + 1}`;
+  const usedPercent = normalizeZaiPercent(item.percentage);
+  const currentValue = normalizeNumberValue(
+    item.currentValue ?? item.current_value ?? item.currentUsage ?? item.current_usage
+  );
+  const remainingValue = normalizeNumberValue(item.remaining);
+  const limit = normalizeNumberValue(item.usage ?? item.total ?? item.limit ?? item.totol);
+  const usageDerivedPercent =
+    usedPercent === null && currentValue !== null && limit !== null && limit > 0
+      ? (currentValue / limit) * 100
+      : null;
+  const remainingDerivedPercent =
+    usedPercent === null &&
+    usageDerivedPercent === null &&
+    remainingValue !== null &&
+    limit !== null &&
+    limit > 0
+      ? 100 - (remainingValue / limit) * 100
+      : null;
+  const normalizedUsedPercent = usedPercent ?? usageDerivedPercent ?? remainingDerivedPercent;
+  const remainingPercent =
+    normalizedUsedPercent === null
+      ? null
+      : Math.max(0, Math.min(100, 100 - normalizedUsedPercent));
+
+  if (normalizedUsedPercent === null && currentValue === null && limit === null) {
+    return null;
+  }
+
+  return {
+    id: type.toLowerCase().replace(/[^a-z0-9]+/g, '-') || `limit-${index}`,
+    ...zaiFallbackLabel(type, index),
+    usedPercent: normalizedUsedPercent,
+    remainingPercent,
+    currentValue,
+    limit,
+    resetHint: zaiResetHint(record),
+  };
+}
+
+export function buildZaiQuotaRows(payload: ZaiQuotaPayload): ZaiQuotaRow[] {
+  const limits = Array.isArray(payload.limits)
+    ? payload.limits
+    : Array.isArray(payload.data?.limits)
+      ? payload.data.limits
+      : [];
+
+  return limits
+    .map((item, index) => toZaiQuotaRow(item, index))
+    .filter((row): row is ZaiQuotaRow => row !== null);
 }

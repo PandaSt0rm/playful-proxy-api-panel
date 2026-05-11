@@ -38,6 +38,10 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
     light: { bg: '#dce8ff', text: '#0560cf' },
     dark: { bg: '#003880', text: '#70b5ff' },
   },
+  zai: {
+    light: { bg: '#e5f4ff', text: '#075a9f' },
+    dark: { bg: '#073763', text: '#8fd0ff' },
+  },
   antigravity: {
     light: { bg: '#e0f7fa', text: '#006064' },
     dark: { bg: '#004d40', text: '#80deea' },
@@ -197,4 +201,13 @@ export const KIMI_USAGE_URL = 'https://api.kimi.com/coding/v1/usages';
 
 export const KIMI_REQUEST_HEADERS = {
   Authorization: 'Bearer $TOKEN$',
+};
+
+// Z.AI GLM Coding Plan API configuration
+export const ZAI_QUOTA_URL = 'https://api.z.ai/api/monitor/usage/quota/limit';
+
+export const ZAI_REQUEST_HEADERS = {
+  Authorization: '$TOKEN$',
+  'Accept-Language': 'en-US,en',
+  'Content-Type': 'application/json',
 };

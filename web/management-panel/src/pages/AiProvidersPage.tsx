@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -8,6 +8,7 @@ import {
   GeminiSection,
   OpenAISection,
   VertexSection,
+  ZaiSection,
   ProviderNav,
   useProviderRecentRequests,
 } from '@/components/providers';
@@ -20,6 +21,7 @@ import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { ampcodeApi, providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore, useThemeStore } from '@/stores';
 import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
+import { isZaiOpenAIProvider } from '@/utils/zaiProvider';
 import styles from './AiProvidersPage.module.scss';
 
 export function AiProvidersPage() {
@@ -66,6 +68,19 @@ export function AiProvidersPage() {
   const { usageByProvider, loadRecentRequests, refreshRecentRequests } = useProviderRecentRequests({
     enabled: isCurrentLayer,
   });
+
+  const zaiProviders = useMemo(
+    () =>
+      openaiProviders
+        .map((config, originalIndex) => ({ config, originalIndex }))
+        .filter(({ config }) => isZaiOpenAIProvider(config)),
+    [openaiProviders]
+  );
+
+  const isGenericOpenAIProvider = useCallback(
+    (provider: OpenAIProviderConfig) => !isZaiOpenAIProvider(provider),
+    []
+  );
 
   const getErrorMessage = (err: unknown) => {
     if (err instanceof Error) return err.message;
@@ -381,12 +396,14 @@ export function AiProvidersPage() {
     });
   };
 
-  const deleteOpenai = async (index: number) => {
+  const deleteOpenai = async (index: number, providerKind: 'openai' | 'zai' = 'openai') => {
     const entry = openaiProviders[index];
     if (!entry) return;
     showConfirmation({
-      title: t('ai_providers.openai_delete_title', { defaultValue: 'Delete OpenAI Provider' }),
-      message: t('ai_providers.openai_delete_confirm'),
+      title: t(`ai_providers.${providerKind}_delete_title`, {
+        defaultValue: providerKind === 'zai' ? 'Delete Z.AI Provider' : 'Delete OpenAI Provider',
+      }),
+      message: t(`ai_providers.${providerKind}_delete_confirm`),
       variant: 'danger',
       confirmText: t('common.confirm'),
       onConfirm: async () => {
@@ -396,7 +413,14 @@ export function AiProvidersPage() {
           setOpenaiProviders(next);
           updateConfigValue('openai-compatibility', next);
           clearCache('openai-compatibility');
-          showNotification(t('notification.openai_provider_deleted'), 'success');
+          showNotification(
+            t(
+              providerKind === 'zai'
+                ? 'notification.zai_provider_deleted'
+                : 'notification.openai_provider_deleted'
+            ),
+            'success'
+          );
         } catch (err: unknown) {
           const message = getErrorMessage(err);
           showNotification(`${t('notification.delete_failed')}: ${message}`, 'error');
@@ -477,6 +501,20 @@ export function AiProvidersPage() {
           />
         </div>
 
+        <div id="provider-zai">
+          <ZaiSection
+            providers={zaiProviders}
+            usageByProvider={usageByProvider}
+            loading={loading}
+            disableControls={disableControls}
+            isSwitching={isSwitching}
+            onAdd={() => openEditor('/ai-providers/zai/new')}
+            onEdit={(index) => openEditor(`/ai-providers/zai/${index}`)}
+            onDelete={(index) => void deleteOpenai(index, 'zai')}
+            onToggle={(index, enabled) => void setOpenAIProviderEnabled(index, enabled)}
+          />
+        </div>
+
         <div id="provider-openai">
           <OpenAISection
             configs={openaiProviders}
@@ -485,9 +523,10 @@ export function AiProvidersPage() {
             disableControls={disableControls}
             isSwitching={isSwitching}
             resolvedTheme={resolvedTheme}
+            filterProvider={isGenericOpenAIProvider}
             onAdd={() => openEditor('/ai-providers/openai/new')}
             onEdit={(index) => openEditor(`/ai-providers/openai/${index}`)}
-            onDelete={deleteOpenai}
+            onDelete={(index) => void deleteOpenai(index)}
             onToggle={(index, enabled) => void setOpenAIProviderEnabled(index, enabled)}
           />
         </div>

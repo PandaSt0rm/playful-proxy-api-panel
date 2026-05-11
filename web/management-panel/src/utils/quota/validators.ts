@@ -3,6 +3,7 @@
  */
 
 import type { AuthFileItem } from '@/types';
+import { isZaiBaseUrl, isZaiProviderName } from '@/utils/zaiProvider';
 import { GEMINI_CLI_IGNORED_MODEL_PREFIXES } from './constants';
 
 export function resolveAuthProvider(file: AuthFileItem): string {
@@ -41,6 +42,20 @@ export function isGeminiCliFile(file: AuthFileItem): boolean {
 
 export function isKimiFile(file: AuthFileItem): boolean {
   return resolveAuthProvider(file) === 'kimi';
+}
+
+export function isZaiFile(file: AuthFileItem): boolean {
+  const providerKeys = [
+    resolveAuthProvider(file),
+    file.type,
+    file.provider,
+    file.label,
+    file.prefix,
+    file['compat_name'],
+    file['provider_key'],
+  ];
+  const baseUrl = file.baseUrl ?? file['base_url'] ?? file['base-url'];
+  return providerKeys.some(isZaiProviderName) || isZaiBaseUrl(baseUrl);
 }
 
 export function isRuntimeOnlyAuthFile(file: AuthFileItem): boolean {

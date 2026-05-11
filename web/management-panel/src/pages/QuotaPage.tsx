@@ -6,16 +6,18 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useAuthStore } from '@/stores';
-import { authFilesApi, configFileApi } from '@/services/api';
+import { authFilesApi, configFileApi, providersApi } from '@/services/api';
 import {
   QuotaSection,
   ANTIGRAVITY_CONFIG,
   CLAUDE_CONFIG,
   CODEX_CONFIG,
   GEMINI_CLI_CONFIG,
-  KIMI_CONFIG
+  KIMI_CONFIG,
+  ZAI_CONFIG
 } from '@/components/quota';
 import type { AuthFileItem } from '@/types';
+import { buildZaiQuotaAuthFilesFromOpenAIProviders } from '@/utils/zaiProvider';
 import styles from './QuotaPage.module.scss';
 
 export function QuotaPage() {
@@ -41,8 +43,21 @@ export function QuotaPage() {
     setLoading(true);
     setError('');
     try {
-      const data = await authFilesApi.list();
-      setFiles(data?.files || []);
+      const [authFilesResult, openAIProvidersResult] = await Promise.allSettled([
+        authFilesApi.list(),
+        providersApi.getOpenAIProviders(),
+      ]);
+
+      if (authFilesResult.status !== 'fulfilled') {
+        throw authFilesResult.reason;
+      }
+
+      const authFiles = authFilesResult.value?.files || [];
+      const zaiQuotaFiles =
+        openAIProvidersResult.status === 'fulfilled'
+          ? buildZaiQuotaAuthFilesFromOpenAIProviders(openAIProvidersResult.value || [])
+          : [];
+      setFiles([...authFiles, ...zaiQuotaFiles]);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : t('notification.refresh_failed');
       setError(errorMessage);
@@ -97,6 +112,12 @@ export function QuotaPage() {
       />
       <QuotaSection
         config={KIMI_CONFIG}
+        files={files}
+        loading={loading}
+        disabled={disableControls}
+      />
+      <QuotaSection
+        config={ZAI_CONFIG}
         files={files}
         loading={loading}
         disabled={disableControls}
