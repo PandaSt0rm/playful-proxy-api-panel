@@ -463,6 +463,18 @@ export function IconSidebarLogs({ size = 20, ...props }: IconProps) {
   );
 }
 
+export function IconSidebarToolingTemplates({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...sidebarSvgProps} width={size} height={size} {...props}>
+      <path d="M4 7l4-3 4 3" />
+      <path d="M4 7v10l4 3 4-3V7" fill="currentColor" fillOpacity="0.12" />
+      <path d="M14 11h6" />
+      <path d="M14 15h6" />
+      <path d="M14 19h4" />
+    </svg>
+  );
+}
+
 export function IconSidebarSystem({ size = 20, ...props }: IconProps) {
   return (
     <svg {...sidebarSvgProps} width={size} height={size} {...props}>
