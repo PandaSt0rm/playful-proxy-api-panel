@@ -1,3 +1,18 @@
+FROM oven/bun:1-alpine AS panel-builder
+
+WORKDIR /panel
+
+COPY web/management-panel/package.json web/management-panel/
+
+RUN cd web/management-panel && bun install
+
+COPY web/management-panel/ web/management-panel/
+
+ARG VERSION=dev
+ENV VERSION=${VERSION}
+
+RUN cd web/management-panel && bun run build
+
 FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
@@ -18,9 +33,11 @@ FROM alpine:3.22.0
 
 RUN apk add --no-cache tzdata
 
-RUN mkdir /CLIProxyAPI
+RUN mkdir -p /CLIProxyAPI/static
 
 COPY --from=builder ./app/CLIProxyAPI /CLIProxyAPI/CLIProxyAPI
+
+COPY --from=panel-builder /panel/web/management-panel/dist/index.html /CLIProxyAPI/static/management.html
 
 COPY config.example.yaml /CLIProxyAPI/config.example.yaml
 
