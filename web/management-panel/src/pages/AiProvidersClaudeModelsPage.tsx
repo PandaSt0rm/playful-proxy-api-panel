@@ -5,11 +5,13 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { modelsApi } from '@/services/api';
 import type { ModelInfo } from '@/utils/models';
 import { buildHeaderObject } from '@/utils/headers';
+import { fetchModelsProxyPreference } from '@/utils/fetchModelsProxyPreference';
 import type { ClaudeEditOutletContext } from './AiProvidersClaudeEditLayout';
 import styles from './AiProvidersPage.module.scss';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
@@ -39,6 +41,16 @@ export function AiProvidersClaudeModelsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const autoFetchSignatureRef = useRef<string>('');
 
+  const formProxyUrl = (form.proxyUrl ?? '').trim();
+  const [useKeyProxy, setUseKeyProxy] = useState<boolean>(() =>
+    fetchModelsProxyPreference.read('claude', Boolean(formProxyUrl))
+  );
+  const handleUseKeyProxyChange = useCallback((value: boolean) => {
+    setUseKeyProxy(value);
+    fetchModelsProxyPreference.write('claude', value);
+  }, []);
+  const effectiveProxyUrl = useKeyProxy ? formProxyUrl : '';
+
   const filteredModels = useMemo(() => {
     const filter = search.trim().toLowerCase();
     if (!filter) return models;
@@ -66,7 +78,8 @@ export function AiProvidersClaudeModelsPage() {
       const list = await modelsApi.fetchClaudeModelsViaApiCall(
         form.baseUrl ?? '',
         form.apiKey.trim() || undefined,
-        headerObject
+        headerObject,
+        effectiveProxyUrl || undefined
       );
       setModels(list);
     } catch (err: unknown) {
@@ -89,7 +102,7 @@ export function AiProvidersClaudeModelsPage() {
     } finally {
       setFetching(false);
     }
-  }, [form.apiKey, form.baseUrl, form.headers, t]);
+  }, [effectiveProxyUrl, form.apiKey, form.baseUrl, form.headers, t]);
 
   useEffect(() => {
     if (initialLoading) return;
@@ -119,12 +132,12 @@ export function AiProvidersClaudeModelsPage() {
       .sort(([a], [b]) => a.toLowerCase().localeCompare(b.toLowerCase()))
       .map(([key, value]) => `${key}:${value}`)
       .join('|');
-    const signature = `${nextEndpoint}||${form.apiKey.trim()}||${headerSignature}`;
+    const signature = `${nextEndpoint}||${form.apiKey.trim()}||${headerSignature}||${effectiveProxyUrl}`;
     if (autoFetchSignatureRef.current === signature) return;
     autoFetchSignatureRef.current = signature;
 
     void fetchClaudeModelDiscovery();
-  }, [fetchClaudeModelDiscovery, form.apiKey, form.baseUrl, form.headers, initialLoading]);
+  }, [effectiveProxyUrl, fetchClaudeModelDiscovery, form.apiKey, form.baseUrl, form.headers, initialLoading]);
 
   useEffect(() => {
     const availableNames = new Set(models.map((model) => model.name));
@@ -248,6 +261,19 @@ export function AiProvidersClaudeModelsPage() {
                 {t('ai_providers.claude_models_fetch_refresh')}
               </Button>
             </div>
+            {formProxyUrl && (
+              <div className={styles.fetchModelsProxyToggle}>
+                <ToggleSwitch
+                  checked={useKeyProxy}
+                  onChange={handleUseKeyProxyChange}
+                  disabled={disableControls || saving || fetching}
+                  label={t('ai_providers.fetch_via_models_use_key_proxy')}
+                />
+                <span className={styles.fetchModelsProxyToggleHint}>
+                  {t('ai_providers.fetch_via_models_use_key_proxy_hint')}
+                </span>
+              </div>
+            )}
           </div>
           <Input
             label={t('ai_providers.claude_models_search_label')}

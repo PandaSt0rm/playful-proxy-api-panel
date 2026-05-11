@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { modelsApi } from '@/services/api';
 import type { ModelInfo } from '@/utils/models';
 import { buildHeaderObject, hasHeader } from '@/utils/headers';
 import { buildOpenAIModelsEndpoint } from '@/components/providers/utils';
+import { fetchModelsProxyPreference } from '@/utils/fetchModelsProxyPreference';
 import type { OpenAIEditOutletContext } from './AiProvidersOpenAIEditLayout';
 import styles from './AiProvidersPage.module.scss';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
@@ -38,6 +40,20 @@ export function AiProvidersOpenAIModelsPage() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const firstKeyEntry = useMemo(
+    () => form.apiKeyEntries.find((entry) => entry.apiKey?.trim()),
+    [form.apiKeyEntries]
+  );
+  const firstEntryProxyUrl = (firstKeyEntry?.proxyUrl ?? '').trim();
+  const [useKeyProxy, setUseKeyProxy] = useState<boolean>(() =>
+    fetchModelsProxyPreference.read('openai', Boolean(firstEntryProxyUrl))
+  );
+  const handleUseKeyProxyChange = useCallback((value: boolean) => {
+    setUseKeyProxy(value);
+    fetchModelsProxyPreference.write('openai', value);
+  }, []);
+  const effectiveProxyUrl = useKeyProxy ? firstEntryProxyUrl : '';
 
   const filteredModels = useMemo(() => {
     const filter = search.trim().toLowerCase();
@@ -67,18 +83,25 @@ export function AiProvidersOpenAIModelsPage() {
       setError('');
       try {
         const headerObject = buildHeaderObject(form.headers);
-        const firstKey = form.apiKeyEntries.find((entry) => entry.apiKey?.trim())?.apiKey?.trim();
+        const firstKey = firstKeyEntry?.apiKey?.trim();
         const hasAuthHeader = hasHeader(headerObject, 'authorization');
+        const proxy = effectiveProxyUrl || undefined;
         const list = await modelsApi.fetchModelsViaApiCall(
           trimmedBaseUrl,
           hasAuthHeader ? undefined : firstKey,
-          headerObject
+          headerObject,
+          proxy
         );
         setModels(list);
       } catch (err: unknown) {
         if (allowFallback) {
           try {
-            const list = await modelsApi.fetchModelsViaApiCall(trimmedBaseUrl);
+            const list = await modelsApi.fetchModelsViaApiCall(
+              trimmedBaseUrl,
+              undefined,
+              {},
+              effectiveProxyUrl || undefined
+            );
             setModels(list);
             return;
           } catch (fallbackErr: unknown) {
@@ -94,7 +117,7 @@ export function AiProvidersOpenAIModelsPage() {
         setFetching(false);
       }
     },
-    [form.apiKeyEntries, form.baseUrl, form.headers, t]
+    [effectiveProxyUrl, firstKeyEntry, form.baseUrl, form.headers, t]
   );
 
   useEffect(() => {
@@ -229,6 +252,19 @@ export function AiProvidersOpenAIModelsPage() {
                 {t('ai_providers.openai_models_fetch_refresh')}
               </Button>
             </div>
+            {firstEntryProxyUrl && (
+              <div className={styles.fetchModelsProxyToggle}>
+                <ToggleSwitch
+                  checked={useKeyProxy}
+                  onChange={handleUseKeyProxyChange}
+                  disabled={disableControls || saving || fetching}
+                  label={t('ai_providers.fetch_via_models_use_key_proxy')}
+                />
+                <span className={styles.fetchModelsProxyToggleHint}>
+                  {t('ai_providers.fetch_via_models_use_key_proxy_hint')}
+                </span>
+              </div>
+            )}
           </div>
           <Input
             label={t('ai_providers.openai_models_search_label')}

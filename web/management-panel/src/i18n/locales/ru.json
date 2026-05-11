@@ -435,6 +435,8 @@
     "openai_models_search_empty": "Модели по запросу не найдены. Попробуйте другой ключ.",
     "openai_models_fetch_invalid_url": "Сначала введите корректный базовый URL",
     "openai_models_fetch_added": "Добавлено новых моделей: {{count}}",
+    "fetch_via_models_use_key_proxy": "Использовать прокси ключа",
+    "fetch_via_models_use_key_proxy_hint": "Отправлять запрос /models через прокси, настроенный для этого ключа.",
     "openai_edit_modal_title": "Редактирование совместимого с OpenAI провайдера",
     "openai_edit_modal_name_label": "Имя провайдера:",
     "openai_edit_modal_url_label": "Базовый URL:",

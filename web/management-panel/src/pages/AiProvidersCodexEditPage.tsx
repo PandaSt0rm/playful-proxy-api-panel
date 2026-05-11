@@ -16,6 +16,7 @@ import { modelsApi, providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { ProviderKeyConfig } from '@/types';
 import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/utils/headers';
+import { fetchModelsProxyPreference } from '@/utils/fetchModelsProxyPreference';
 import { areKeyValueEntriesEqual, areModelEntriesEqual, areStringArraysEqual } from '@/utils/compare';
 import { entriesToModels, modelsToEntries } from '@/components/ui/modelInputListUtils';
 import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
@@ -119,6 +120,16 @@ export function AiProvidersCodexEditPage() {
   const [modelDiscoverySelected, setModelDiscoverySelected] = useState<Set<string>>(new Set());
   const autoFetchSignatureRef = useRef<string>('');
   const modelDiscoveryRequestIdRef = useRef(0);
+
+  const formProxyUrl = (form.proxyUrl ?? '').trim();
+  const [useKeyProxy, setUseKeyProxy] = useState<boolean>(() =>
+    fetchModelsProxyPreference.read('codex', Boolean(formProxyUrl))
+  );
+  const handleUseKeyProxyChange = useCallback((value: boolean) => {
+    setUseKeyProxy(value);
+    fetchModelsProxyPreference.write('codex', value);
+  }, []);
+  const effectiveProxyUrl = useKeyProxy ? formProxyUrl : '';
 
   const hasIndexParam = typeof params.index === 'string';
   const editIndex = useMemo(() => parseIndexParam(params.index), [params.index]);
@@ -329,7 +340,8 @@ export function AiProvidersCodexEditPage() {
       const list = await modelsApi.fetchV1ModelsViaApiCall(
         form.baseUrl ?? '',
         hasCustomAuthorization ? undefined : apiKey,
-        headerObject
+        headerObject,
+        effectiveProxyUrl || undefined
       );
       if (modelDiscoveryRequestIdRef.current !== requestId) return;
       setDiscoveredModels(list);
@@ -343,7 +355,7 @@ export function AiProvidersCodexEditPage() {
         setModelDiscoveryFetching(false);
       }
     }
-  }, [form.apiKey, form.baseUrl, form.headers, t]);
+  }, [effectiveProxyUrl, form.apiKey, form.baseUrl, form.headers, t]);
 
   useEffect(() => {
     if (!modelDiscoveryOpen) {
@@ -375,12 +387,12 @@ export function AiProvidersCodexEditPage() {
       .sort(([a], [b]) => a.toLowerCase().localeCompare(b.toLowerCase()))
       .map(([key, value]) => `${key}:${value}`)
       .join('|');
-    const signature = `${nextEndpoint}||${form.apiKey.trim()}||${headerSignature}`;
+    const signature = `${nextEndpoint}||${form.apiKey.trim()}||${headerSignature}||${effectiveProxyUrl}`;
     if (autoFetchSignatureRef.current === signature) return;
     autoFetchSignatureRef.current = signature;
 
     void fetchCodexModelDiscovery();
-  }, [fetchCodexModelDiscovery, form.apiKey, form.baseUrl, form.headers, modelDiscoveryOpen]);
+  }, [effectiveProxyUrl, fetchCodexModelDiscovery, form.apiKey, form.baseUrl, form.headers, modelDiscoveryOpen]);
 
   useEffect(() => {
     const availableNames = new Set(discoveredModels.map((model) => model.name));
@@ -715,6 +727,19 @@ export function AiProvidersCodexEditPage() {
                       {t('ai_providers.codex_models_fetch_refresh')}
                     </Button>
                   </div>
+                  {formProxyUrl && (
+                    <div className={styles.fetchModelsProxyToggle}>
+                      <ToggleSwitch
+                        checked={useKeyProxy}
+                        onChange={handleUseKeyProxyChange}
+                        disabled={disableControls || saving || modelDiscoveryFetching}
+                        label={t('ai_providers.fetch_via_models_use_key_proxy')}
+                      />
+                      <span className={styles.fetchModelsProxyToggleHint}>
+                        {t('ai_providers.fetch_via_models_use_key_proxy_hint')}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <Input
                   label={t('ai_providers.codex_models_search_label')}

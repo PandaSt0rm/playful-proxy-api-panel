@@ -436,6 +436,8 @@
     "openai_models_search_empty": "No models match your search. Try a different keyword.",
     "openai_models_fetch_invalid_url": "Please enter a valid Base URL first",
     "openai_models_fetch_added": "{{count}} new models added",
+    "fetch_via_models_use_key_proxy": "Use key proxy",
+    "fetch_via_models_use_key_proxy_hint": "Route the /models request through the proxy configured on this key.",
     "openai_edit_modal_title": "Edit OpenAI Compatible Provider",
     "openai_edit_modal_name_label": "Provider Name:",
     "openai_edit_modal_url_label": "Base URL:",

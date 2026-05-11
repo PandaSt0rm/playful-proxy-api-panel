@@ -44,6 +44,8 @@ type apiCallRequest struct {
 	AuthIndexSnake  *string           `json:"auth_index"`
 	AuthIndexCamel  *string           `json:"authIndex"`
 	AuthIndexPascal *string           `json:"AuthIndex"`
+	ProxyURLSnake   *string           `json:"proxy_url"`
+	ProxyURLCamel   *string           `json:"proxyUrl"`
 	Method          string            `json:"method"`
 	URL             string            `json:"url"`
 	Header          map[string]string `json:"header"`
@@ -84,11 +86,19 @@ type apiCallResponse struct {
 //     Example: {"Authorization":"Bearer $TOKEN$"}.
 //     Note: if you need to override the HTTP Host header, set header["Host"].
 //   - data (optional): Raw request body as string (useful for POST/PUT/PATCH).
+//   - proxy_url / proxyUrl (optional):
+//     Explicit proxy URL for this request only. When set, this proxy is used
+//     exclusively; the request is rejected with HTTP 400 if the URL cannot be
+//     parsed or a transport cannot be built. Use this when callers want to
+//     route a specific request through a known proxy without persisting it
+//     onto the credential or global config.
 //
 // Proxy selection (highest priority first):
-//  1. Selected credential proxy_url
-//  2. Global config proxy-url
-//  3. Direct connect (environment proxies are not used)
+//  1. Explicit proxy_url from request body (exclusive — no fallback)
+//  2. Selected credential proxy_url
+//  3. Per-key config proxy_url (matched via auth_index)
+//  4. Global config proxy-url
+//  5. Direct connect (environment proxies are not used)
 //
 // Response JSON (returned with HTTP 200 when the APICall itself succeeds):
 //   - status_code: Upstream HTTP status code.
@@ -128,6 +138,21 @@ func (h *Handler) APICall(c *gin.Context) {
 	if errParseURL != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid url"})
 		return
+	}
+
+	explicitProxyURL := firstNonEmptyString(body.ProxyURLSnake, body.ProxyURLCamel)
+	var explicitProxyTransport *http.Transport
+	if explicitProxyURL != "" {
+		parsedProxy, errParseProxy := url.Parse(explicitProxyURL)
+		if errParseProxy != nil || parsedProxy.Scheme == "" || parsedProxy.Host == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid proxy_url"})
+			return
+		}
+		explicitProxyTransport = buildProxyTransport(explicitProxyURL)
+		if explicitProxyTransport == nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid proxy_url"})
+			return
+		}
 	}
 
 	authIndex := firstNonEmptyString(body.AuthIndexSnake, body.AuthIndexCamel, body.AuthIndexPascal)
@@ -189,7 +214,11 @@ func (h *Handler) APICall(c *gin.Context) {
 	httpClient := &http.Client{
 		Timeout: defaultAPICallTimeout,
 	}
-	httpClient.Transport = h.apiCallTransport(auth)
+	if explicitProxyTransport != nil {
+		httpClient.Transport = explicitProxyTransport
+	} else {
+		httpClient.Transport = h.apiCallTransport(auth)
+	}
 
 	resp, errDo := httpClient.Do(req)
 	if errDo != nil {

@@ -1011,6 +1011,18 @@ $openai-toolbar-control-height: 36px;
   min-width: 0;
 }
 
+.fetchModelsProxyToggle {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: $spacing-xs;
+}
+
+.fetchModelsProxyToggleHint {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
 .modelConfigSection {
   margin-bottom: $spacing-md;
   display: flex;
