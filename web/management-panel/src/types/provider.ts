@@ -8,6 +8,7 @@ export interface ModelAlias {
   alias?: string;
   priority?: number;
   testModel?: string;
+  thinkingLevels?: string[];
 }
 
 export interface ApiKeyEntry {

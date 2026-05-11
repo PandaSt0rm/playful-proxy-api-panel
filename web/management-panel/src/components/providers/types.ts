@@ -4,6 +4,7 @@ import type { HeaderEntry } from '@/utils/headers';
 export interface ModelEntry {
   name: string;
   alias: string;
+  thinkingLevels?: string[];
 }
 
 export interface OpenAIFormState {

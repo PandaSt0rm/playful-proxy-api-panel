@@ -570,7 +570,11 @@ type OpenAICompatibilityModel struct {
 	Alias string `yaml:"alias" json:"alias"`
 
 	// Thinking configures the thinking/reasoning capability for this model.
-	// If nil, the model defaults to level-based reasoning with levels ["low", "medium", "high"].
+	// If nil, the upstream model name is matched against a built-in catalog of
+	// known reasoning-capable models (see internal/thinking/catalog.go). Models
+	// outside the catalog get no thinking levels and therefore no automatic
+	// -low / -medium / -high / -xhigh variants. Set this field explicitly to
+	// override the catalog for a specific model.
 	Thinking *registry.ThinkingSupport `yaml:"thinking,omitempty" json:"thinking,omitempty"`
 }
 

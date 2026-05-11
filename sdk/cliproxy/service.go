@@ -1007,9 +1007,9 @@ func (s *Service) registerModelsForAuth(a *coreauth.Auth) {
 						if modelID == "" {
 							modelID = m.Name
 						}
-						thinking := m.Thinking
-						if thinking == nil {
-							thinking = &registry.ThinkingSupport{Levels: []string{"low", "medium", "high"}}
+						modelThinking := m.Thinking
+						if modelThinking == nil {
+							modelThinking = thinking.DefaultThinkingForModel(m.Name)
 						}
 						ms = append(ms, &ModelInfo{
 							ID:          modelID,
@@ -1019,7 +1019,7 @@ func (s *Service) registerModelsForAuth(a *coreauth.Auth) {
 							Type:        "openai-compatibility",
 							DisplayName: modelID,
 							UserDefined: false,
-							Thinking:    thinking,
+							Thinking:    modelThinking,
 						})
 					}
 					// Register and return

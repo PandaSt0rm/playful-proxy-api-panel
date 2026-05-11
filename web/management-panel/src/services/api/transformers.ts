@@ -56,6 +56,15 @@ const normalizeModelAliases = (models: unknown): ModelAlias[] => {
       if (testModel) {
         entry.testModel = String(testModel);
       }
+      const thinking = item.thinking;
+      if (isRecord(thinking) && Array.isArray(thinking.levels)) {
+        const levels = thinking.levels
+          .map((level) => String(level ?? '').trim().toLowerCase())
+          .filter(Boolean);
+        if (levels.length) {
+          entry.thinkingLevels = levels;
+        }
+      }
       return entry;
     })
     .filter(Boolean) as ModelAlias[];

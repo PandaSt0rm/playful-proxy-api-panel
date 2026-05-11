@@ -1,7 +1,14 @@
-import { Fragment } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { Button } from './Button';
 import { IconX } from './icons';
 import type { ModelEntry } from './modelInputListUtils';
+
+export interface ModelInputListRowExtrasArgs {
+  entry: ModelEntry;
+  index: number;
+  disabled: boolean;
+  updateEntry: (patch: Partial<ModelEntry>) => void;
+}
 
 interface ModelInputListProps {
   entries: ModelEntry[];
@@ -18,6 +25,7 @@ interface ModelInputListProps {
   removeButtonClassName?: string;
   removeButtonTitle?: string;
   removeButtonAriaLabel?: string;
+  renderRowExtras?: (args: ModelInputListRowExtrasArgs) => ReactNode;
 }
 
 export function ModelInputList({
@@ -35,14 +43,15 @@ export function ModelInputList({
   removeButtonClassName = '',
   removeButtonTitle = 'Remove',
   removeButtonAriaLabel = 'Remove',
+  renderRowExtras,
 }: ModelInputListProps) {
   const currentEntries = entries.length ? entries : [{ name: '', alias: '' }];
   const containerClassName = ['header-input-list', className].filter(Boolean).join(' ');
   const inputClassNames = ['input', inputClassName].filter(Boolean).join(' ');
   const rowClassNames = ['header-input-row', rowClassName].filter(Boolean).join(' ');
 
-  const updateEntry = (index: number, field: 'name' | 'alias', value: string) => {
-    const next = currentEntries.map((entry, idx) => (idx === index ? { ...entry, [field]: value } : entry));
+  const replaceEntry = (index: number, patch: Partial<ModelEntry>) => {
+    const next = currentEntries.map((entry, idx) => (idx === index ? { ...entry, ...patch } : entry));
     onChange(next);
   };
 
@@ -68,7 +77,7 @@ export function ModelInputList({
               className={inputClassNames}
               placeholder={namePlaceholder}
               value={entry.name}
-              onChange={(e) => updateEntry(index, 'name', e.target.value)}
+              onChange={(e) => replaceEntry(index, { name: e.target.value })}
               disabled={disabled}
             />
             <span className="header-separator">→</span>
@@ -76,9 +85,16 @@ export function ModelInputList({
               className={inputClassNames}
               placeholder={aliasPlaceholder}
               value={entry.alias}
-              onChange={(e) => updateEntry(index, 'alias', e.target.value)}
+              onChange={(e) => replaceEntry(index, { alias: e.target.value })}
               disabled={disabled}
             />
+            {renderRowExtras &&
+              renderRowExtras({
+                entry,
+                index,
+                disabled,
+                updateEntry: (patch) => replaceEntry(index, patch),
+              })}
             <Button
               variant="ghost"
               size="sm"

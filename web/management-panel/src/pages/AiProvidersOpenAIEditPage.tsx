@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { HeaderInputList } from '@/components/ui/HeaderInputList';
 import { Input } from '@/components/ui/Input';
-import { ModelInputList } from '@/components/ui/ModelInputList';
+import { ModelInputList, type ModelInputListRowExtrasArgs } from '@/components/ui/ModelInputList';
 import { Select } from '@/components/ui/Select';
 import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
@@ -20,6 +20,9 @@ import styles from './AiProvidersPage.module.scss';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
 
 const OPENAI_TEST_TIMEOUT_MS = 30_000;
+
+const REASONING_LEVELS = ['low', 'medium', 'high', 'xhigh'] as const;
+type ReasoningLevel = (typeof REASONING_LEVELS)[number];
 
 const getErrorMessage = (err: unknown) => {
   if (err instanceof Error) return err.message;
@@ -360,6 +363,50 @@ export function AiProvidersOpenAIEditPage() {
     showNotification,
   ]);
 
+  const renderModelLevelChips = useCallback(
+    ({ entry, disabled, updateEntry }: ModelInputListRowExtrasArgs) => {
+      const active = new Set(entry.thinkingLevels ?? []);
+      const toggleLevel = (level: ReasoningLevel) => {
+        const next = new Set(active);
+        if (next.has(level)) next.delete(level);
+        else next.add(level);
+        const ordered = [
+          ...REASONING_LEVELS.filter((known) => next.has(known)),
+          ...Array.from(next).filter(
+            (lvl) => !(REASONING_LEVELS as readonly string[]).includes(lvl)
+          ),
+        ];
+        updateEntry({ thinkingLevels: ordered.length ? ordered : undefined });
+      };
+      return (
+        <div className={styles.modelLevelChips}>
+          {REASONING_LEVELS.map((level) => {
+            const on = active.has(level);
+            const className = [
+              styles.modelLevelChip,
+              on ? styles.modelLevelChipActive : '',
+            ]
+              .filter(Boolean)
+              .join(' ');
+            return (
+              <button
+                type="button"
+                key={level}
+                className={className}
+                onClick={() => toggleLevel(level)}
+                disabled={disabled}
+                aria-pressed={on}
+              >
+                {t(`ai_providers.reasoning_level_${level}`)}
+              </button>
+            );
+          })}
+        </div>
+      );
+    },
+    [t]
+  );
+
   const openOpenaiModelDiscovery = () => {
     const baseUrl = form.baseUrl.trim();
     if (!baseUrl) {
@@ -626,12 +673,16 @@ export function AiProvidersOpenAIEditPage() {
                 disabled={saving || disableControls || isTestingKeys}
                 hideAddButton
                 className={styles.modelInputList}
-                rowClassName={styles.modelInputRow}
+                rowClassName={styles.modelInputRowWithChips}
                 inputClassName={styles.modelInputField}
                 removeButtonClassName={styles.modelRowRemoveButton}
                 removeButtonTitle={t('common.delete')}
                 removeButtonAriaLabel={t('common.delete')}
+                renderRowExtras={renderModelLevelChips}
               />
+              <div className={styles.modelLevelChipsHint}>
+                {t('ai_providers.openai_models_variants_hint')}
+              </div>
 
               {/* 测试区域 */}
               <div className={styles.modelTestPanel}>

@@ -50,6 +50,9 @@ const serializeModelAliases = (models?: ModelAlias[]) =>
           if (model.testModel) {
             payload['test-model'] = model.testModel;
           }
+          if (Array.isArray(model.thinkingLevels) && model.thinkingLevels.length) {
+            payload.thinking = { levels: [...model.thinkingLevels] };
+          }
           return payload;
         })
         .filter(Boolean)
