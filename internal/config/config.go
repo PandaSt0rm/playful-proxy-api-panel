@@ -12,6 +12,7 @@ import (
 	"os"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/registry"
 	log "github.com/sirupsen/logrus"
@@ -59,7 +60,7 @@ type Config struct {
 	LogsMaxTotalSizeMB int `yaml:"logs-max-total-size-mb" json:"logs-max-total-size-mb"`
 
 	// ErrorLogsMaxFiles limits the number of error log files retained when request logging is disabled.
-	// When exceeded, the oldest error log files are deleted. Default is 10. Set to 0 to disable cleanup.
+	// When exceeded, the oldest error log files are deleted. Default is 0, which disables cleanup.
 	ErrorLogsMaxFiles int `yaml:"error-logs-max-files" json:"error-logs-max-files"`
 
 	// UsageStatisticsEnabled toggles usage aggregation; when false, usage data is discarded.
@@ -96,6 +97,10 @@ type Config struct {
 
 	// Routing controls credential selection behavior.
 	Routing RoutingConfig `yaml:"routing" json:"routing"`
+
+	// UpstreamConcurrency limits concurrent upstream requests before they reach providers.
+	// Limits are opt-in; zero means unlimited.
+	UpstreamConcurrency UpstreamConcurrencyConfig `yaml:"upstream-concurrency" json:"upstream-concurrency"`
 
 	// WebsocketAuth enables or disables authentication for the WebSocket API.
 	WebsocketAuth bool `yaml:"ws-auth" json:"ws-auth"`
@@ -246,6 +251,79 @@ type RoutingConfig struct {
 	// SessionAffinityTTL specifies how long session-to-auth bindings are retained.
 	// Default: 1h. Accepts duration strings like "30m", "1h", "2h30m".
 	SessionAffinityTTL string `yaml:"session-affinity-ttl,omitempty" json:"session-affinity-ttl,omitempty"`
+}
+
+// UpstreamConcurrencyConfig configures provider-level upstream concurrency gates.
+type UpstreamConcurrencyConfig struct {
+	// Default applies to providers without an explicit provider limit. Zero means unlimited.
+	Default int `yaml:"default" json:"default"`
+	// Providers maps provider keys such as "codex" to positive concurrency limits.
+	Providers map[string]int `yaml:"providers,omitempty" json:"providers,omitempty"`
+	// QueueTimeoutSeconds bounds how long a request may wait for a permit. When <= 0,
+	// enabled gates use a conservative 30 second timeout.
+	QueueTimeoutSeconds int `yaml:"queue-timeout-seconds" json:"queue-timeout-seconds"`
+}
+
+// Normalize clamps negative values and normalizes provider keys.
+func (c *UpstreamConcurrencyConfig) Normalize() {
+	if c == nil {
+		return
+	}
+	if c.Default < 0 {
+		c.Default = 0
+	}
+	if c.QueueTimeoutSeconds < 0 {
+		c.QueueTimeoutSeconds = 0
+	}
+	if len(c.Providers) == 0 {
+		return
+	}
+	normalized := make(map[string]int, len(c.Providers))
+	for key, limit := range c.Providers {
+		provider := strings.ToLower(strings.TrimSpace(key))
+		if provider == "" {
+			continue
+		}
+		if limit < 0 {
+			limit = 0
+		}
+		normalized[provider] = limit
+	}
+	c.Providers = normalized
+}
+
+// LimitForProvider returns the effective concurrency limit for a provider.
+func (c UpstreamConcurrencyConfig) LimitForProvider(provider string) int {
+	provider = strings.ToLower(strings.TrimSpace(provider))
+	if provider != "" && len(c.Providers) > 0 {
+		if limit, ok := c.Providers[provider]; ok {
+			if limit < 0 {
+				return 0
+			}
+			return limit
+		}
+		for key, limit := range c.Providers {
+			if strings.ToLower(strings.TrimSpace(key)) != provider {
+				continue
+			}
+			if limit < 0 {
+				return 0
+			}
+			return limit
+		}
+	}
+	if c.Default < 0 {
+		return 0
+	}
+	return c.Default
+}
+
+// QueueTimeout returns the configured queue timeout for enabled concurrency gates.
+func (c UpstreamConcurrencyConfig) QueueTimeout() time.Duration {
+	if c.QueueTimeoutSeconds > 0 {
+		return time.Duration(c.QueueTimeoutSeconds) * time.Second
+	}
+	return 30 * time.Second
 }
 
 // OAuthModelAlias defines a model ID alias for a specific channel.
@@ -622,7 +700,7 @@ func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 	cfg.Host = "" // Default empty: binds to all interfaces (IPv4 + IPv6)
 	cfg.LoggingToFile = false
 	cfg.LogsMaxTotalSizeMB = 0
-	cfg.ErrorLogsMaxFiles = 10
+	cfg.ErrorLogsMaxFiles = 0
 	cfg.UsageStatisticsEnabled = false
 	cfg.RedisUsageQueueRetentionSeconds = 60
 	cfg.DisableCooling = false
@@ -684,7 +762,7 @@ func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 	}
 
 	if cfg.ErrorLogsMaxFiles < 0 {
-		cfg.ErrorLogsMaxFiles = 10
+		cfg.ErrorLogsMaxFiles = 0
 	}
 
 	if cfg.RedisUsageQueueRetentionSeconds <= 0 {
@@ -697,6 +775,8 @@ func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 	if cfg.MaxRetryCredentials < 0 {
 		cfg.MaxRetryCredentials = 0
 	}
+
+	cfg.UpstreamConcurrency.Normalize()
 
 	// Sanitize Gemini API key configuration and migrate legacy entries.
 	cfg.SanitizeGeminiKeys()

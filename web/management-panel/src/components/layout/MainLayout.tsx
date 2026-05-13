@@ -217,7 +217,6 @@ export function MainLayout() {
 
   const logout = useAuthStore((state) => state.logout);
 
-  const config = useConfigStore((state) => state.config);
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
   const clearCache = useConfigStore((state) => state.clearCache);
 
@@ -240,7 +239,7 @@ export function MainLayout() {
   const isLogsPage = location.pathname.startsWith('/logs');
   const showSidebarLabels = !sidebarCollapsed || sidebarOpen;
 
-  // 将顶部悬浮控制区高度写入 CSS 变量，供移动端粘性元素和浮层避让。
+  // Store the floating top control height for mobile sticky elements and overlays.
   useLayoutEffect(() => {
     const updateHeaderHeight = () => {
       const height = headerRef.current?.offsetHeight;
@@ -269,7 +268,7 @@ export function MainLayout() {
     };
   }, []);
 
-  // 将主内容区的中心点写入 CSS 变量，供底部浮层（配置面板操作栏、提供商导航）对齐到内容区
+  // Store the main content center so bottom overlays can align to the content area.
   useLayoutEffect(() => {
     const updateContentCenter = () => {
       const el = contentRef.current;
@@ -384,7 +383,7 @@ export function MainLayout() {
 
   useEffect(() => {
     fetchConfig().catch(() => {
-      // ignore initial failure; login flow会提示
+      // Ignore the initial failure; the login flow will surface it.
     });
   }, [fetchConfig]);
 
@@ -401,9 +400,7 @@ export function MainLayout() {
     },
     { path: '/quota', label: t('nav.quota_management'), icon: sidebarIcons.quota },
     { path: '/usage', label: t('nav.usage_statistics'), icon: sidebarIcons.usage },
-    ...(config?.loggingToFile
-      ? [{ path: '/logs', label: t('nav.logs'), icon: sidebarIcons.logs }]
-      : []),
+    { path: '/logs', label: t('nav.logs'), icon: sidebarIcons.logs },
     { path: '/system', label: t('nav.system_info'), icon: sidebarIcons.system },
   ];
   const navOrder = navItems.map((item) => item.path);
@@ -658,7 +655,11 @@ export function MainLayout() {
           className={`sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}
         >
           <div className="sidebar-brand" title={fullBrandName}>
-            <img src={INLINE_LOGO_JPEG} alt="PPAP logo" className="sidebar-brand-logo" />
+            <img
+              src={INLINE_LOGO_JPEG}
+              alt="Playful Proxy API Panel logo"
+              className="sidebar-brand-logo"
+            />
             {showSidebarLabels && <span className="sidebar-brand-title">{abbrBrandName}</span>}
           </div>
 

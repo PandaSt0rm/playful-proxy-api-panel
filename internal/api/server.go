@@ -510,6 +510,7 @@ func (s *Server) registerManagementRoutes() {
 		mgmt.GET("/usage", s.mgmt.GetUsageStatistics)
 		mgmt.GET("/usage/export", s.mgmt.ExportUsageStatistics)
 		mgmt.POST("/usage/import", s.mgmt.ImportUsageStatistics)
+		mgmt.GET("/usage-queue", s.mgmt.GetUsageQueue)
 		mgmt.GET("/config", s.mgmt.GetConfig)
 		mgmt.GET("/config.yaml", s.mgmt.GetConfigYAML)
 		mgmt.PUT("/config.yaml", s.mgmt.PutConfigYAML)
@@ -563,6 +564,7 @@ func (s *Server) registerManagementRoutes() {
 
 		mgmt.GET("/logs", s.mgmt.GetLogs)
 		mgmt.DELETE("/logs", s.mgmt.DeleteLogs)
+		mgmt.GET("/logs/storage", s.mgmt.GetLogStorage)
 		mgmt.GET("/request-error-logs", s.mgmt.GetRequestErrorLogs)
 		mgmt.GET("/request-error-logs/:name", s.mgmt.DownloadRequestErrorLog)
 		mgmt.GET("/request-log-by-id/:id", s.mgmt.GetRequestLogByID)
