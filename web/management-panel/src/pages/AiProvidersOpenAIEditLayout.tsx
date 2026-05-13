@@ -174,14 +174,11 @@ export function AiProvidersOpenAIEditLayout({
   const config = useConfigStore((state) => state.config);
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
   const updateConfigValue = useConfigStore((state) => state.updateConfigValue);
-  const isCacheValid = useConfigStore((state) => state.isCacheValid);
 
   const [providers, setProviders] = useState<OpenAIProviderConfig[]>(
     () => config?.openaiCompatibility ?? []
   );
-  const [loading, setLoading] = useState(
-    () => !isCacheValid('openai-compatibility')
-  );
+  const [providersFetched, setProvidersFetched] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const draftKey = useMemo(() => {
@@ -256,14 +253,20 @@ export function AiProvidersOpenAIEditLayout({
     return providers[editIndex];
   }, [editIndex, providers]);
 
-  const invalidIndex = editIndex !== null && !initialData;
+  const providerListReady =
+    providersFetched ||
+    (editIndex !== null
+      ? Boolean(initialData)
+      : Array.isArray(config?.openaiCompatibility));
+  const invalidIndex = editIndex !== null && providerListReady && !initialData;
+  const resolvedLoading = !draft?.initialized || (!invalidIndexParam && !providerListReady);
 
   useEffect(() => {
     if (providerMode !== 'openai') return;
-    if (loading || editIndex === null || !initialData) return;
+    if (!providerListReady || editIndex === null || !initialData) return;
     if (!isZaiOpenAIProvider(initialData)) return;
     navigate(`/ai-providers/zai/${editIndex}`, { replace: true, state: location.state });
-  }, [editIndex, initialData, loading, location.state, navigate, providerMode]);
+  }, [editIndex, initialData, location.state, navigate, providerListReady, providerMode]);
 
   const availableModels = useMemo(
     () => form.modelEntries.map((entry) => entry.name.trim()).filter(Boolean),
@@ -286,10 +289,6 @@ export function AiProvidersOpenAIEditLayout({
 
   useEffect(() => {
     let cancelled = false;
-    const hasValidCache = isCacheValid('openai-compatibility');
-    if (!hasValidCache) {
-      setLoading(true);
-    }
 
     providersApi
       .getOpenAIProviders()
@@ -297,6 +296,7 @@ export function AiProvidersOpenAIEditLayout({
         if (cancelled) return;
         const nextProviders = value || [];
         setProviders(nextProviders);
+        setProvidersFetched(true);
         updateConfigValue('openai-compatibility', nextProviders);
       })
       .catch(async (err: unknown) => {
@@ -305,25 +305,35 @@ export function AiProvidersOpenAIEditLayout({
           const fallback = await fetchConfig('openai-compatibility');
           if (cancelled) return;
           setProviders(Array.isArray(fallback) ? (fallback as OpenAIProviderConfig[]) : []);
+          setProvidersFetched(true);
         } catch {
           if (cancelled) return;
           const message = getErrorMessage(err) || t('notification.refresh_failed');
           showNotification(`${t('notification.load_failed')}: ${message}`, 'error');
+          setProvidersFetched(true);
         }
-      })
-      .finally(() => {
-        if (cancelled) return;
-        setLoading(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [fetchConfig, isCacheValid, showNotification, t, updateConfigValue]);
+  }, [fetchConfig, showNotification, t, updateConfigValue]);
 
   useEffect(() => {
-    if (loading) return;
     if (draft?.initialized) return;
+    if (invalidIndexParam) {
+      const emptyForm = buildEmptyForm(providerMode);
+      initDraft(draftKey, {
+        baseline: buildOpenAIBaseline(emptyForm, ''),
+        form: emptyForm,
+        testModel: '',
+        testStatus: 'idle',
+        testMessage: '',
+        keyTestStatuses: [],
+      });
+      return;
+    }
+    if (!providerListReady) return;
 
     if (initialData) {
       const seededForm = providerToForm(initialData);
@@ -354,10 +364,18 @@ export function AiProvidersOpenAIEditLayout({
         keyTestStatuses: [],
       });
     }
-  }, [draft?.initialized, draftKey, initDraft, initialData, loading, providerMode]);
+  }, [
+    draft?.initialized,
+    draftKey,
+    initDraft,
+    initialData,
+    invalidIndexParam,
+    providerListReady,
+    providerMode,
+  ]);
 
   useEffect(() => {
-    if (loading) return;
+    if (resolvedLoading) return;
 
     if (availableModels.length === 0) {
       if (testModel) {
@@ -373,7 +391,7 @@ export function AiProvidersOpenAIEditLayout({
       setTestStatus('idle');
       setTestMessage('');
     }
-  }, [availableModels, loading, setTestMessage, setTestModel, setTestStatus, testModel]);
+  }, [availableModels, resolvedLoading, setTestMessage, setTestModel, setTestStatus, testModel]);
 
   const mergeDiscoveredModels = useCallback(
     (selectedModels: ModelInfo[]) => {
@@ -409,7 +427,6 @@ export function AiProvidersOpenAIEditLayout({
     [setForm, showNotification, t]
   );
 
-  const resolvedLoading = !draft?.initialized;
   const baseline = draft?.baseline ?? null;
   const normalizedHeaders = useMemo(() => normalizeHeaderEntries(form.headers), [form.headers]);
   const normalizedModels = useMemo(

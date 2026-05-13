@@ -415,9 +415,16 @@ const ZAI_QUOTA_LABEL_KEYS: Record<string, string> = {
 };
 
 function normalizeZaiPercent(value: unknown): number | null {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed.endsWith('%')) {
+      const parsed = Number(trimmed.slice(0, -1));
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+  }
   const normalized = normalizeNumberValue(value);
   if (normalized === null) return null;
-  return normalized <= 1 ? normalized * 100 : normalized;
+  return normalized;
 }
 
 function zaiDurationHint(ms: number): string | undefined {
@@ -493,25 +500,21 @@ function zaiFallbackLabel(type: string, index: number): Pick<ZaiQuotaRow, 'label
 function toZaiQuotaRow(item: ZaiQuotaLimit, index: number): ZaiQuotaRow | null {
   const record = item as Record<string, unknown>;
   const type = normalizeStringValue(item.type)?.toUpperCase() ?? `LIMIT_${index + 1}`;
-  const usedPercent = normalizeZaiPercent(item.percentage);
+  const apiUsedPercent = normalizeZaiPercent(item.percentage);
   const currentValue = normalizeNumberValue(
     item.currentValue ?? item.current_value ?? item.currentUsage ?? item.current_usage
   );
   const remainingValue = normalizeNumberValue(item.remaining);
   const limit = normalizeNumberValue(item.usage ?? item.total ?? item.limit ?? item.totol);
   const usageDerivedPercent =
-    usedPercent === null && currentValue !== null && limit !== null && limit > 0
+    currentValue !== null && limit !== null && limit > 0
       ? (currentValue / limit) * 100
       : null;
   const remainingDerivedPercent =
-    usedPercent === null &&
-    usageDerivedPercent === null &&
-    remainingValue !== null &&
-    limit !== null &&
-    limit > 0
+    usageDerivedPercent === null && remainingValue !== null && limit !== null && limit > 0
       ? 100 - (remainingValue / limit) * 100
       : null;
-  const normalizedUsedPercent = usedPercent ?? usageDerivedPercent ?? remainingDerivedPercent;
+  const normalizedUsedPercent = usageDerivedPercent ?? remainingDerivedPercent ?? apiUsedPercent;
   const remainingPercent =
     normalizedUsedPercent === null
       ? null
