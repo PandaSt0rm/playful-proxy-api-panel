@@ -7,6 +7,8 @@ export { VertexSection } from './VertexSection';
 export { ZaiSection } from './ZaiSection';
 export { ProviderList } from './ProviderList';
 export { ProviderStatusBar } from './ProviderStatusBar';
+export { ProviderConcurrencyInput } from './ProviderConcurrencyInput';
+export { ProviderConcurrencyBadge } from './ProviderConcurrencyBadge';
 export { ProviderNav } from './ProviderNav';
 export * from './hooks/useProviderRecentRequests';
 export * from './types';

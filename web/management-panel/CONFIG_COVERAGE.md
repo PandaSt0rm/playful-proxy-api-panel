@@ -1,15 +1,24 @@
 # CLIProxyAPI v7 Config Coverage
 
-This dashboard treats `src/internal/config/config.go` and `src/config.example.yaml` as the source of truth for supported config keys.
+Source of truth: `src/internal/config/config.go`, `src/internal/config/sdk_config.go`, and `src/config.example.yaml`.
 
-## Typed visual editor
+## Coverage Matrix
 
-The Config visual editor covers server binding, TLS, Home, remote management, auth directory, API keys, logging, request logging, error log retention, usage statistics, pprof, retry behavior, global proxy, model prefix enforcement, passthrough headers, image generation mode, Gemini CLI internal endpoint, websocket auth, upstream concurrency, quota fallback, Antigravity signature toggles, routing affinity, streaming keepalive, Claude header defaults, Codex header defaults, and payload rules.
+| Config path | Dashboard surface | Save path | Decision |
+| --- | --- | --- | --- |
+| `host`, `port`, `tls.*`, `home.*`, `remote-management.*`, `auth-dir` | Config visual editor | `/config.yaml` | Structural/runtime fields stay in the config editor. |
+| `debug`, `commercial-mode`, `logging-to-file`, `logs-max-total-size-mb`, `error-logs-max-files`, `request-log`, `usage-statistics-*`, `redis-usage-queue-retention-seconds`, `pprof.*` | Config visual editor; dashboard pills for key runtime status | `/config.yaml` plus existing simple endpoints where available | Safe operational controls are exposed visually. |
+| `proxy-url`, `passthrough-headers`, `disable-image-generation`, `enable-gemini-cli-endpoint`, `force-model-prefix`, `ws-auth` | Config visual editor; dashboard shows image generation and WebSocket auth | `/config.yaml` plus existing simple endpoints where available | Network/request behavior is visible without source editing. |
+| `request-retry`, `max-retry-credentials`, `max-retry-interval`, `quota-exceeded.*`, `routing.*`, `streaming.*` | Config visual editor; dashboard shows retry and routing | `/config.yaml` plus existing simple endpoints where available | Retry/routing controls remain centralized. |
+| `upstream-concurrency.default`, `providers`, `queue-timeout-seconds` | Config visual editor, dashboard, provider cards, provider edit pages | `/upstream-concurrency` management endpoints and `/config.yaml` visual save | Full structured support. Provider edit pages write the global provider map. |
+| `api-keys` | Config visual editor and API key management | Existing API key endpoints and `/config.yaml` | Existing key-management UX remains the main surface. |
+| `gemini-api-key`, `codex-api-key`, `claude-api-key`, `vertex-api-key`, `openai-compatibility` | AI Providers list/edit pages | Provider management endpoints | Provider-owned fields are edited in provider-specific pages and preserve unknown raw fields. |
+| Provider `disable-cooling`, Codex `websockets`, Claude `cloak`, Claude `experimental-cch-signing`, OpenAI model `thinking` | AI Providers list/edit pages | Provider management endpoints | v7 provider-specific fields have structured editor support. |
+| `claude-header-defaults`, `codex-header-defaults`, `payload.*`, Antigravity signature toggles | Config visual editor | `/config.yaml` | Advanced request shaping is centralized in Config. |
+| `ampcode.*` | Amp provider page and Config source fallback | Amp management endpoints | Amp summary exposes security-relevant `restrict-management-to-localhost`; mappings preserve regex support. |
+| `oauth-excluded-models`, `oauth-model-alias` | Auth Files dedicated pages | OAuth management endpoints | Dedicated pages remain the source of truth. |
+| `sync-profiles` | Tooling Templates | Sync profile endpoints | Sync profile editing remains with tooling template flows. |
 
-## Structured provider editors
+## Source-Only Policy
 
-Provider editors cover the v7 provider fields for Gemini, Codex, Claude, OpenAI-compatible providers, Vertex-compatible providers, and Amp. Save paths must preserve existing raw item fields while overriding only fields the editor owns. This is especially important for per-provider `disable-cooling`, Claude `cloak.cache-user-id`, Claude `experimental-cch-signing`, OpenAI model `thinking`, Amp `restrict-management-to-localhost`, and Amp mapping `regex`.
-
-## Fallback surface
-
-The source YAML editor remains the fallback for fields that are deliberately not given a dedicated control or for future upstream fields before the dashboard is updated.
+Fields are source-only only when they are structural, secret-bearing, legacy migration aliases, or not safe to quick-edit outside the full config context. Future upstream keys should appear first in source mode and then be added to this matrix when a typed control is implemented.

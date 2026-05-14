@@ -12,7 +12,7 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
-import { modelsApi, providersApi } from '@/services/api';
+import { modelsApi, providersApi, saveProviderConcurrencyDraft } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { GeminiKeyConfig } from '@/types';
 import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/utils/headers';
@@ -25,7 +25,12 @@ import {
 import type { ModelInfo } from '@/utils/models';
 import { entriesToModels, modelsToEntries } from '@/components/ui/modelInputListUtils';
 import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
-import type { GeminiFormState } from '@/components/providers';
+import { ProviderConcurrencyInput, type GeminiFormState } from '@/components/providers';
+import {
+  concurrencyLimitToDraft,
+  getProviderConcurrencyOverride,
+  parseConcurrencyLimitDraft,
+} from '@/utils/upstreamConcurrency';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
 import styles from './AiProvidersPage.module.scss';
 
@@ -106,6 +111,7 @@ export function AiProvidersGeminiEditPage() {
   const disableControls = connectionStatus !== 'connected';
 
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
+  const config = useConfigStore((state) => state.config);
   const updateConfigValue = useConfigStore((state) => state.updateConfigValue);
   const clearCache = useConfigStore((state) => state.clearCache);
 
@@ -115,6 +121,8 @@ export function AiProvidersGeminiEditPage() {
   const [error, setError] = useState('');
   const [form, setForm] = useState<GeminiFormState>(() => buildEmptyForm());
   const [baseline, setBaseline] = useState(() => buildGeminiBaseline(buildEmptyForm()));
+  const [concurrencyLimit, setConcurrencyLimit] = useState('');
+  const [baselineConcurrencyLimit, setBaselineConcurrencyLimit] = useState('');
 
   const [modelDiscoveryOpen, setModelDiscoveryOpen] = useState(false);
   const [modelDiscoveryEndpoint, setModelDiscoveryEndpoint] = useState('');
@@ -214,14 +222,37 @@ export function AiProvidersGeminiEditPage() {
       };
       setForm(nextForm);
       setBaseline(buildGeminiBaseline(nextForm));
+      const nextConcurrencyLimit = concurrencyLimitToDraft(
+        getProviderConcurrencyOverride(config?.upstreamConcurrency, 'gemini')
+      );
+      setConcurrencyLimit(nextConcurrencyLimit);
+      setBaselineConcurrencyLimit(nextConcurrencyLimit);
       return;
     }
     const nextForm = buildEmptyForm();
     setForm(nextForm);
     setBaseline(buildGeminiBaseline(nextForm));
-  }, [initialData, loading]);
+    const nextConcurrencyLimit = concurrencyLimitToDraft(
+      getProviderConcurrencyOverride(config?.upstreamConcurrency, 'gemini')
+    );
+    setConcurrencyLimit(nextConcurrencyLimit);
+    setBaselineConcurrencyLimit(nextConcurrencyLimit);
+  }, [config?.upstreamConcurrency, initialData, loading]);
 
-  const canSave = !disableControls && !saving && !loading && !invalidIndexParam && !invalidIndex;
+  const concurrencyLimitError =
+    concurrencyLimit.trim() && !Number.isFinite(parseConcurrencyLimitDraft(concurrencyLimit))
+      ? t('config_management.visual.validation.provider_limit_invalid', {
+          defaultValue: 'Enter a non-negative whole number',
+        })
+      : undefined;
+
+  const canSave =
+    !disableControls &&
+    !saving &&
+    !loading &&
+    !invalidIndexParam &&
+    !invalidIndex &&
+    !concurrencyLimitError;
 
   const discoveredModelsFiltered = useMemo(() => {
     const filter = modelDiscoverySearch.trim().toLowerCase();
@@ -450,7 +481,8 @@ export function AiProvidersGeminiEditPage() {
       (form.disableCooling === undefined ? null : Boolean(form.disableCooling)) ||
     isHeadersDirty ||
     isModelsDirty ||
-    isExcludedModelsDirty;
+    isExcludedModelsDirty ||
+    baselineConcurrencyLimit !== concurrencyLimit.trim();
   const canGuard = !loading && !saving && !invalidIndexParam && !invalidIndex;
 
   const { allowNextNavigation } = useUnsavedChangesGuard({
@@ -496,8 +528,14 @@ export function AiProvidersGeminiEditPage() {
           : [...configs, payload];
 
       await providersApi.saveGeminiKeys(nextList);
+      await saveProviderConcurrencyDraft({
+        providerKey: 'gemini',
+        draftLimit: concurrencyLimit,
+        baselineDraftLimit: baselineConcurrencyLimit,
+      });
       updateConfigValue('gemini-api-key', nextList);
       clearCache('gemini-api-key');
+      await fetchConfig(undefined, true);
       showNotification(
         editIndex !== null
           ? t('notification.gemini_key_updated')
@@ -506,6 +544,7 @@ export function AiProvidersGeminiEditPage() {
       );
       allowNextNavigation();
       setBaseline(buildGeminiBaseline(form));
+      setBaselineConcurrencyLimit(concurrencyLimit.trim());
       handleBack();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '';
@@ -520,9 +559,12 @@ export function AiProvidersGeminiEditPage() {
     clearCache,
     configs,
     editIndex,
+    fetchConfig,
     form,
     handleBack,
     initialData?.raw,
+    concurrencyLimit,
+    baselineConcurrencyLimit,
     showNotification,
     t,
     updateConfigValue,
@@ -617,6 +659,14 @@ export function AiProvidersGeminiEditPage() {
               value={form.proxyUrl ?? ''}
               onChange={(e) => setForm((prev) => ({ ...prev, proxyUrl: e.target.value }))}
               disabled={disableControls || saving}
+            />
+            <ProviderConcurrencyInput
+              providerKey="gemini"
+              value={concurrencyLimit}
+              config={config?.upstreamConcurrency}
+              disabled={disableControls || saving}
+              error={concurrencyLimitError}
+              onChange={setConcurrencyLimit}
             />
             <div className="form-group">
               <ToggleSwitch

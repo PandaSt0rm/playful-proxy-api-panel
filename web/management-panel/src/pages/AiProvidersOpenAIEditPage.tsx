@@ -15,6 +15,7 @@ import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
 import type { ApiKeyEntry } from '@/types';
 import { buildHeaderObject, hasHeader } from '@/utils/headers';
 import { buildApiKeyEntry, buildOpenAIChatCompletionsEndpoint } from '@/components/providers/utils';
+import { ProviderConcurrencyInput } from '@/components/providers';
 import type { OpenAIEditOutletContext } from './AiProvidersOpenAIEditLayout';
 import type { KeyTestStatus } from '@/stores/useOpenAIEditDraftStore';
 import styles from './AiProvidersPage.module.scss';
@@ -116,6 +117,9 @@ export function AiProvidersOpenAIEditPage() {
     setDraftKeyTestStatus,
     resetDraftKeyTestStatuses,
     availableModels,
+    concurrencyLimit,
+    setConcurrencyLimit,
+    concurrencyLimitError,
     handleBack,
     handleSave,
   } = useOutletContext<OpenAIEditOutletContext>();
@@ -144,7 +148,8 @@ export function AiProvidersOpenAIEditPage() {
     !saving &&
     !invalidIndexParam &&
     !invalidIndex &&
-    !isTestingKeys;
+    !isTestingKeys &&
+    !concurrencyLimitError;
   const hasConfiguredModels = form.modelEntries.some((entry) => entry.name.trim());
   const hasTestableKeys = form.apiKeyEntries.some((entry) => entry.apiKey?.trim());
   const modelSelectOptions = useMemo(() => {
@@ -640,6 +645,13 @@ export function AiProvidersOpenAIEditPage() {
               placeholder={t(`ai_providers.${providerI18nPrefix}_add_modal_url_placeholder`)}
               onChange={(e) => setForm((prev) => ({ ...prev, baseUrl: e.target.value }))}
               disabled={saving || disableControls || isTestingKeys}
+            />
+            <ProviderConcurrencyInput
+              providerKey={form.name}
+              value={concurrencyLimit}
+              disabled={saving || disableControls || isTestingKeys}
+              error={concurrencyLimitError}
+              onChange={setConcurrencyLimit}
             />
             <div className="form-group">
               <ToggleSwitch

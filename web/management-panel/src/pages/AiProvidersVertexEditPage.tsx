@@ -10,13 +10,18 @@ import { modelsToEntries } from '@/components/ui/modelInputListUtils';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
-import { providersApi } from '@/services/api';
+import { providersApi, saveProviderConcurrencyDraft } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { ProviderKeyConfig } from '@/types';
 import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
 import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/utils/headers';
 import { areKeyValueEntriesEqual, areModelEntriesEqual, areStringArraysEqual } from '@/utils/compare';
-import type { VertexFormState } from '@/components/providers';
+import { ProviderConcurrencyInput, type VertexFormState } from '@/components/providers';
+import {
+  concurrencyLimitToDraft,
+  getProviderConcurrencyOverride,
+  parseConcurrencyLimitDraft,
+} from '@/utils/upstreamConcurrency';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
 
 type LocationState = { fromAiProviders?: boolean } | null;
@@ -82,6 +87,7 @@ export function AiProvidersVertexEditPage() {
   const disableControls = connectionStatus !== 'connected';
 
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
+  const config = useConfigStore((state) => state.config);
   const updateConfigValue = useConfigStore((state) => state.updateConfigValue);
   const clearCache = useConfigStore((state) => state.clearCache);
 
@@ -91,6 +97,8 @@ export function AiProvidersVertexEditPage() {
   const [error, setError] = useState('');
   const [form, setForm] = useState<VertexFormState>(() => buildEmptyForm());
   const [baseline, setBaseline] = useState(() => buildVertexBaseline(buildEmptyForm()));
+  const [concurrencyLimit, setConcurrencyLimit] = useState('');
+  const [baselineConcurrencyLimit, setBaselineConcurrencyLimit] = useState('');
 
   const hasIndexParam = typeof params.index === 'string';
   const editIndex = useMemo(() => parseIndexParam(params.index), [params.index]);
@@ -172,14 +180,37 @@ export function AiProvidersVertexEditPage() {
       };
       setForm(nextForm);
       setBaseline(buildVertexBaseline(nextForm));
+      const nextConcurrencyLimit = concurrencyLimitToDraft(
+        getProviderConcurrencyOverride(config?.upstreamConcurrency, 'vertex')
+      );
+      setConcurrencyLimit(nextConcurrencyLimit);
+      setBaselineConcurrencyLimit(nextConcurrencyLimit);
       return;
     }
     const nextForm = buildEmptyForm();
     setForm(nextForm);
     setBaseline(buildVertexBaseline(nextForm));
-  }, [initialData, loading]);
+    const nextConcurrencyLimit = concurrencyLimitToDraft(
+      getProviderConcurrencyOverride(config?.upstreamConcurrency, 'vertex')
+    );
+    setConcurrencyLimit(nextConcurrencyLimit);
+    setBaselineConcurrencyLimit(nextConcurrencyLimit);
+  }, [config?.upstreamConcurrency, initialData, loading]);
 
-  const canSave = !disableControls && !saving && !loading && !invalidIndexParam && !invalidIndex;
+  const concurrencyLimitError =
+    concurrencyLimit.trim() && !Number.isFinite(parseConcurrencyLimitDraft(concurrencyLimit))
+      ? t('config_management.visual.validation.provider_limit_invalid', {
+          defaultValue: 'Enter a non-negative whole number',
+        })
+      : undefined;
+
+  const canSave =
+    !disableControls &&
+    !saving &&
+    !loading &&
+    !invalidIndexParam &&
+    !invalidIndex &&
+    !concurrencyLimitError;
 
   const normalizedHeaders = useMemo(() => normalizeHeaderEntries(form.headers), [form.headers]);
   const normalizedModels = useMemo(
@@ -215,7 +246,8 @@ export function AiProvidersVertexEditPage() {
     baseline.proxyUrl !== String(form.proxyUrl ?? '').trim() ||
     isHeadersDirty ||
     isModelsDirty ||
-    isExcludedModelsDirty;
+    isExcludedModelsDirty ||
+    baselineConcurrencyLimit !== concurrencyLimit.trim();
   const canGuard = !loading && !saving && !invalidIndexParam && !invalidIndex;
 
   const { allowNextNavigation } = useUnsavedChangesGuard({
@@ -267,14 +299,21 @@ export function AiProvidersVertexEditPage() {
           : [...configs, payload];
 
       await providersApi.saveVertexConfigs(nextList);
+      await saveProviderConcurrencyDraft({
+        providerKey: 'vertex',
+        draftLimit: concurrencyLimit,
+        baselineDraftLimit: baselineConcurrencyLimit,
+      });
       updateConfigValue('vertex-api-key', nextList);
       clearCache('vertex-api-key');
+      await fetchConfig(undefined, true);
       showNotification(
         editIndex !== null ? t('notification.vertex_config_updated') : t('notification.vertex_config_added'),
         'success'
       );
       allowNextNavigation();
       setBaseline(buildVertexBaseline(form));
+      setBaselineConcurrencyLimit(concurrencyLimit.trim());
       handleBack();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '';
@@ -289,8 +328,11 @@ export function AiProvidersVertexEditPage() {
     clearCache,
     configs,
     editIndex,
+    fetchConfig,
     form,
     handleBack,
+    concurrencyLimit,
+    baselineConcurrencyLimit,
     showNotification,
     t,
     updateConfigValue,
@@ -364,6 +406,14 @@ export function AiProvidersVertexEditPage() {
               value={form.proxyUrl ?? ''}
               onChange={(e) => setForm((prev) => ({ ...prev, proxyUrl: e.target.value }))}
               disabled={disableControls || saving}
+            />
+            <ProviderConcurrencyInput
+              providerKey="vertex"
+              value={concurrencyLimit}
+              config={config?.upstreamConcurrency}
+              disabled={disableControls || saving}
+              error={concurrencyLimitError}
+              onChange={setConcurrencyLimit}
             />
             <HeaderInputList
               entries={form.headers}

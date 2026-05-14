@@ -8,8 +8,9 @@ import type {
   VisualConfigValues,
   VisualConfigValidationErrors,
   PayloadParamValidationErrorCode,
+  UpstreamConcurrencyProviderLimitEntry,
 } from '@/types/visualConfig';
-import { DEFAULT_VISUAL_VALUES } from '@/types/visualConfig';
+import { DEFAULT_VISUAL_VALUES, makeClientId } from '@/types/visualConfig';
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -155,6 +156,27 @@ function getNonNegativeIntegerError(value: string): 'non_negative_integer' | und
   return Number(trimmed) >= 0 ? undefined : 'non_negative_integer';
 }
 
+function getProviderLimitEntriesError(
+  entries: UpstreamConcurrencyProviderLimitEntry[]
+):
+  | 'provider_limit_provider_required'
+  | 'provider_limit_duplicate'
+  | 'provider_limit_invalid'
+  | undefined {
+  const seen = new Set<string>();
+  for (const entry of entries) {
+    const provider = entry.provider.trim().toLowerCase();
+    const limit = entry.limit.trim();
+    if (!provider && !limit) continue;
+    if (!provider) return 'provider_limit_provider_required';
+    if (seen.has(provider)) return 'provider_limit_duplicate';
+    seen.add(provider);
+    if (!limit) return 'provider_limit_invalid';
+    if (getNonNegativeIntegerError(limit)) return 'provider_limit_invalid';
+  }
+  return undefined;
+}
+
 function parseDisableImageGenerationMode(
   raw: unknown
 ): VisualConfigValues['disableImageGeneration'] {
@@ -166,31 +188,52 @@ function parseDisableImageGenerationMode(
   return 'false';
 }
 
-function providerLimitsToText(raw: unknown): string {
+function providerLimitsToEntries(raw: unknown): UpstreamConcurrencyProviderLimitEntry[] {
   const record = asRecord(raw);
-  if (!record) return '';
+  if (!record) return [];
   return Object.entries(record)
-    .map(([provider, value]) => `${provider}=${value}`)
-    .join('\n');
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([provider, value]) => ({
+      id: makeClientId(),
+      provider,
+      limit: String(value ?? ''),
+    }));
 }
 
-function textToProviderLimits(text: string): Record<string, number> {
+function providerLimitEntriesToRecord(
+  entries: UpstreamConcurrencyProviderLimitEntry[]
+): Record<string, number> {
   const result: Record<string, number> = {};
-  text
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .forEach((line) => {
-      const [rawKey, rawValue] = line.includes('=') ? line.split(/=(.*)/s) : line.split(/:(.*)/s);
-      const key = String(rawKey ?? '').trim();
-      const value = String(rawValue ?? '').trim();
-      if (!key || !/^-?\d+$/.test(value)) return;
-      const parsed = Number(value);
-      if (Number.isFinite(parsed)) {
-        result[key] = parsed;
-      }
-    });
+  entries.forEach((entry) => {
+    const key = entry.provider.trim().toLowerCase();
+    const value = entry.limit.trim();
+    if (!key || !/^-?\d+$/.test(value)) return;
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      result[key] = parsed;
+    }
+  });
   return result;
+}
+
+function providerLimitEntriesComparable(entries: UpstreamConcurrencyProviderLimitEntry[]) {
+  return entries
+    .map((entry) => ({
+      provider: entry.provider.trim().toLowerCase(),
+      limit: entry.limit.trim(),
+    }))
+    .filter((entry) => entry.provider || entry.limit)
+    .sort((left, right) => left.provider.localeCompare(right.provider));
+}
+
+function areProviderLimitEntriesEqual(
+  left: UpstreamConcurrencyProviderLimitEntry[],
+  right: UpstreamConcurrencyProviderLimitEntry[]
+): boolean {
+  return (
+    JSON.stringify(providerLimitEntriesComparable(left)) ===
+    JSON.stringify(providerLimitEntriesComparable(right))
+  );
 }
 
 function parseHeaderDefaults(raw: unknown): VisualConfigValues['claudeHeaderDefaults'] {
@@ -255,6 +298,9 @@ export function getVisualConfigValidationErrors(
     maxRetryInterval: getNonNegativeIntegerError(values.maxRetryInterval),
     'upstreamConcurrency.default': getNonNegativeIntegerError(
       values.upstreamConcurrency.defaultLimit
+    ),
+    'upstreamConcurrency.providers': getProviderLimitEntriesError(
+      values.upstreamConcurrency.providerLimits
     ),
     'upstreamConcurrency.queueTimeoutSeconds': getNonNegativeIntegerError(
       values.upstreamConcurrency.queueTimeoutSeconds
@@ -848,11 +894,13 @@ function getNextDirtyFields(
           baselineValues.upstreamConcurrency.defaultLimit
       );
     }
-    if (Object.prototype.hasOwnProperty.call(upstreamPatch, 'providersText')) {
+    if (Object.prototype.hasOwnProperty.call(upstreamPatch, 'providerLimits')) {
       updateDirty(
-        'upstreamConcurrency.providersText',
-        nextValues.upstreamConcurrency.providersText ===
-          baselineValues.upstreamConcurrency.providersText
+        'upstreamConcurrency.providerLimits',
+        areProviderLimitEntriesEqual(
+          nextValues.upstreamConcurrency.providerLimits,
+          baselineValues.upstreamConcurrency.providerLimits
+        )
       );
     }
     if (Object.prototype.hasOwnProperty.call(upstreamPatch, 'queueTimeoutSeconds')) {
@@ -1137,7 +1185,7 @@ export function useVisualConfig() {
         wsAuth: Boolean(parsed['ws-auth']),
         upstreamConcurrency: {
           defaultLimit: String(upstreamConcurrency?.default ?? ''),
-          providersText: providerLimitsToText(upstreamConcurrency?.providers),
+          providerLimits: providerLimitsToEntries(upstreamConcurrency?.providers),
           queueTimeoutSeconds: String(upstreamConcurrency?.['queue-timeout-seconds'] ?? ''),
         },
 
@@ -1380,10 +1428,12 @@ export function useVisualConfig() {
         if (
           docHas(doc, ['upstream-concurrency']) ||
           values.upstreamConcurrency.defaultLimit.trim() ||
-          values.upstreamConcurrency.providersText.trim() ||
+          values.upstreamConcurrency.providerLimits.some(
+            (entry) => entry.provider.trim() || entry.limit.trim()
+          ) ||
           values.upstreamConcurrency.queueTimeoutSeconds.trim() ||
           dirtyFields.has('upstreamConcurrency.defaultLimit') ||
-          dirtyFields.has('upstreamConcurrency.providersText') ||
+          dirtyFields.has('upstreamConcurrency.providerLimits') ||
           dirtyFields.has('upstreamConcurrency.queueTimeoutSeconds')
         ) {
           ensureMapInDoc(doc, ['upstream-concurrency']);
@@ -1392,7 +1442,7 @@ export function useVisualConfig() {
             ['upstream-concurrency', 'default'],
             values.upstreamConcurrency.defaultLimit
           );
-          const providerLimits = textToProviderLimits(values.upstreamConcurrency.providersText);
+          const providerLimits = providerLimitEntriesToRecord(values.upstreamConcurrency.providerLimits);
           if (Object.keys(providerLimits).length) {
             doc.setIn(['upstream-concurrency', 'providers'], providerLimits);
           } else if (docHas(doc, ['upstream-concurrency', 'providers'])) {

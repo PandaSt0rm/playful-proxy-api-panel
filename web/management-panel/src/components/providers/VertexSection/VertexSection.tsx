@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import iconVertex from '@/assets/icons/vertex.svg';
-import type { ProviderKeyConfig } from '@/types';
+import type { ProviderKeyConfig, UpstreamConcurrencyConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
 import { statusBarDataFromRecentRequests } from '@/utils/recentRequests';
 import styles from '@/pages/AiProvidersPage.module.scss';
 import { ProviderList } from '../ProviderList';
+import { ProviderConcurrencyBadge } from '../ProviderConcurrencyBadge';
 import { ProviderStatusBar } from '../ProviderStatusBar';
 import {
   getProviderConfigKey,
@@ -20,6 +21,7 @@ import {
 
 interface VertexSectionProps {
   configs: ProviderKeyConfig[];
+  upstreamConcurrency?: UpstreamConcurrencyConfig;
   usageByProvider: ProviderRecentUsageMap;
   loading: boolean;
   disableControls: boolean;
@@ -32,6 +34,7 @@ interface VertexSectionProps {
 
 export function VertexSection({
   configs,
+  upstreamConcurrency,
   usageByProvider,
   loading,
   disableControls,
@@ -136,6 +139,7 @@ export function VertexSection({
                     <span className={styles.fieldValue}>{item.proxyUrl}</span>
                   </div>
                 )}
+                <ProviderConcurrencyBadge providerKey="vertex" config={upstreamConcurrency} />
                 {headerEntries.length > 0 && (
                   <div className={styles.headerBadgeList}>
                     {headerEntries.map(([key, value]) => (

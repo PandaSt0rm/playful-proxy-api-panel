@@ -259,6 +259,25 @@ export function DashboardPage() {
       : routingStrategyRaw === 'fill-first'
         ? styles.configBadgeFillFirst
         : styles.configBadgeUnknown;
+  const upstreamProviderOverrides = Object.keys(config?.upstreamConcurrency?.providers ?? {}).length;
+  const upstreamConcurrencyDisplay =
+    config?.upstreamConcurrency?.default && config.upstreamConcurrency.default > 0
+      ? t('dashboard.concurrency_default', {
+          defaultValue: '{{limit}} default',
+          limit: config.upstreamConcurrency.default,
+        })
+      : upstreamProviderOverrides > 0
+        ? t('dashboard.concurrency_overrides', {
+            defaultValue: '{{count}} overrides',
+            count: upstreamProviderOverrides,
+          })
+        : t('ai_providers.concurrency_unlimited', { defaultValue: 'Unlimited' });
+  const imageGenerationDisplay =
+    config?.disableImageGeneration === true
+      ? t('dashboard.image_generation_off', { defaultValue: 'Off' })
+      : config?.disableImageGeneration === 'chat'
+        ? t('dashboard.image_generation_chat', { defaultValue: 'Chat only' })
+        : t('dashboard.image_generation_on', { defaultValue: 'On' });
 
   // Derived time-based values
   const greetingKey = `dashboard.greeting_${timeOfDay}`;
@@ -381,6 +400,34 @@ export function DashboardPage() {
               <span className={`${styles.configPillValue} ${config.wsAuth ? styles.on : styles.off}`}>
                 {config.wsAuth ? t('common.yes') : t('common.no')}
               </span>
+            </div>
+            <div className={styles.configPill}>
+              <span className={styles.configPillLabel}>
+                {t('basic_settings.request_log_enable')}
+              </span>
+              <span className={`${styles.configPillValue} ${config.requestLog ? styles.on : styles.off}`}>
+                {config.requestLog ? t('common.yes') : t('common.no')}
+              </span>
+            </div>
+            <div className={styles.configPill}>
+              <span className={styles.configPillLabel}>
+                {t('usage_statistics.title', { defaultValue: 'Usage Statistics' })}
+              </span>
+              <span className={`${styles.configPillValue} ${config.usageStatisticsEnabled ? styles.on : styles.off}`}>
+                {config.usageStatisticsEnabled ? t('common.yes') : t('common.no')}
+              </span>
+            </div>
+            <div className={styles.configPill}>
+              <span className={styles.configPillLabel}>
+                {t('dashboard.image_generation', { defaultValue: 'Image Generation' })}
+              </span>
+              <span className={styles.configPillValue}>{imageGenerationDisplay}</span>
+            </div>
+            <div className={styles.configPill}>
+              <span className={styles.configPillLabel}>
+                {t('ai_providers.concurrency_label', { defaultValue: 'Concurrency' })}
+              </span>
+              <span className={styles.configPillValue}>{upstreamConcurrencyDisplay}</span>
             </div>
             <div className={styles.configPill}>
               <span className={styles.configPillLabel}>{t('dashboard.routing_strategy')}</span>

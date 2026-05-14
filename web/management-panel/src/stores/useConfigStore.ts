@@ -41,9 +41,13 @@ const SECTION_KEYS: RawConfigSection[] = [
   'request-log',
   'logging-to-file',
   'logs-max-total-size-mb',
+  'error-logs-max-files',
+  'usage-statistics-enabled',
   'ws-auth',
   'force-model-prefix',
   'routing/strategy',
+  'max-retry-interval',
+  'upstream-concurrency',
   'api-keys',
   'ampcode',
   'gemini-api-key',
@@ -72,12 +76,20 @@ const extractSectionValue = (config: Config | null, section?: RawConfigSection) 
       return config.loggingToFile;
     case 'logs-max-total-size-mb':
       return config.logsMaxTotalSizeMb;
+    case 'error-logs-max-files':
+      return config.errorLogsMaxFiles;
+    case 'usage-statistics-enabled':
+      return config.usageStatisticsEnabled;
     case 'ws-auth':
       return config.wsAuth;
     case 'force-model-prefix':
       return config.forceModelPrefix;
     case 'routing/strategy':
       return config.routingStrategy;
+    case 'max-retry-interval':
+      return config.maxRetryInterval;
+    case 'upstream-concurrency':
+      return config.upstreamConcurrency;
     case 'api-keys':
       return config.apiKeys;
     case 'ampcode':
@@ -211,6 +223,12 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         case 'logs-max-total-size-mb':
           nextConfig.logsMaxTotalSizeMb = value as Config['logsMaxTotalSizeMb'];
           break;
+        case 'error-logs-max-files':
+          nextConfig.errorLogsMaxFiles = value as Config['errorLogsMaxFiles'];
+          break;
+        case 'usage-statistics-enabled':
+          nextConfig.usageStatisticsEnabled = value as Config['usageStatisticsEnabled'];
+          break;
         case 'ws-auth':
           nextConfig.wsAuth = value as Config['wsAuth'];
           break;
@@ -219,6 +237,12 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
           break;
         case 'routing/strategy':
           nextConfig.routingStrategy = value as Config['routingStrategy'];
+          break;
+        case 'max-retry-interval':
+          nextConfig.maxRetryInterval = value as Config['maxRetryInterval'];
+          break;
+        case 'upstream-concurrency':
+          nextConfig.upstreamConcurrency = value as Config['upstreamConcurrency'];
           break;
         case 'api-keys':
           nextConfig.apiKeys = value as Config['apiKeys'];

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
-import { providersApi } from '@/services/api';
+import { providersApi, saveProviderConcurrencyDraft } from '@/services/api';
 import {
   useAuthStore,
   useClaudeEditDraftStore,
@@ -22,6 +22,11 @@ import {
 import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
 import { modelsToEntries } from '@/components/ui/modelInputListUtils';
 import type { ClaudeEditBaseline } from '@/stores/useClaudeEditDraftStore';
+import {
+  concurrencyLimitToDraft,
+  getProviderConcurrencyOverride,
+  parseConcurrencyLimitDraft,
+} from '@/utils/upstreamConcurrency';
 
 type LocationState = { fromAiProviders?: boolean } | null;
 
@@ -44,6 +49,9 @@ export type ClaudeEditOutletContext = {
   testMessage: string;
   setTestMessage: Dispatch<SetStateAction<string>>;
   availableModels: string[];
+  concurrencyLimit: string;
+  setConcurrencyLimit: Dispatch<SetStateAction<string>>;
+  concurrencyLimitError?: string;
   handleBack: () => void;
   handleSave: () => Promise<void>;
   mergeDiscoveredModels: (selectedModels: ModelInfo[]) => void;
@@ -166,6 +174,8 @@ export function AiProvidersClaudeEditLayout() {
   const [configs, setConfigs] = useState<ProviderKeyConfig[]>(() => config?.claudeApiKeys ?? []);
   const [loading, setLoading] = useState(() => !isCacheValid('claude-api-key'));
   const [saving, setSaving] = useState(false);
+  const [concurrencyLimit, setConcurrencyLimit] = useState('');
+  const [baselineConcurrencyLimit, setBaselineConcurrencyLimit] = useState('');
 
   const draftKey = useMemo(() => {
     if (invalidIndexParam) return `claude:invalid:${params.index ?? 'unknown'}`;
@@ -282,6 +292,11 @@ export function AiProvidersClaudeEditLayout() {
       };
       const available = seededForm.modelEntries.map((entry) => entry.name.trim()).filter(Boolean);
       const baseline = buildClaudeBaseline(seededForm);
+      const nextConcurrencyLimit = concurrencyLimitToDraft(
+        getProviderConcurrencyOverride(config?.upstreamConcurrency, 'claude')
+      );
+      setConcurrencyLimit(nextConcurrencyLimit);
+      setBaselineConcurrencyLimit(nextConcurrencyLimit);
       initDraft(draftKey, {
         baseline,
         form: seededForm,
@@ -293,6 +308,11 @@ export function AiProvidersClaudeEditLayout() {
     }
 
     const emptyForm = buildEmptyForm();
+    const nextConcurrencyLimit = concurrencyLimitToDraft(
+      getProviderConcurrencyOverride(config?.upstreamConcurrency, 'claude')
+    );
+    setConcurrencyLimit(nextConcurrencyLimit);
+    setBaselineConcurrencyLimit(nextConcurrencyLimit);
     initDraft(draftKey, {
       baseline: buildClaudeBaseline(emptyForm),
       form: emptyForm,
@@ -300,7 +320,7 @@ export function AiProvidersClaudeEditLayout() {
       testStatus: 'idle',
       testMessage: '',
     });
-  }, [draft?.initialized, draftKey, initDraft, initialData, loading]);
+  }, [config?.upstreamConcurrency, draft?.initialized, draftKey, initDraft, initialData, loading]);
 
   const resolvedLoading = !draft?.initialized;
   const baseline = draft?.baseline ?? null;
@@ -350,7 +370,14 @@ export function AiProvidersClaudeEditLayout() {
       isHeadersDirty ||
       isModelsDirty ||
       isExcludedModelsDirty ||
-      isCloakDirty);
+      isCloakDirty ||
+      baselineConcurrencyLimit !== concurrencyLimit.trim());
+  const concurrencyLimitError =
+    concurrencyLimit.trim() && !Number.isFinite(parseConcurrencyLimitDraft(concurrencyLimit))
+      ? t('config_management.visual.validation.provider_limit_invalid', {
+          defaultValue: 'Enter a non-negative whole number',
+        })
+      : undefined;
   const editorRootPath = useMemo(() => {
     if (hasIndexParam) {
       return `/ai-providers/claude/${params.index ?? ''}`;
@@ -433,7 +460,12 @@ export function AiProvidersClaudeEditLayout() {
 
   const handleSave = useCallback(async () => {
     const canSave =
-      !disableControls && !saving && !resolvedLoading && !invalidIndexParam && !invalidIndex;
+      !disableControls &&
+      !saving &&
+      !resolvedLoading &&
+      !invalidIndexParam &&
+      !invalidIndex &&
+      !concurrencyLimitError;
     if (!canSave) return;
 
     setSaving(true);
@@ -466,9 +498,15 @@ export function AiProvidersClaudeEditLayout() {
           : [...configs, payload];
 
       await providersApi.saveClaudeConfigs(nextList);
+      await saveProviderConcurrencyDraft({
+        providerKey: 'claude',
+        draftLimit: concurrencyLimit,
+        baselineDraftLimit: baselineConcurrencyLimit,
+      });
       setConfigs(nextList);
       updateConfigValue('claude-api-key', nextList);
       clearCache('claude-api-key');
+      await fetchConfig(undefined, true);
       showNotification(
         editIndex !== null
           ? t('notification.claude_config_updated')
@@ -477,6 +515,7 @@ export function AiProvidersClaudeEditLayout() {
       );
       allowNextNavigation();
       setDraftBaseline(draftKey, buildClaudeBaseline(form));
+      setBaselineConcurrencyLimit(concurrencyLimit.trim());
       handleBack();
     } catch (err: unknown) {
       showNotification(`${t('notification.update_failed')}: ${getErrorMessage(err)}`, 'error');
@@ -490,6 +529,7 @@ export function AiProvidersClaudeEditLayout() {
     draftKey,
     disableControls,
     editIndex,
+    fetchConfig,
     form,
     handleBack,
     initialData?.raw,
@@ -501,6 +541,9 @@ export function AiProvidersClaudeEditLayout() {
     showNotification,
     t,
     updateConfigValue,
+    concurrencyLimit,
+    baselineConcurrencyLimit,
+    concurrencyLimitError,
   ]);
 
   return (
@@ -523,6 +566,9 @@ export function AiProvidersClaudeEditLayout() {
           testMessage,
           setTestMessage,
           availableModels,
+          concurrencyLimit,
+          setConcurrencyLimit,
+          concurrencyLimitError,
           handleBack,
           handleSave,
           mergeDiscoveredModels,

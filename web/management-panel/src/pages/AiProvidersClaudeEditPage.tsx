@@ -14,6 +14,7 @@ import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
 import { useNotificationStore } from '@/stores';
 import { buildHeaderObject } from '@/utils/headers';
 import { buildClaudeMessagesEndpoint, parseTextList } from '@/components/providers/utils';
+import { ProviderConcurrencyInput } from '@/components/providers';
 import type { ClaudeEditOutletContext } from './AiProvidersClaudeEditLayout';
 import styles from './AiProvidersPage.module.scss';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
@@ -61,6 +62,9 @@ export function AiProvidersClaudeEditPage() {
     testMessage,
     setTestMessage,
     availableModels,
+    concurrencyLimit,
+    setConcurrencyLimit,
+    concurrencyLimitError,
     handleBack,
     handleSave,
   } = useOutletContext<ClaudeEditOutletContext>();
@@ -89,7 +93,13 @@ export function AiProvidersClaudeEditPage() {
   }, [form.cloak]);
 
   const canSave =
-    !disableControls && !loading && !saving && !invalidIndexParam && !invalidIndex && !isTesting;
+    !disableControls &&
+    !loading &&
+    !saving &&
+    !invalidIndexParam &&
+    !invalidIndex &&
+    !isTesting &&
+    !concurrencyLimitError;
 
   const modelSelectOptions = useMemo(() => {
     const seen = new Set<string>();
@@ -344,6 +354,13 @@ export function AiProvidersClaudeEditPage() {
               value={form.proxyUrl ?? ''}
               onChange={(e) => setForm((prev) => ({ ...prev, proxyUrl: e.target.value }))}
               disabled={saving || disableControls || isTesting}
+            />
+            <ProviderConcurrencyInput
+              providerKey="claude"
+              value={concurrencyLimit}
+              disabled={saving || disableControls || isTesting}
+              error={concurrencyLimitError}
+              onChange={setConcurrencyLimit}
             />
             <div className="form-group">
               <ToggleSwitch

@@ -91,8 +91,16 @@ function assertVisualRoundTrip(useVisualConfig, resetHookState) {
   assert.equal(loadedHook.visualValues.disableImageGeneration, 'chat');
   assert.equal(loadedHook.visualValues.enableGeminiCliEndpoint, true);
   assert.equal(loadedHook.visualValues.upstreamConcurrency.defaultLimit, '8');
-  assert.match(loadedHook.visualValues.upstreamConcurrency.providersText, /codex=2/);
-  assert.match(loadedHook.visualValues.upstreamConcurrency.providersText, /claude=4/);
+  assert.deepEqual(
+    loadedHook.visualValues.upstreamConcurrency.providerLimits.map((entry) => ({
+      provider: entry.provider,
+      limit: entry.limit,
+    })),
+    [
+      { provider: 'claude', limit: '4' },
+      { provider: 'codex', limit: '2' },
+    ]
+  );
   assert.equal(loadedHook.visualValues.upstreamConcurrency.queueTimeoutSeconds, '30');
   assert.equal(loadedHook.visualValues.antigravitySignatureCacheEnabled, true);
   assert.equal(loadedHook.visualValues.antigravitySignatureBypassStrict, true);
@@ -219,15 +227,48 @@ function assertProviderRoundTrip(transformers, providers, providerUtils) {
   );
 }
 
+function assertProviderConcurrencyHelpers(concurrency) {
+  const config = {
+    default: 5,
+    providers: {
+      codex: 2,
+      'local-openai': 1,
+      claude: 0,
+    },
+  };
+
+  assert.deepEqual(concurrency.getEffectiveProviderConcurrency(config, 'codex'), {
+    source: 'provider',
+    limit: 2,
+  });
+  assert.deepEqual(concurrency.getEffectiveProviderConcurrency(config, 'local-openai'), {
+    source: 'provider',
+    limit: 1,
+  });
+  assert.deepEqual(concurrency.getEffectiveProviderConcurrency(config, 'claude'), {
+    source: 'provider',
+    limit: 0,
+  });
+  assert.deepEqual(concurrency.getEffectiveProviderConcurrency(config, 'gemini'), {
+    source: 'default',
+    limit: 5,
+  });
+  assert.deepEqual(concurrency.getEffectiveProviderConcurrency(undefined, 'gemini'), {
+    source: 'unlimited',
+  });
+}
+
 try {
   const reactShim = await server.ssrLoadModule('/scripts/react-hook-shim.mjs');
   const visual = await server.ssrLoadModule('/src/hooks/useVisualConfig.ts');
   const transformers = await server.ssrLoadModule('/src/services/api/transformers.ts');
   const providers = await server.ssrLoadModule('/src/services/api/providers.ts');
   const providerUtils = await server.ssrLoadModule('/src/components/providers/utils.ts');
+  const concurrency = await server.ssrLoadModule('/src/utils/upstreamConcurrency.ts');
 
   assertVisualRoundTrip(visual.useVisualConfig, reactShim.resetHookState);
   assertProviderRoundTrip(transformers, providers, providerUtils);
+  assertProviderConcurrencyHelpers(concurrency);
 
   console.log('config round-trip checks passed');
 } finally {

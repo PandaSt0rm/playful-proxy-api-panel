@@ -12,6 +12,8 @@ import {
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer';
+import { AutocompleteInput } from '@/components/ui/AutocompleteInput';
+import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
@@ -37,6 +39,7 @@ import type {
   VisualConfigValidationErrors,
   VisualConfigValues,
 } from '@/types/visualConfig';
+import { makeClientId } from '@/types/visualConfig';
 import {
   ApiKeysCardEditor,
   PayloadFilterRulesEditor,
@@ -231,6 +234,10 @@ export function VisualConfigEditor({
     t,
     validationErrors?.['upstreamConcurrency.default']
   );
+  const upstreamProvidersError = getValidationMessage(
+    t,
+    validationErrors?.['upstreamConcurrency.providers']
+  );
   const upstreamQueueTimeoutError = getValidationMessage(
     t,
     validationErrors?.['upstreamConcurrency.queueTimeoutSeconds']
@@ -268,6 +275,60 @@ export function VisualConfigEditor({
   const handlePayloadFilterRulesChange = useCallback(
     (payloadFilterRules: PayloadFilterRule[]) => onChange({ payloadFilterRules }),
     [onChange]
+  );
+  const upstreamProviderOptions = useMemo(
+    () => [
+      { value: 'codex', label: t('ai_providers.codex_title', { defaultValue: 'Codex' }) },
+      { value: 'claude', label: t('ai_providers.claude_title', { defaultValue: 'Claude' }) },
+      { value: 'gemini', label: t('ai_providers.gemini_title', { defaultValue: 'Gemini' }) },
+      { value: 'gemini-cli', label: 'Gemini CLI' },
+      { value: 'vertex', label: t('ai_providers.vertex_title', { defaultValue: 'Vertex' }) },
+      { value: 'antigravity', label: 'Antigravity' },
+      { value: 'aistudio', label: 'AI Studio' },
+      { value: 'kimi', label: 'Kimi' },
+      {
+        value: 'openai-compatibility',
+        label: t('ai_providers.openai_title', { defaultValue: 'OpenAI Compatible' }),
+      },
+    ],
+    [t]
+  );
+  const updateUpstreamProviderLimit = useCallback(
+    (id: string, patch: { provider?: string; limit?: string }) => {
+      onChange({
+        upstreamConcurrency: {
+          ...values.upstreamConcurrency,
+          providerLimits: values.upstreamConcurrency.providerLimits.map((entry) =>
+            entry.id === id ? { ...entry, ...patch } : entry
+          ),
+        },
+      });
+    },
+    [onChange, values.upstreamConcurrency]
+  );
+  const addUpstreamProviderLimit = useCallback(() => {
+    onChange({
+      upstreamConcurrency: {
+        ...values.upstreamConcurrency,
+        providerLimits: [
+          ...values.upstreamConcurrency.providerLimits,
+          { id: makeClientId(), provider: '', limit: '' },
+        ],
+      },
+    });
+  }, [onChange, values.upstreamConcurrency]);
+  const removeUpstreamProviderLimit = useCallback(
+    (id: string) => {
+      onChange({
+        upstreamConcurrency: {
+          ...values.upstreamConcurrency,
+          providerLimits: values.upstreamConcurrency.providerLimits.filter(
+            (entry) => entry.id !== id
+          ),
+        },
+      });
+    },
+    [onChange, values.upstreamConcurrency]
   );
 
   const countErrors = useCallback(
@@ -336,6 +397,7 @@ export function VisualConfigEditor({
           'maxRetryCredentials',
           'maxRetryInterval',
           'upstreamConcurrency.default',
+          'upstreamConcurrency.providers',
           'upstreamConcurrency.queueTimeoutSeconds',
         ]),
       },
@@ -1436,32 +1498,90 @@ export function VisualConfigEditor({
                     error={upstreamQueueTimeoutError}
                   />
                 </SectionGrid>
-                <div className="form-group">
-                  <label>
-                    {t('config_management.visual.sections.network.upstream_providers', {
-                      defaultValue: 'Provider Limits',
-                    })}
-                  </label>
-                  <textarea
-                    className="input"
-                    placeholder={'codex=2\nclaude=4'}
-                    value={values.upstreamConcurrency.providersText}
-                    onChange={(e) =>
-                      onChange({
-                        upstreamConcurrency: {
-                          ...values.upstreamConcurrency,
-                          providersText: e.target.value,
-                        },
-                      })
-                    }
-                    rows={4}
-                    disabled={disabled}
-                  />
-                  <div className="hint">
-                    {t('config_management.visual.sections.network.upstream_providers_hint', {
-                      defaultValue: 'One provider=limit entry per line, for example codex=2.',
-                    })}
+                <div className={styles.providerLimitEditor}>
+                  <div className={styles.providerLimitHeader}>
+                    <div>
+                      <div className={styles.fieldLabel}>
+                        {t('config_management.visual.sections.network.upstream_providers', {
+                          defaultValue: 'Provider Limits',
+                        })}
+                      </div>
+                      <div className={styles.fieldHint}>
+                        {t('config_management.visual.sections.network.upstream_providers_hint', {
+                          defaultValue:
+                            'Provider keys use runtime executor names. OpenAI-compatible providers use the configured provider name.',
+                        })}
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      disabled={disabled}
+                      onClick={addUpstreamProviderLimit}
+                    >
+                      {t('config_management.visual.sections.network.upstream_provider_add', {
+                        defaultValue: 'Add Limit',
+                      })}
+                    </Button>
                   </div>
+
+                  {values.upstreamConcurrency.providerLimits.length ? (
+                    <div className={styles.providerLimitRows}>
+                      {values.upstreamConcurrency.providerLimits.map((entry) => (
+                        <div key={entry.id} className={styles.providerLimitRow}>
+                          <AutocompleteInput
+                            label={t(
+                              'config_management.visual.sections.network.upstream_provider_key',
+                              { defaultValue: 'Provider' }
+                            )}
+                            value={entry.provider}
+                            onChange={(provider) =>
+                              updateUpstreamProviderLimit(entry.id, { provider })
+                            }
+                            options={upstreamProviderOptions}
+                            placeholder="codex"
+                            disabled={disabled}
+                            wrapperClassName={styles.providerLimitProvider}
+                          />
+                          <Input
+                            label={t(
+                              'config_management.visual.sections.network.upstream_provider_limit',
+                              { defaultValue: 'Limit' }
+                            )}
+                            type="number"
+                            placeholder="2"
+                            value={entry.limit}
+                            onChange={(event) =>
+                              updateUpstreamProviderLimit(entry.id, {
+                                limit: event.target.value,
+                              })
+                            }
+                            disabled={disabled}
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="danger"
+                            disabled={disabled}
+                            onClick={() => removeUpstreamProviderLimit(entry.id)}
+                            className={styles.providerLimitRemove}
+                          >
+                            {t('common.remove', { defaultValue: 'Remove' })}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className={styles.emptyProviderLimits}>
+                      {t('config_management.visual.sections.network.upstream_providers_empty', {
+                        defaultValue: 'No provider-specific limits configured.',
+                      })}
+                    </div>
+                  )}
+                  {upstreamProvidersError ? (
+                    <div className="error-box">{upstreamProvidersError}</div>
+                  ) : null}
                 </div>
               </SectionSubsection>
             </SectionStack>

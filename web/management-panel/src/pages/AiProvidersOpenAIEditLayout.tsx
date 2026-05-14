@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
-import { providersApi } from '@/services/api';
+import { providersApi, saveProviderConcurrencyDraft } from '@/services/api';
 import {
   useAuthStore,
   useConfigStore,
@@ -19,6 +19,11 @@ import { buildApiKeyEntry } from '@/components/providers/utils';
 import { buildDefaultZaiProvider, isZaiOpenAIProvider } from '@/utils/zaiProvider';
 import type { ModelEntry, OpenAIFormState } from '@/components/providers/types';
 import type { KeyTestStatus, OpenAIEditBaseline } from '@/stores/useOpenAIEditDraftStore';
+import {
+  concurrencyLimitToDraft,
+  getProviderConcurrencyOverride,
+  parseConcurrencyLimitDraft,
+} from '@/utils/upstreamConcurrency';
 
 type LocationState = { fromAiProviders?: boolean } | null;
 export type OpenAIProviderEditorMode = 'openai' | 'zai';
@@ -44,6 +49,9 @@ export type OpenAIEditOutletContext = {
   setDraftKeyTestStatus: (keyIndex: number, status: KeyTestStatus) => void;
   resetDraftKeyTestStatuses: (count: number) => void;
   availableModels: string[];
+  concurrencyLimit: string;
+  setConcurrencyLimit: Dispatch<SetStateAction<string>>;
+  concurrencyLimitError?: string;
   handleBack: () => void;
   handleSave: () => Promise<void>;
   mergeDiscoveredModels: (selectedModels: ModelInfo[]) => void;
@@ -202,6 +210,9 @@ export function AiProvidersOpenAIEditLayout({
   );
   const [providersFetched, setProvidersFetched] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [concurrencyLimit, setConcurrencyLimit] = useState('');
+  const [baselineConcurrencyLimit, setBaselineConcurrencyLimit] = useState('');
+  const [baselineConcurrencyProvider, setBaselineConcurrencyProvider] = useState('');
 
   const draftKey = useMemo(() => {
     if (invalidIndexParam) return `${providerMode}:invalid:${params.index ?? 'unknown'}`;
@@ -345,6 +356,9 @@ export function AiProvidersOpenAIEditLayout({
     if (draft?.initialized) return;
     if (invalidIndexParam) {
       const emptyForm = buildEmptyForm(providerMode);
+      setConcurrencyLimit('');
+      setBaselineConcurrencyLimit('');
+      setBaselineConcurrencyProvider(emptyForm.name.trim());
       initDraft(draftKey, {
         baseline: buildOpenAIBaseline(emptyForm, ''),
         form: emptyForm,
@@ -367,6 +381,12 @@ export function AiProvidersOpenAIEditLayout({
           ? initialData.testModel
           : available[0] || '';
       const baseline = buildOpenAIBaseline(seededForm, initialTestModel);
+      const nextConcurrencyLimit = concurrencyLimitToDraft(
+        getProviderConcurrencyOverride(config?.upstreamConcurrency, seededForm.name)
+      );
+      setConcurrencyLimit(nextConcurrencyLimit);
+      setBaselineConcurrencyLimit(nextConcurrencyLimit);
+      setBaselineConcurrencyProvider(seededForm.name.trim());
       initDraft(draftKey, {
         baseline,
         form: seededForm,
@@ -377,6 +397,12 @@ export function AiProvidersOpenAIEditLayout({
       });
     } else {
       const emptyForm = buildEmptyForm(providerMode);
+      const nextConcurrencyLimit = concurrencyLimitToDraft(
+        getProviderConcurrencyOverride(config?.upstreamConcurrency, emptyForm.name)
+      );
+      setConcurrencyLimit(nextConcurrencyLimit);
+      setBaselineConcurrencyLimit(nextConcurrencyLimit);
+      setBaselineConcurrencyProvider(emptyForm.name.trim());
       initDraft(draftKey, {
         baseline: buildOpenAIBaseline(emptyForm, ''),
         form: emptyForm,
@@ -394,6 +420,7 @@ export function AiProvidersOpenAIEditLayout({
     invalidIndexParam,
     providerListReady,
     providerMode,
+    config?.upstreamConcurrency,
   ]);
 
   useEffect(() => {
@@ -492,7 +519,15 @@ export function AiProvidersOpenAIEditLayout({
         (form.disableCooling === undefined ? null : Boolean(form.disableCooling)) ||
       isHeadersDirty ||
       isApiKeyEntriesDirty ||
-      isModelsDirty);
+      isModelsDirty ||
+      baselineConcurrencyLimit !== concurrencyLimit.trim() ||
+      (baselineConcurrencyLimit !== '' && baselineConcurrencyProvider !== form.name.trim()));
+  const concurrencyLimitError =
+    concurrencyLimit.trim() && !Number.isFinite(parseConcurrencyLimitDraft(concurrencyLimit))
+      ? t('config_management.visual.validation.provider_limit_invalid', {
+          defaultValue: 'Enter a non-negative whole number',
+        })
+      : undefined;
   const editorRootPath = useMemo(() => {
     if (hasIndexParam) {
       return `/ai-providers/${providerMode}/${params.index ?? ''}`;
@@ -523,6 +558,10 @@ export function AiProvidersOpenAIEditLayout({
 
     if (!name || !baseUrl) {
       showNotification(t(`notification.${providerMode}_provider_required`), 'error');
+      return;
+    }
+    if (concurrencyLimitError) {
+      showNotification(concurrencyLimitError, 'error');
       return;
     }
 
@@ -559,6 +598,12 @@ export function AiProvidersOpenAIEditLayout({
           : [...providers, payload];
 
       await providersApi.saveOpenAIProviders(nextList);
+      await saveProviderConcurrencyDraft({
+        providerKey: name,
+        draftLimit: concurrencyLimit,
+        baselineProviderKey: baselineConcurrencyProvider,
+        baselineDraftLimit: baselineConcurrencyLimit,
+      });
 
       let syncedProviders = nextList;
       try {
@@ -569,6 +614,7 @@ export function AiProvidersOpenAIEditLayout({
 
       setProviders(syncedProviders);
       updateConfigValue('openai-compatibility', syncedProviders);
+      await fetchConfig(undefined, true);
       showNotification(
         editIndex !== null
           ? t(`notification.${providerMode}_provider_updated`)
@@ -577,6 +623,8 @@ export function AiProvidersOpenAIEditLayout({
       );
       allowNextNavigation();
       setDraftBaseline(draftKey, buildOpenAIBaseline(form, testModel));
+      setBaselineConcurrencyLimit(concurrencyLimit.trim());
+      setBaselineConcurrencyProvider(name);
       handleBack();
     } catch (err: unknown) {
       showNotification(`${t('notification.update_failed')}: ${getErrorMessage(err)}`, 'error');
@@ -587,6 +635,7 @@ export function AiProvidersOpenAIEditLayout({
     allowNextNavigation,
     draftKey,
     editIndex,
+    fetchConfig,
     form,
     handleBack,
     initialData?.disabled,
@@ -598,6 +647,10 @@ export function AiProvidersOpenAIEditLayout({
     t,
     testModel,
     updateConfigValue,
+    concurrencyLimit,
+    baselineConcurrencyLimit,
+    baselineConcurrencyProvider,
+    concurrencyLimitError,
   ]);
 
   return (
@@ -624,6 +677,9 @@ export function AiProvidersOpenAIEditLayout({
           setDraftKeyTestStatus: handleSetDraftKeyTestStatus,
           resetDraftKeyTestStatuses: handleResetDraftKeyTestStatuses,
           availableModels,
+          concurrencyLimit,
+          setConcurrencyLimit,
+          concurrencyLimitError,
           handleBack,
           handleSave,
           mergeDiscoveredModels,

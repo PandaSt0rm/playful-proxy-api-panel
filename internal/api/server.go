@@ -643,6 +643,12 @@ func (s *Server) registerManagementRoutes() {
 		mgmt.GET("/max-retry-interval", s.mgmt.GetMaxRetryInterval)
 		mgmt.PUT("/max-retry-interval", s.mgmt.PutMaxRetryInterval)
 		mgmt.PATCH("/max-retry-interval", s.mgmt.PutMaxRetryInterval)
+		mgmt.GET("/upstream-concurrency", s.mgmt.GetUpstreamConcurrency)
+		mgmt.PUT("/upstream-concurrency", s.mgmt.PutUpstreamConcurrency)
+		mgmt.PATCH("/upstream-concurrency", s.mgmt.PatchUpstreamConcurrency)
+		mgmt.PUT("/upstream-concurrency/providers/:provider", s.mgmt.PutUpstreamConcurrencyProvider)
+		mgmt.PATCH("/upstream-concurrency/providers/:provider", s.mgmt.PutUpstreamConcurrencyProvider)
+		mgmt.DELETE("/upstream-concurrency/providers/:provider", s.mgmt.DeleteUpstreamConcurrencyProvider)
 
 		mgmt.GET("/force-model-prefix", s.mgmt.GetForceModelPrefix)
 		mgmt.PUT("/force-model-prefix", s.mgmt.PutForceModelPrefix)

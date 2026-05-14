@@ -16,10 +16,11 @@ import {
 } from '@/components/ui/icons';
 import iconOpenaiLight from '@/assets/icons/openai-light.svg';
 import iconOpenaiDark from '@/assets/icons/openai-dark.svg';
-import type { OpenAIProviderConfig } from '@/types';
+import type { OpenAIProviderConfig, UpstreamConcurrencyConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
 import { statusBarDataFromRecentRequests } from '@/utils/recentRequests';
 import styles from '@/pages/AiProvidersPage.module.scss';
+import { ProviderConcurrencyBadge } from '../ProviderConcurrencyBadge';
 import { ProviderStatusBar } from '../ProviderStatusBar';
 import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer';
 import {
@@ -45,6 +46,7 @@ const EMPTY_STATUS_BAR = statusBarDataFromRecentRequests([]);
 
 interface OpenAISectionProps {
   configs: OpenAIProviderConfig[];
+  upstreamConcurrency?: UpstreamConcurrencyConfig;
   usageByProvider: ProviderRecentUsageMap;
   loading: boolean;
   disableControls: boolean;
@@ -72,6 +74,7 @@ const getApiKeyEntryRenderKey = (
 
 export function OpenAISection({
   configs,
+  upstreamConcurrency,
   usageByProvider,
   loading,
   disableControls,
@@ -563,6 +566,20 @@ export function OpenAISection({
             <span className={styles.fieldLabel}>{t('common.base_url')}:</span>
             <span className={styles.fieldValue}>{provider.baseUrl}</span>
           </div>
+          <ProviderConcurrencyBadge providerKey={provider.name} config={upstreamConcurrency} />
+          {provider.disableCooling !== undefined && (
+            <div className={styles.fieldRow}>
+              <span className={styles.fieldLabel}>
+                {t('ai_providers.disable_cooling_label', {
+                  defaultValue: 'Disable Cooling',
+                })}
+                :
+              </span>
+              <span className={styles.fieldValue}>
+                {provider.disableCooling ? t('common.yes') : t('common.no')}
+              </span>
+            </div>
+          )}
           {providerDisabled && (
             <div className="status-badge warning" style={{ marginTop: 8, marginBottom: 0 }}>
               {t('ai_providers.config_disabled_badge')}

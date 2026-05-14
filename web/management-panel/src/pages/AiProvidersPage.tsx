@@ -438,6 +438,7 @@ export function AiProvidersPage() {
         <div id="provider-gemini">
           <GeminiSection
             configs={geminiKeys}
+            upstreamConcurrency={config?.upstreamConcurrency}
             usageByProvider={usageByProvider}
             loading={loading}
             disableControls={disableControls}
@@ -452,6 +453,7 @@ export function AiProvidersPage() {
         <div id="provider-codex">
           <CodexSection
             configs={codexConfigs}
+            upstreamConcurrency={config?.upstreamConcurrency}
             usageByProvider={usageByProvider}
             loading={loading}
             disableControls={disableControls}
@@ -466,6 +468,7 @@ export function AiProvidersPage() {
         <div id="provider-claude">
           <ClaudeSection
             configs={claudeConfigs}
+            upstreamConcurrency={config?.upstreamConcurrency}
             usageByProvider={usageByProvider}
             loading={loading}
             disableControls={disableControls}
@@ -480,6 +483,7 @@ export function AiProvidersPage() {
         <div id="provider-vertex">
           <VertexSection
             configs={vertexConfigs}
+            upstreamConcurrency={config?.upstreamConcurrency}
             usageByProvider={usageByProvider}
             loading={loading}
             disableControls={disableControls}
@@ -504,6 +508,7 @@ export function AiProvidersPage() {
         <div id="provider-zai">
           <ZaiSection
             providers={zaiProviders}
+            upstreamConcurrency={config?.upstreamConcurrency}
             usageByProvider={usageByProvider}
             loading={loading}
             disableControls={disableControls}
@@ -518,6 +523,7 @@ export function AiProvidersPage() {
         <div id="provider-openai">
           <OpenAISection
             configs={openaiProviders}
+            upstreamConcurrency={config?.upstreamConcurrency}
             usageByProvider={usageByProvider}
             loading={loading}
             disableControls={disableControls}

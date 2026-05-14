@@ -67,6 +67,19 @@ export function AmpcodeSection({
                 {(config?.forceModelMappings ?? false) ? t('common.yes') : t('common.no')}
               </span>
             </div>
+            <div className={styles.fieldRow}>
+              <span className={styles.fieldLabel}>
+                {t('ai_providers.ampcode_restrict_management_label', {
+                  defaultValue: 'Restrict Management to Localhost',
+                })}
+                :
+              </span>
+              <span className={styles.fieldValue}>
+                {(config?.restrictManagementToLocalhost ?? false)
+                  ? t('common.yes')
+                  : t('common.no')}
+              </span>
+            </div>
             <div className={styles.fieldRow} style={{ marginTop: 8 }}>
               <span className={styles.fieldLabel}>{t('ai_providers.ampcode_model_mappings_count')}:</span>
               <span className={styles.fieldValue}>{config?.modelMappings?.length || 0}</span>

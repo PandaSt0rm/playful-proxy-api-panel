@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import iconGemini from '@/assets/icons/gemini.svg';
-import type { GeminiKeyConfig } from '@/types';
+import type { GeminiKeyConfig, UpstreamConcurrencyConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
 import { statusBarDataFromRecentRequests } from '@/utils/recentRequests';
 import styles from '@/pages/AiProvidersPage.module.scss';
 import { ProviderList } from '../ProviderList';
+import { ProviderConcurrencyBadge } from '../ProviderConcurrencyBadge';
 import { ProviderStatusBar } from '../ProviderStatusBar';
 import {
   getProviderConfigKey,
@@ -20,6 +21,7 @@ import {
 
 interface GeminiSectionProps {
   configs: GeminiKeyConfig[];
+  upstreamConcurrency?: UpstreamConcurrencyConfig;
   usageByProvider: ProviderRecentUsageMap;
   loading: boolean;
   disableControls: boolean;
@@ -32,6 +34,7 @@ interface GeminiSectionProps {
 
 export function GeminiSection({
   configs,
+  upstreamConcurrency,
   usageByProvider,
   loading,
   disableControls,
@@ -140,6 +143,20 @@ export function GeminiSection({
                   <div className={styles.fieldRow}>
                     <span className={styles.fieldLabel}>{t('common.proxy_url')}:</span>
                     <span className={styles.fieldValue}>{item.proxyUrl}</span>
+                  </div>
+                )}
+                <ProviderConcurrencyBadge providerKey="gemini" config={upstreamConcurrency} />
+                {item.disableCooling !== undefined && (
+                  <div className={styles.fieldRow}>
+                    <span className={styles.fieldLabel}>
+                      {t('ai_providers.disable_cooling_label', {
+                        defaultValue: 'Disable Cooling',
+                      })}
+                      :
+                    </span>
+                    <span className={styles.fieldValue}>
+                      {item.disableCooling ? t('common.yes') : t('common.no')}
+                    </span>
                   </div>
                 )}
                 {headerEntries.length > 0 && (

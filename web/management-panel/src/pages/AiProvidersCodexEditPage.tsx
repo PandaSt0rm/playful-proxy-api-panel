@@ -12,7 +12,7 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
-import { modelsApi, providersApi } from '@/services/api';
+import { modelsApi, providersApi, saveProviderConcurrencyDraft } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { ProviderKeyConfig } from '@/types';
 import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/utils/headers';
@@ -24,7 +24,12 @@ import {
 } from '@/utils/compare';
 import { entriesToModels, modelsToEntries } from '@/components/ui/modelInputListUtils';
 import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
-import type { ProviderFormState } from '@/components/providers';
+import { ProviderConcurrencyInput, type ProviderFormState } from '@/components/providers';
+import {
+  concurrencyLimitToDraft,
+  getProviderConcurrencyOverride,
+  parseConcurrencyLimitDraft,
+} from '@/utils/upstreamConcurrency';
 import type { ModelInfo } from '@/utils/models';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
 import styles from './AiProvidersPage.module.scss';
@@ -110,6 +115,7 @@ export function AiProvidersCodexEditPage() {
   const disableControls = connectionStatus !== 'connected';
 
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
+  const config = useConfigStore((state) => state.config);
   const updateConfigValue = useConfigStore((state) => state.updateConfigValue);
   const clearCache = useConfigStore((state) => state.clearCache);
 
@@ -119,6 +125,8 @@ export function AiProvidersCodexEditPage() {
   const [error, setError] = useState('');
   const [form, setForm] = useState<ProviderFormState>(() => buildEmptyForm());
   const [baseline, setBaseline] = useState(() => buildCodexBaseline(buildEmptyForm()));
+  const [concurrencyLimit, setConcurrencyLimit] = useState('');
+  const [baselineConcurrencyLimit, setBaselineConcurrencyLimit] = useState('');
 
   const [modelDiscoveryOpen, setModelDiscoveryOpen] = useState(false);
   const [modelDiscoveryEndpoint, setModelDiscoveryEndpoint] = useState('');
@@ -215,12 +223,29 @@ export function AiProvidersCodexEditPage() {
       };
       setForm(nextForm);
       setBaseline(buildCodexBaseline(nextForm));
+      const nextConcurrencyLimit = concurrencyLimitToDraft(
+        getProviderConcurrencyOverride(config?.upstreamConcurrency, 'codex')
+      );
+      setConcurrencyLimit(nextConcurrencyLimit);
+      setBaselineConcurrencyLimit(nextConcurrencyLimit);
       return;
     }
     const nextForm = buildEmptyForm();
     setForm(nextForm);
     setBaseline(buildCodexBaseline(nextForm));
-  }, [initialData, loading]);
+    const nextConcurrencyLimit = concurrencyLimitToDraft(
+      getProviderConcurrencyOverride(config?.upstreamConcurrency, 'codex')
+    );
+    setConcurrencyLimit(nextConcurrencyLimit);
+    setBaselineConcurrencyLimit(nextConcurrencyLimit);
+  }, [config?.upstreamConcurrency, initialData, loading]);
+
+  const concurrencyLimitError =
+    concurrencyLimit.trim() && !Number.isFinite(parseConcurrencyLimitDraft(concurrencyLimit))
+      ? t('config_management.visual.validation.provider_limit_invalid', {
+          defaultValue: 'Enter a non-negative whole number',
+        })
+      : undefined;
 
   const normalizedHeaders = useMemo(() => normalizeHeaderEntries(form.headers), [form.headers]);
   const normalizedModels = useMemo(
@@ -259,7 +284,8 @@ export function AiProvidersCodexEditPage() {
       (form.disableCooling === undefined ? null : Boolean(form.disableCooling)) ||
     isHeadersDirty ||
     isModelsDirty ||
-    isExcludedModelsDirty;
+    isExcludedModelsDirty ||
+    baselineConcurrencyLimit !== concurrencyLimit.trim();
   const canGuard = !loading && !saving && !invalidIndexParam && !invalidIndex;
 
   const { allowNextNavigation } = useUnsavedChangesGuard({
@@ -275,7 +301,13 @@ export function AiProvidersCodexEditPage() {
     },
   });
 
-  const canSave = !disableControls && !saving && !loading && !invalidIndexParam && !invalidIndex;
+  const canSave =
+    !disableControls &&
+    !saving &&
+    !loading &&
+    !invalidIndexParam &&
+    !invalidIndex &&
+    !concurrencyLimitError;
 
   const discoveredModelsFiltered = useMemo(() => {
     const filter = modelDiscoverySearch.trim().toLowerCase();
@@ -495,8 +527,14 @@ export function AiProvidersCodexEditPage() {
           : [...configs, payload];
 
       await providersApi.saveCodexConfigs(nextList);
+      await saveProviderConcurrencyDraft({
+        providerKey: 'codex',
+        draftLimit: concurrencyLimit,
+        baselineDraftLimit: baselineConcurrencyLimit,
+      });
       updateConfigValue('codex-api-key', nextList);
       clearCache('codex-api-key');
+      await fetchConfig(undefined, true);
       showNotification(
         editIndex !== null
           ? t('notification.codex_config_updated')
@@ -505,6 +543,7 @@ export function AiProvidersCodexEditPage() {
       );
       allowNextNavigation();
       setBaseline(buildCodexBaseline(form));
+      setBaselineConcurrencyLimit(concurrencyLimit.trim());
       handleBack();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '';
@@ -519,9 +558,12 @@ export function AiProvidersCodexEditPage() {
     clearCache,
     configs,
     editIndex,
+    fetchConfig,
     form,
     handleBack,
     initialData?.raw,
+    concurrencyLimit,
+    baselineConcurrencyLimit,
     showNotification,
     t,
     updateConfigValue,
@@ -612,6 +654,14 @@ export function AiProvidersCodexEditPage() {
               value={form.baseUrl ?? ''}
               onChange={(e) => setForm((prev) => ({ ...prev, baseUrl: e.target.value }))}
               disabled={disableControls || saving}
+            />
+            <ProviderConcurrencyInput
+              providerKey="codex"
+              value={concurrencyLimit}
+              config={config?.upstreamConcurrency}
+              disabled={disableControls || saving}
+              error={concurrencyLimitError}
+              onChange={setConcurrencyLimit}
             />
             <div className="form-group">
               <label>{t('ai_providers.codex_websockets_label')}</label>

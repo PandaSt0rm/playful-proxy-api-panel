@@ -16,12 +16,18 @@ export type VisualConfigFieldPath =
   | 'maxRetryCredentials'
   | 'maxRetryInterval'
   | 'upstreamConcurrency.default'
+  | 'upstreamConcurrency.providers'
   | 'upstreamConcurrency.queueTimeoutSeconds'
   | 'streaming.keepaliveSeconds'
   | 'streaming.bootstrapRetries'
   | 'streaming.nonstreamKeepaliveInterval';
 
-export type VisualConfigValidationErrorCode = 'port_range' | 'non_negative_integer';
+export type VisualConfigValidationErrorCode =
+  | 'port_range'
+  | 'non_negative_integer'
+  | 'provider_limit_provider_required'
+  | 'provider_limit_duplicate'
+  | 'provider_limit_invalid';
 
 export type VisualConfigValidationErrors = Partial<
   Record<VisualConfigFieldPath, VisualConfigValidationErrorCode>
@@ -62,9 +68,15 @@ export type DisableImageGenerationMode = 'false' | 'true' | 'chat';
 
 export interface UpstreamConcurrencyVisualConfig {
   defaultLimit: string;
-  providersText: string;
+  providerLimits: UpstreamConcurrencyProviderLimitEntry[];
   queueTimeoutSeconds: string;
 }
+
+export type UpstreamConcurrencyProviderLimitEntry = {
+  id: string;
+  provider: string;
+  limit: string;
+};
 
 export interface HeaderDefaultsVisualConfig {
   userAgent: string;
@@ -182,7 +194,7 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   maxRetryInterval: '',
   upstreamConcurrency: {
     defaultLimit: '',
-    providersText: '',
+    providerLimits: [],
     queueTimeoutSeconds: '',
   },
   quotaSwitchProject: true,

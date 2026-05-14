@@ -3,8 +3,29 @@
  */
 
 import { apiClient } from './client';
-import type { Config } from '@/types';
+import type { Config, UpstreamConcurrencyConfig } from '@/types';
 import { normalizeConfigResponse } from './transformers';
+
+function normalizeUpstreamConcurrencyResponse(data: Record<string, unknown>): UpstreamConcurrencyConfig {
+  const raw = data?.['upstream-concurrency'] ?? data?.upstreamConcurrency ?? data;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const record = raw as Record<string, unknown>;
+  const providersRaw = record.providers;
+  const providers: Record<string, number> = {};
+  if (providersRaw && typeof providersRaw === 'object' && !Array.isArray(providersRaw)) {
+    Object.entries(providersRaw as Record<string, unknown>).forEach(([provider, value]) => {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) providers[provider] = parsed;
+    });
+  }
+  const defaultLimit = Number(record.default);
+  const queueTimeoutSeconds = Number(record['queue-timeout-seconds'] ?? record.queueTimeoutSeconds);
+  return {
+    default: Number.isFinite(defaultLimit) ? defaultLimit : undefined,
+    providers: Object.keys(providers).length ? providers : undefined,
+    queueTimeoutSeconds: Number.isFinite(queueTimeoutSeconds) ? queueTimeoutSeconds : undefined,
+  };
+}
 
 export const configApi = {
   /**
@@ -79,6 +100,35 @@ export const configApi = {
     apiClient.put('/logs-max-total-size-mb', { value }),
 
   /**
+   * 获取错误请求日志文件保留数量
+   */
+  async getErrorLogsMaxFiles(): Promise<number> {
+    const data = await apiClient.get<Record<string, unknown>>('/error-logs-max-files');
+    const value = data?.['error-logs-max-files'] ?? data?.errorLogsMaxFiles ?? 0;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  },
+
+  /**
+   * 更新错误请求日志文件保留数量
+   */
+  updateErrorLogsMaxFiles: (value: number) => apiClient.put('/error-logs-max-files', { value }),
+
+  /**
+   * 获取使用统计开关
+   */
+  async getUsageStatisticsEnabled(): Promise<boolean> {
+    const data = await apiClient.get<Record<string, unknown>>('/usage-statistics-enabled');
+    return Boolean(data?.['usage-statistics-enabled'] ?? data?.usageStatisticsEnabled ?? false);
+  },
+
+  /**
+   * 更新使用统计开关
+   */
+  updateUsageStatisticsEnabled: (enabled: boolean) =>
+    apiClient.put('/usage-statistics-enabled', { value: enabled }),
+
+  /**
    * WebSocket 鉴权开关
    */
   updateWsAuth: (enabled: boolean) => apiClient.put('/ws-auth', { value: enabled }),
@@ -109,4 +159,49 @@ export const configApi = {
    * 更新路由策略
    */
   updateRoutingStrategy: (strategy: string) => apiClient.put('/routing/strategy', { value: strategy }),
+
+  /**
+   * 获取最大重试间隔
+   */
+  async getMaxRetryInterval(): Promise<number> {
+    const data = await apiClient.get<Record<string, unknown>>('/max-retry-interval');
+    const value = data?.['max-retry-interval'] ?? data?.maxRetryInterval ?? 0;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  },
+
+  /**
+   * 更新最大重试间隔
+   */
+  updateMaxRetryInterval: (value: number) => apiClient.put('/max-retry-interval', { value }),
+
+  /**
+   * 获取上游并发配置
+   */
+  async getUpstreamConcurrency(): Promise<UpstreamConcurrencyConfig> {
+    const data = await apiClient.get<Record<string, unknown>>('/upstream-concurrency');
+    return normalizeUpstreamConcurrencyResponse(data);
+  },
+
+  /**
+   * 更新整个上游并发配置块
+   */
+  updateUpstreamConcurrency: (value: UpstreamConcurrencyConfig) =>
+    apiClient.put('/upstream-concurrency', {
+      default: value.default ?? 0,
+      providers: value.providers ?? {},
+      'queue-timeout-seconds': value.queueTimeoutSeconds ?? 0,
+    }),
+
+  /**
+   * 更新单个 provider 的上游并发限制
+   */
+  updateUpstreamConcurrencyProvider: (provider: string, limit: number) =>
+    apiClient.put(`/upstream-concurrency/providers/${encodeURIComponent(provider)}`, { limit }),
+
+  /**
+   * 删除单个 provider 的上游并发限制
+   */
+  deleteUpstreamConcurrencyProvider: (provider: string) =>
+    apiClient.delete(`/upstream-concurrency/providers/${encodeURIComponent(provider)}`),
 };
