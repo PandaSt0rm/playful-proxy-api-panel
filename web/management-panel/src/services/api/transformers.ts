@@ -7,7 +7,9 @@ import type {
   ProviderKeyConfig,
   AmpcodeConfig,
   AmpcodeModelMapping,
-  AmpcodeUpstreamApiKeyMapping
+  AmpcodeUpstreamApiKeyMapping,
+  SyncProfile,
+  SyncProfileTarget
 } from '@/types';
 import type { Config } from '@/types/config';
 import { buildHeaderObject } from '@/utils/headers';
@@ -95,6 +97,44 @@ const normalizeExcludedModels = (input: unknown): string[] => {
   });
 
   return normalized;
+};
+
+// --- Sync profile normalization ---
+
+const normalizeSyncProfileTarget = (item: unknown): SyncProfileTarget | null => {
+  if (!isRecord(item)) return null;
+  const tool = typeof item.tool === 'string' ? item.tool.trim() : '';
+  if (!tool) return null;
+  const target: SyncProfileTarget = { tool };
+  const modelFilter = item['model-filter'] ?? item.modelFilter;
+  if (typeof modelFilter === 'string' && modelFilter.trim()) {
+    target['model-filter'] = modelFilter.trim();
+  }
+  const apiKeyIndex = item['api-key-index'] ?? item.apiKeyIndex;
+  if (typeof apiKeyIndex === 'number' && Number.isFinite(apiKeyIndex)) {
+    target['api-key-index'] = apiKeyIndex;
+  }
+  const activeModel = item['active-model'] ?? item.activeModel;
+  if (typeof activeModel === 'string' && activeModel.trim()) {
+    target['active-model'] = activeModel.trim();
+  }
+  return target;
+};
+
+const normalizeSyncProfiles = (input: unknown): SyncProfile[] | undefined => {
+  if (!Array.isArray(input)) return undefined;
+  const profiles: SyncProfile[] = [];
+  for (const item of input) {
+    if (!isRecord(item)) continue;
+    const name = typeof item.name === 'string' ? item.name.trim() : '';
+    if (!name) continue;
+    const rawTargets = item.targets;
+    const targets: SyncProfileTarget[] = Array.isArray(rawTargets)
+      ? rawTargets.map(normalizeSyncProfileTarget).filter(Boolean) as SyncProfileTarget[]
+      : [];
+    profiles.push({ name, targets });
+  }
+  return profiles.length > 0 ? profiles : undefined;
 };
 
 const normalizePrefix = (value: unknown): string | undefined => {
@@ -477,6 +517,12 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
   const oauthExcluded = normalizeOauthExcluded(raw['oauth-excluded-models'] ?? raw.oauthExcludedModels);
   if (oauthExcluded) {
     config.oauthExcludedModels = oauthExcluded;
+  }
+
+  const syncProfilesRaw = raw['sync-profiles'] ?? raw.syncProfiles;
+  const syncProfiles = normalizeSyncProfiles(syncProfilesRaw);
+  if (syncProfiles) {
+    config.syncProfiles = syncProfiles;
   }
 
   return config;

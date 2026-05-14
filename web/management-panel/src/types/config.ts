@@ -5,6 +5,7 @@
 
 import type { GeminiKeyConfig, ProviderKeyConfig, OpenAIProviderConfig } from './provider';
 import type { AmpcodeConfig } from './ampcode';
+import type { SyncProfile } from './sync';
 
 export interface QuotaExceededConfig {
   switchProject?: boolean;
@@ -31,6 +32,7 @@ export interface Config {
   vertexApiKeys?: ProviderKeyConfig[];
   openaiCompatibility?: OpenAIProviderConfig[];
   oauthExcludedModels?: Record<string, string[]>;
+  syncProfiles?: SyncProfile[];
   raw?: Record<string, unknown>;
 }
 
@@ -52,7 +54,8 @@ export type RawConfigSection =
   | 'claude-api-key'
   | 'vertex-api-key'
   | 'openai-compatibility'
-  | 'oauth-excluded-models';
+  | 'oauth-excluded-models'
+  | 'sync-profiles';
 
 export interface ConfigCache {
   data: Config;

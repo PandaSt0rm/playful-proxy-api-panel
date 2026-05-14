@@ -1,0 +1,69 @@
+/**
+ * Sync profile types for the PPAPI config sync system.
+ * Matches server-side types in internal/config/sync_profiles.go and
+ * internal/api/handlers/management/sync.go.
+ */
+
+// --- Sync Profile Config Model ---
+
+/** A single target within a sync profile, specifying a CLI tool to configure. */
+export interface SyncProfileTarget {
+  /** CLI tool identifier (e.g., "factory-droid", "claude-code", "hermes"). */
+  tool: string;
+  /** Optional regex pattern — only models matching this filter are synced. */
+  'model-filter'?: string;
+  /** 0-based index into the server's api-keys list. */
+  'api-key-index'?: number;
+  /** Optional model ID to set as the active/default model for single-model tools. */
+  'active-model'?: string;
+}
+
+/** A named sync profile containing one or more tool targets. */
+export interface SyncProfile {
+  /** Unique profile name (required). */
+  name: string;
+  /** Tool targets for this profile. Empty arrays are allowed (placeholder profiles). */
+  targets: SyncProfileTarget[];
+}
+
+// --- Available Configs Aggregation ---
+
+/** Masked API key with its index for selection by the sync CLI tool. */
+export interface MaskedAPIKey {
+  /** Key with all but the last 4 characters replaced by '*'. */
+  masked: string;
+  /** Position in the server's API key configuration list. */
+  index: number;
+}
+
+/** A single API provider with its available models. */
+export interface SyncProvider {
+  /** Provider category (e.g., "openai-compatibility", "claude-api-key"). */
+  type: string;
+  /** Optional human-readable name (used by openai-compatibility entries). */
+  name?: string;
+  /** Available model IDs including aliases, with exclusions applied. */
+  models: string[];
+}
+
+/** An OAuth channel with its alias-transformed model list. */
+export interface SyncOAuthChannel {
+  /** Channel identifier (e.g., "claude", "codex", "gemini-cli"). */
+  channel: string;
+  /** Available models after applying aliases and exclusion filters. */
+  models: string[];
+}
+
+/** Aggregated sync-available configuration response. */
+export interface SyncAvailableConfigs {
+  /** Server's external URL derived from host, port, and TLS config. */
+  base_url: string;
+  /** All configured API keys with masking and index. */
+  api_keys: MaskedAPIKey[];
+  /** All non-disabled provider entries with their available models. */
+  providers: SyncProvider[];
+  /** OAuth channels with their alias-derived models. */
+  oauth_channels: SyncOAuthChannel[];
+  /** Deduplicated union of all model names across providers and channels. */
+  all_models: string[];
+}
