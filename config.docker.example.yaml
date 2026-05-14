@@ -4,6 +4,12 @@
 host: ""
 port: 8317
 
+home:
+  enabled: false
+  host: "127.0.0.1"
+  port: 6379
+  password: ""
+
 remote-management:
   # Docker bridge traffic is non-local from the container point of view.
   allow-remote: true

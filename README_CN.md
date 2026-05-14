@@ -79,6 +79,7 @@ Docker bridge 流量在容器内会被视为非 localhost，所以 `config.docke
 - `usage-statistics-enabled`：启用内置使用量快照。
 - `usage-statistics-path`：可选，把快照文件放到指定路径。
 - `redis-usage-queue-retention-seconds`：Redis usage queue 启用时的保留时间。
+- `home`：v7 Redis-compatible Home 控制平面配置；Home 模式下 PPAP 会关闭本进程管理接口，并把 usage 转发给 Home。
 - `/v0/management/usage-queue`：弹出 Redis-compatible usage stream 中排队的使用量记录，方便外部集成消费。
 - `oauth-model-alias`：配置友好模型别名，同时兼容老配置写法。
 

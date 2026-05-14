@@ -47,6 +47,7 @@ import styles from './VisualConfigEditor.module.scss';
 type VisualSectionId =
   | 'server'
   | 'tls'
+  | 'home'
   | 'remote'
   | 'auth'
   | 'system'
@@ -208,6 +209,7 @@ export function VisualConfigEditor({
     values.streaming.nonstreamKeepaliveInterval === '0';
 
   const portError = getValidationMessage(t, validationErrors?.port);
+  const homePortError = getValidationMessage(t, validationErrors?.['home.port']);
   const logsMaxSizeError = getValidationMessage(t, validationErrors?.logsMaxTotalSizeMb);
   const requestRetryError = getValidationMessage(t, validationErrors?.requestRetry);
   const maxRetryCredentialsError = getValidationMessage(t, validationErrors?.maxRetryCredentials);
@@ -268,6 +270,13 @@ export function VisualConfigEditor({
         description: t('config_management.visual.sections.tls.description'),
         icon: IconShield,
         errorCount: 0,
+      },
+      {
+        id: 'home',
+        title: t('config_management.visual.sections.home.title'),
+        description: t('config_management.visual.sections.home.description'),
+        icon: IconSatellite,
+        errorCount: countErrors(['home.port']),
       },
       {
         id: 'remote',
@@ -683,11 +692,58 @@ export function VisualConfigEditor({
           </ConfigSection>
 
           <ConfigSection
+            id="home"
+            ref={(node) => {
+              sectionRefs.current.home = node;
+            }}
+            indexLabel="03"
+            icon={<IconSatellite size={16} />}
+            title={t('config_management.visual.sections.home.title')}
+            description={t('config_management.visual.sections.home.description')}
+          >
+            <SectionStack>
+              <ToggleRow
+                title={t('config_management.visual.sections.home.enabled')}
+                description={t('config_management.visual.sections.home.enabled_desc')}
+                checked={values.homeEnabled}
+                disabled={disabled}
+                onChange={(homeEnabled) => onChange({ homeEnabled })}
+              />
+              <SectionGrid>
+                <Input
+                  label={t('config_management.visual.sections.home.host')}
+                  placeholder="127.0.0.1"
+                  value={values.homeHost}
+                  onChange={(e) => onChange({ homeHost: e.target.value })}
+                  disabled={disabled}
+                />
+                <Input
+                  label={t('config_management.visual.sections.home.port')}
+                  type="number"
+                  placeholder="6379"
+                  value={values.homePort}
+                  onChange={(e) => onChange({ homePort: e.target.value })}
+                  disabled={disabled}
+                  error={homePortError}
+                />
+                <Input
+                  label={t('config_management.visual.sections.home.password')}
+                  type="password"
+                  placeholder={t('config_management.visual.sections.home.password_placeholder')}
+                  value={values.homePassword}
+                  onChange={(e) => onChange({ homePassword: e.target.value })}
+                  disabled={disabled}
+                />
+              </SectionGrid>
+            </SectionStack>
+          </ConfigSection>
+
+          <ConfigSection
             id="remote"
             ref={(node) => {
               sectionRefs.current.remote = node;
             }}
-            indexLabel="03"
+            indexLabel="04"
             icon={<IconSatellite size={16} />}
             title={t('config_management.visual.sections.remote.title')}
             description={t('config_management.visual.sections.remote.description')}
@@ -732,7 +788,7 @@ export function VisualConfigEditor({
             ref={(node) => {
               sectionRefs.current.auth = node;
             }}
-            indexLabel="04"
+            indexLabel="05"
             icon={<IconKey size={16} />}
             title={t('config_management.visual.sections.auth.title')}
             description={t('config_management.visual.sections.auth.description')}
@@ -761,7 +817,7 @@ export function VisualConfigEditor({
             ref={(node) => {
               sectionRefs.current.system = node;
             }}
-            indexLabel="05"
+            indexLabel="06"
             icon={<IconDiamond size={16} />}
             title={t('config_management.visual.sections.system.title')}
             description={t('config_management.visual.sections.system.description')}
@@ -810,7 +866,7 @@ export function VisualConfigEditor({
             ref={(node) => {
               sectionRefs.current.network = node;
             }}
-            indexLabel="06"
+            indexLabel="07"
             icon={<IconTrendingUp size={16} />}
             title={t('config_management.visual.sections.network.title')}
             description={t('config_management.visual.sections.network.description')}
@@ -922,7 +978,7 @@ export function VisualConfigEditor({
             ref={(node) => {
               sectionRefs.current.quota = node;
             }}
-            indexLabel="07"
+            indexLabel="08"
             icon={<IconTimer size={16} />}
             title={t('config_management.visual.sections.quota.title')}
             description={t('config_management.visual.sections.quota.description')}
@@ -959,7 +1015,7 @@ export function VisualConfigEditor({
             ref={(node) => {
               sectionRefs.current.streaming = node;
             }}
-            indexLabel="08"
+            indexLabel="09"
             icon={<IconSatellite size={16} />}
             title={t('config_management.visual.sections.streaming.title')}
             description={t('config_management.visual.sections.streaming.description')}
@@ -1060,7 +1116,7 @@ export function VisualConfigEditor({
             ref={(node) => {
               sectionRefs.current.payload = node;
             }}
-            indexLabel="09"
+            indexLabel="10"
             icon={<IconCode size={16} />}
             title={t('config_management.visual.sections.payload.title')}
             description={t('config_management.visual.sections.payload.description')}

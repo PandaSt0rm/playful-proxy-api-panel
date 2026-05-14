@@ -1137,6 +1137,16 @@
           "cert": "Путь к сертификату",
           "key": "Путь к закрытому ключу"
         },
+        "home": {
+          "title": "Панель управления Home",
+          "description": "Redis-совместимая интеграция Home для v7",
+          "enabled": "Включить Home",
+          "enabled_desc": "Загружать конфигурацию и отправлять usage через Home",
+          "host": "Хост Home",
+          "port": "Порт Home",
+          "password": "Пароль Home",
+          "password_placeholder": "Пароль Redis AUTH"
+        },
         "remote": {
           "title": "Удалённое управление",
           "description": "Настройки удалённого доступа и панели управления",

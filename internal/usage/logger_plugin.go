@@ -11,8 +11,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	internallogging "github.com/router-for-me/CLIProxyAPI/v6/internal/logging"
-	coreusage "github.com/router-for-me/CLIProxyAPI/v6/sdk/cliproxy/usage"
+	internallogging "github.com/router-for-me/CLIProxyAPI/v7/internal/logging"
+	coreusage "github.com/router-for-me/CLIProxyAPI/v7/sdk/cliproxy/usage"
 )
 
 var statisticsEnabled atomic.Bool
@@ -121,15 +121,24 @@ type RequestDetail struct {
 	AuthIndex          string     `json:"auth_index"`
 	Tokens             TokenStats `json:"tokens"`
 	Failed             bool       `json:"failed"`
+	Fail               FailDetail `json:"fail"`
 }
 
 // TokenStats captures the token usage breakdown for a request.
 type TokenStats struct {
-	InputTokens     int64 `json:"input_tokens"`
-	OutputTokens    int64 `json:"output_tokens"`
-	ReasoningTokens int64 `json:"reasoning_tokens"`
-	CachedTokens    int64 `json:"cached_tokens"`
-	TotalTokens     int64 `json:"total_tokens"`
+	InputTokens         int64 `json:"input_tokens"`
+	OutputTokens        int64 `json:"output_tokens"`
+	ReasoningTokens     int64 `json:"reasoning_tokens"`
+	CachedTokens        int64 `json:"cached_tokens"`
+	CacheReadTokens     int64 `json:"cache_read_tokens"`
+	CacheCreationTokens int64 `json:"cache_creation_tokens"`
+	TotalTokens         int64 `json:"total_tokens"`
+}
+
+// FailDetail stores HTTP failure metadata for a request attempt.
+type FailDetail struct {
+	StatusCode int    `json:"status_code"`
+	Body       string `json:"body"`
 }
 
 // StatisticsSnapshot represents an immutable view of the aggregated metrics.
@@ -262,6 +271,7 @@ func (s *RequestStatistics) Record(ctx context.Context, record coreusage.Record)
 		AuthIndex:          record.AuthIndex,
 		Tokens:             detail,
 		Failed:             failed,
+		Fail:               normaliseFail(record.Fail, failed),
 	})
 
 	s.requestsByDay[dayKey]++
@@ -497,7 +507,7 @@ func dedupKey(apiName, modelName string, detail RequestDetail) string {
 	timestamp := detail.Timestamp.UTC().Format(time.RFC3339Nano)
 	tokens := normaliseTokenStats(detail.Tokens)
 	return fmt.Sprintf(
-		"%s|%s|%s|%s|%s|%t|%d|%d|%d|%d|%d",
+		"%s|%s|%s|%s|%s|%t|%d|%d|%d|%d|%d|%d|%d",
 		apiName,
 		modelName,
 		timestamp,
@@ -508,6 +518,8 @@ func dedupKey(apiName, modelName string, detail RequestDetail) string {
 		tokens.OutputTokens,
 		tokens.ReasoningTokens,
 		tokens.CachedTokens,
+		tokens.CacheReadTokens,
+		tokens.CacheCreationTokens,
 		tokens.TotalTokens,
 	)
 }
@@ -532,21 +544,30 @@ func resolveSuccess(ctx context.Context) bool {
 	return status < httpStatusBadRequest
 }
 
-const httpStatusBadRequest = 400
+const (
+	httpStatusOK                  = 200
+	httpStatusBadRequest          = 400
+	httpStatusInternalServerError = 500
+)
 
 func normaliseDetail(detail coreusage.Detail) TokenStats {
 	tokens := TokenStats{
-		InputTokens:     detail.InputTokens,
-		OutputTokens:    detail.OutputTokens,
-		ReasoningTokens: detail.ReasoningTokens,
-		CachedTokens:    detail.CachedTokens,
-		TotalTokens:     detail.TotalTokens,
+		InputTokens:         detail.InputTokens,
+		OutputTokens:        detail.OutputTokens,
+		ReasoningTokens:     detail.ReasoningTokens,
+		CachedTokens:        detail.CachedTokens,
+		CacheReadTokens:     detail.CacheReadTokens,
+		CacheCreationTokens: detail.CacheCreationTokens,
+		TotalTokens:         detail.TotalTokens,
 	}
 	if tokens.TotalTokens == 0 {
 		tokens.TotalTokens = detail.InputTokens + detail.OutputTokens + detail.ReasoningTokens
 	}
 	if tokens.TotalTokens == 0 {
 		tokens.TotalTokens = detail.InputTokens + detail.OutputTokens + detail.ReasoningTokens + detail.CachedTokens
+	}
+	if tokens.CachedTokens == 0 {
+		tokens.CachedTokens = tokens.CacheReadTokens + tokens.CacheCreationTokens
 	}
 	return tokens
 }
@@ -558,7 +579,27 @@ func normaliseTokenStats(tokens TokenStats) TokenStats {
 	if tokens.TotalTokens == 0 {
 		tokens.TotalTokens = tokens.InputTokens + tokens.OutputTokens + tokens.ReasoningTokens + tokens.CachedTokens
 	}
+	if tokens.CachedTokens == 0 {
+		tokens.CachedTokens = tokens.CacheReadTokens + tokens.CacheCreationTokens
+	}
 	return tokens
+}
+
+func normaliseFail(fail coreusage.Failure, failed bool) FailDetail {
+	detail := FailDetail{
+		StatusCode: fail.StatusCode,
+		Body:       strings.TrimSpace(fail.Body),
+	}
+	if !failed {
+		if detail.StatusCode <= 0 {
+			detail.StatusCode = httpStatusOK
+		}
+		return detail
+	}
+	if detail.StatusCode <= 0 {
+		detail.StatusCode = httpStatusInternalServerError
+	}
+	return detail
 }
 
 func normaliseLatency(latency time.Duration) int64 {

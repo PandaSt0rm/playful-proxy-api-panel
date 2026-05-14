@@ -1140,6 +1140,16 @@
           "cert": "证书文件路径",
           "key": "私钥文件路径"
         },
+        "home": {
+          "title": "Home 控制平面",
+          "description": "Redis 兼容的 v7 Home 集成",
+          "enabled": "启用 Home",
+          "enabled_desc": "通过 Home 控制平面加载运行时配置并转发用量",
+          "host": "Home 主机",
+          "port": "Home 端口",
+          "password": "Home 密码",
+          "password_placeholder": "Redis AUTH 密码"
+        },
         "remote": {
           "title": "远程管理",
           "description": "远程访问和控制面板设置",

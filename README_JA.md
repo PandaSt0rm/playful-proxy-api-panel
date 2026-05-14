@@ -79,6 +79,7 @@ Docker bridge traffic は container 内では non-localhost として見える�
 - `usage-statistics-enabled`: built-in usage snapshot を有効化。
 - `usage-statistics-path`: snapshot file の保存先を指定。
 - `redis-usage-queue-retention-seconds`: Redis usage queue retention を調整。
+- `home`: v7 Redis-compatible Home control plane 設定。Home mode では PPAP の in-process management endpoints を無効化し、usage を Home に転送します。
 - `/v0/management/usage-queue`: Redis-compatible usage stream の queued records を external integrations 向けに pop。
 - `oauth-model-alias`: friendly model alias を定義し、legacy config style も維持。
 

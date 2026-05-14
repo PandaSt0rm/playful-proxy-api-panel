@@ -78,6 +78,7 @@ Start from [`config.example.yaml`](config.example.yaml). The most useful PPAP-sp
 - `usage-statistics-enabled`: enable built-in usage snapshots.
 - `usage-statistics-path`: optionally move the usage snapshot away from the config directory.
 - `redis-usage-queue-retention-seconds`: tune Redis usage queue retention when Redis usage queueing is enabled.
+- `home`: v7 Redis-compatible Home control-plane settings; PPAP disables in-process management endpoints in Home mode and forwards usage to Home.
 - `/v0/management/usage-queue`: pop queued usage records for integrations that consume the Redis-compatible usage stream.
 - `oauth-model-alias`: define friendly model aliases while preserving old config compatibility.
 

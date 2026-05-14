@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/router-for-me/CLIProxyAPI/v6/internal/redisqueue"
-	"github.com/router-for-me/CLIProxyAPI/v6/internal/usage"
+	"github.com/router-for-me/CLIProxyAPI/v7/internal/redisqueue"
+	"github.com/router-for-me/CLIProxyAPI/v7/internal/usage"
 )
 
 type usageExportPayload struct {
@@ -95,7 +95,7 @@ func (h *Handler) ImportUsageStatistics(c *gin.Context) {
 	})
 }
 
-// GetUsageQueue pops queued usage records from the Redis-compatible usage queue.
+// GetUsageQueue pops queued usage records from the usage queue.
 func (h *Handler) GetUsageQueue(c *gin.Context) {
 	if h == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "handler unavailable"})

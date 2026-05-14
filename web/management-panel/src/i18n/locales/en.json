@@ -1141,6 +1141,16 @@
           "cert": "Certificate File Path",
           "key": "Private Key File Path"
         },
+        "home": {
+          "title": "Home Control Plane",
+          "description": "Redis-compatible v7 Home integration",
+          "enabled": "Enable Home",
+          "enabled_desc": "Load runtime config and forward usage through the Home control plane",
+          "host": "Home Host",
+          "port": "Home Port",
+          "password": "Home Password",
+          "password_placeholder": "Redis AUTH password"
+        },
         "remote": {
           "title": "Remote Management",
           "description": "Remote access and control panel settings",

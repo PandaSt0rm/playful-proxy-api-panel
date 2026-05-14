@@ -157,6 +157,7 @@ export function getVisualConfigValidationErrors(
 ): VisualConfigValidationErrors {
   return {
     port: getPortError(values.port),
+    'home.port': getPortError(values.homePort),
     logsMaxTotalSizeMb: getNonNegativeIntegerError(values.logsMaxTotalSizeMb),
     requestRetry: getNonNegativeIntegerError(values.requestRetry),
     maxRetryCredentials: getNonNegativeIntegerError(values.maxRetryCredentials),
@@ -578,6 +579,18 @@ function getNextDirtyFields(
   if (Object.prototype.hasOwnProperty.call(patch, 'tlsKey')) {
     updateDirty('tlsKey', nextValues.tlsKey === baselineValues.tlsKey);
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'homeEnabled')) {
+    updateDirty('homeEnabled', nextValues.homeEnabled === baselineValues.homeEnabled);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'homeHost')) {
+    updateDirty('homeHost', nextValues.homeHost === baselineValues.homeHost);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'homePort')) {
+    updateDirty('homePort', nextValues.homePort === baselineValues.homePort);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'homePassword')) {
+    updateDirty('homePassword', nextValues.homePassword === baselineValues.homePassword);
+  }
   if (Object.prototype.hasOwnProperty.call(patch, 'rmAllowRemote')) {
     updateDirty('rmAllowRemote', nextValues.rmAllowRemote === baselineValues.rmAllowRemote);
   }
@@ -806,6 +819,7 @@ export function useVisualConfig() {
       const parsedRaw: unknown = parseYaml(yamlContent) || {};
       const parsed = asRecord(parsedRaw) ?? {};
       const tls = asRecord(parsed.tls);
+      const home = asRecord(parsed.home);
       const remoteManagement = asRecord(parsed['remote-management']);
       const quotaExceeded = asRecord(parsed['quota-exceeded']);
       const routing = asRecord(parsed.routing);
@@ -819,6 +833,11 @@ export function useVisualConfig() {
         tlsEnable: Boolean(tls?.enable),
         tlsCert: typeof tls?.cert === 'string' ? tls.cert : '',
         tlsKey: typeof tls?.key === 'string' ? tls.key : '',
+
+        homeEnabled: Boolean(home?.enabled),
+        homeHost: typeof home?.host === 'string' ? home.host : '',
+        homePort: String(home?.port ?? ''),
+        homePassword: typeof home?.password === 'string' ? home.password : '',
 
         rmAllowRemote: Boolean(remoteManagement?.['allow-remote']),
         rmSecretKey:
@@ -913,6 +932,25 @@ export function useVisualConfig() {
           setStringInDoc(doc, ['tls', 'cert'], values.tlsCert);
           setStringInDoc(doc, ['tls', 'key'], values.tlsKey);
           deleteIfMapEmpty(doc, ['tls']);
+        }
+
+        if (
+          docHas(doc, ['home']) ||
+          values.homeEnabled ||
+          values.homeHost.trim() ||
+          values.homePort.trim() ||
+          values.homePassword.trim() ||
+          dirtyFields.has('homeEnabled') ||
+          dirtyFields.has('homeHost') ||
+          dirtyFields.has('homePort') ||
+          dirtyFields.has('homePassword')
+        ) {
+          ensureMapInDoc(doc, ['home']);
+          doc.setIn(['home', 'enabled'], values.homeEnabled);
+          setStringInDoc(doc, ['home', 'host'], values.homeHost);
+          setIntFromStringInDoc(doc, ['home', 'port'], values.homePort);
+          setStringInDoc(doc, ['home', 'password'], values.homePassword);
+          deleteIfMapEmpty(doc, ['home']);
         }
 
         if (
