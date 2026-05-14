@@ -1,0 +1,452 @@
+@use '../../styles/mixins' as *;
+@use '../../styles/variables.scss' as *;
+
+// ── Section Layout ──────────────────────────────────────────────────────────
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  flex-wrap: wrap;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.sectionHint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+// ── Profile List ────────────────────────────────────────────────────────────
+
+.profileList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.profileCard {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-lg;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-primary);
+  transition: border-color $transition-fast, box-shadow $transition-fast;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--primary-color) 40%, var(--border-color));
+    box-shadow: $shadow-sm;
+  }
+}
+
+.profileCardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  min-width: 0;
+}
+
+.profileCardName {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  @include text-ellipsis;
+}
+
+.profileCardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.profileCardMetaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.profileCardActions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-shrink: 0;
+}
+
+// ── Loading / Error / Empty ─────────────────────────────────────────────────
+
+.loadingContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-2xl;
+  color: var(--text-tertiary);
+  font-size: 14px;
+  gap: $spacing-sm;
+}
+
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-lg;
+  color: $error-color;
+  font-size: 14px;
+  text-align: center;
+}
+
+.retryButton {
+  @include button-reset;
+  color: var(--primary-color);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: $radius-sm;
+
+  &:hover {
+    background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+  }
+}
+
+// ── Profile Form ────────────────────────────────────────────────────────────
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.formSection {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.formSectionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0 0 $spacing-xs;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: $spacing-md;
+  align-items: start;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.formLabel {
+  margin: 0;
+  padding-top: 10px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.formError {
+  font-size: 12px;
+  color: $error-color;
+  line-height: 1.5;
+}
+
+.formHint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.5;
+}
+
+.nameError,
+.toolsError {
+  font-size: 12px;
+  color: $error-color;
+  line-height: 1.5;
+}
+
+// ── Tool Selection Grid ─────────────────────────────────────────────────────
+
+.toolGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: $spacing-sm;
+}
+
+.toolCheckbox {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: border-color $transition-fast, background $transition-fast;
+
+  &:hover {
+    border-color: var(--primary-color);
+    background: color-mix(in srgb, var(--primary-color) 6%, var(--bg-secondary));
+  }
+}
+
+.toolCheckboxChecked {
+  border-color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 10%, var(--bg-secondary));
+}
+
+.toolCheckboxInput {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--primary-color);
+  cursor: pointer;
+}
+
+.toolCheckboxLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  user-select: none;
+}
+
+// ── Per-Tool Config ─────────────────────────────────────────────────────────
+
+.toolConfigs {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.toolConfigBlock {
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  overflow: hidden;
+}
+
+.toolConfigHeader {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 10px 14px;
+  background: var(--bg-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.toolConfigBody {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: $spacing-md;
+  padding: $spacing-md;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.toolConfigField {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.toolConfigLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+// ── Form Actions ────────────────────────────────────────────────────────────
+
+.formActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+  padding-top: $spacing-md;
+  border-top: 1px solid var(--border-color);
+}
+
+// ── Delete Confirmation ─────────────────────────────────────────────────────
+
+.deleteWarning {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0 0 $spacing-md;
+
+  strong {
+    color: var(--text-primary);
+  }
+}
+
+.deleteProfileName {
+  font-family: $font-mono, monospace;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+// ── Sync Status ─────────────────────────────────────────────────────────────
+
+.statusIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusSynced {
+  color: $success-color;
+  .statusDot { background: $success-color; }
+}
+
+.statusOutdated {
+  color: $warning-color;
+  .statusDot { background: $warning-color; }
+}
+
+.statusNeverSynced {
+  color: var(--text-tertiary);
+  .statusDot { background: var(--text-tertiary); }
+}
+
+.statusError {
+  color: $error-color;
+  .statusDot { background: $error-color; }
+}
+
+.statusTimestamp {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+// ── Target List in Profile Detail ───────────────────────────────────────────
+
+.targetList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.targetRow {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: $spacing-md;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-sm;
+  background: var(--bg-primary);
+}
+
+.targetToolName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.targetModelInfo {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-family: $font-mono, monospace;
+}
+
+// ── Expanded Profile Detail ─────────────────────────────────────────────────
+
+.profileDetail {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-lg $spacing-lg;
+  border: 1px solid var(--border-color);
+  border-top: none;
+  border-radius: 0 0 $radius-md $radius-md;
+  background: var(--bg-secondary);
+}
+
+.profileDetailTargets {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.targetDetailRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-sm;
+  background: var(--bg-primary);
+}
+
+.targetDetailToolLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 100px;
+}
+
+.targetDetailModel {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: $font-mono, monospace;
+}
+
+.targetDetailFilter {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-family: $font-mono, monospace;
+  font-style: italic;
+}
+
+.syncAllRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+  padding-top: $spacing-sm;
+}

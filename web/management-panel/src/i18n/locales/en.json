@@ -1646,5 +1646,69 @@
       "continue_dev": "Continue",
       "aider": "Aider"
     }
+  },
+  "sync_profiles": {
+    "section_title": "Sync Profiles",
+    "section_hint": "Sync profiles define which CLI tools to configure and which models/API keys to use. Use ppap-sync CLI to apply profiles to your local tool configs.",
+    "create_button": "+ Create Profile",
+    "create_first": "Create First Profile",
+    "empty_title": "No sync profiles configured",
+    "empty_description": "Create a sync profile to configure CLI tools with models from this proxy.",
+    "load_error": "Failed to load sync profiles.",
+    "tool_count": "{{count}} tool(s)",
+    "last_sync_label": "Last synced",
+    "tools": {
+      "factory_droid": "Factory Droid",
+      "opencode": "OpenCode",
+      "claude_code": "Claude Code",
+      "codex": "Codex",
+      "cursor": "Cursor",
+      "continue": "Continue",
+      "aider": "Aider",
+      "forgecode": "ForgeCode",
+      "hermes": "Hermes"
+    },
+    "status": {
+      "synced": "Synced",
+      "outdated": "Outdated",
+      "never-synced": "Never Synced",
+      "error": "Error"
+    },
+    "form": {
+      "create_title": "Create Sync Profile",
+      "edit_title": "Edit Sync Profile",
+      "create_button": "Create Profile",
+      "name_label": "Profile name",
+      "name_placeholder": "e.g., Production, Staging",
+      "tools_section": "Select tools to sync",
+      "per_tool_config": "Per-tool configuration",
+      "model_filter_label": "Model filter (regex)",
+      "model_filter_placeholder": "e.g., gpt-4.*",
+      "model_filter_hint": "Optional regex to filter models",
+      "active_model_label": "Active model",
+      "active_model_placeholder": "None (use first available)",
+      "active_model_none": "None (use first available)",
+      "api_key_label": "API key",
+      "api_key_placeholder": "Default",
+      "api_key_default": "Default (first key)",
+      "api_key_option": "Key #{{index}}: {{masked}}"
+    },
+    "validation": {
+      "name_required": "Profile name is required",
+      "tools_required": "Select at least one tool",
+      "duplicate_name": "A profile with this name already exists"
+    },
+    "notifications": {
+      "created": "Profile \"{{name}}\" created",
+      "updated": "Profile \"{{name}}\" updated",
+      "deleted": "Profile \"{{name}}\" deleted",
+      "save_error": "Failed to save profile",
+      "delete_error": "Failed to delete profile"
+    },
+    "delete": {
+      "title": "Delete Sync Profile",
+      "message": "Are you sure you want to delete the sync profile \"{{name}}\"? This action cannot be undone.",
+      "confirm": "Delete"
+    }
   }
 }

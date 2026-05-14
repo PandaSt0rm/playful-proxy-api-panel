@@ -28,6 +28,7 @@ import {
   type TemplateInputs,
   type ToolTemplateId,
 } from '@/utils/toolingTemplates';
+import { SyncProfilesSection } from '@/components/sync';
 import type { ModelInfo } from '@/utils/models';
 import styles from './ToolingTemplatesPage.module.scss';
 
@@ -1122,6 +1123,8 @@ export function ToolingTemplatesPage() {
             </Card>
           );
         })()}
+
+        <SyncProfilesSection />
       </div>
     </div>
   );
