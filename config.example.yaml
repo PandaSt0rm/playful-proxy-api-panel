@@ -77,6 +77,16 @@ usage-statistics-enabled: false
 # Defaults to usage-statistics.json next to config.yaml when usage statistics are enabled.
 usage-statistics-path: ""
 
+# Optional SQLite path for per-request usage history.
+# Defaults to usage-statistics.sqlite next to config.yaml when usage statistics are enabled.
+usage-statistics-db-path: ""
+
+# Maximum number of usage events returned by management queries. Defaults to 50000.
+usage-statistics-query-limit: 50000
+
+# Usage event retention in days. Set 0 to retain indefinitely.
+usage-statistics-retention-days: 0
+
 # How often usage statistics are flushed to disk. Defaults to 30 seconds when omitted or <= 0.
 usage-statistics-flush-interval-seconds: 30
 

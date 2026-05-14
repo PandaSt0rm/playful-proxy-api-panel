@@ -34,6 +34,9 @@ error-logs-max-files: 20
 
 usage-statistics-enabled: true
 usage-statistics-path: "/CLIProxyAPI/data/usage-statistics.json"
+usage-statistics-db-path: "/CLIProxyAPI/data/usage.sqlite"
+usage-statistics-query-limit: 50000
+usage-statistics-retention-days: 0
 usage-statistics-flush-interval-seconds: 30
 redis-usage-queue-retention-seconds: 60
 

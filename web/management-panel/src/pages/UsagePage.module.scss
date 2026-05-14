@@ -94,6 +94,59 @@
   font-size: 14px;
 }
 
+.controlPanel {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.2fr) minmax(140px, 0.6fr) minmax(140px, 0.6fr) minmax(240px, 1fr);
+  gap: $spacing-md;
+  align-items: end;
+
+  @include tablet {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.controlField,
+.searchField {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+
+  > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 750;
+  }
+
+  select,
+  input {
+    width: 100%;
+    min-height: 38px;
+    padding: 0 11px;
+    border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+    border-radius: $radius-md;
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    font-size: 13px;
+    outline: none;
+    transition:
+      border-color $transition-fast,
+      box-shadow $transition-fast;
+
+    &:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 16%, transparent);
+    }
+  }
+}
+
 .metricGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -718,4 +771,339 @@
 .statusFailed {
   color: var(--danger-color);
   background: rgba($error-color, 0.1);
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 8px;
+  border-radius: $radius-full;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--bg-hover) 74%, transparent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.accountPanelStack {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  min-width: 0;
+}
+
+.managementGrid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.82fr) minmax(0, 1.18fr);
+  gap: $spacing-lg;
+
+  @include tablet {
+    grid-template-columns: 1fr;
+  }
+}
+
+.managementPanel {
+  min-width: 0;
+  padding: $spacing-md;
+  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
+  border-radius: $radius-lg;
+  background: color-mix(in srgb, var(--bg-primary) 86%, transparent);
+
+  h3 {
+    margin: 0 0 6px;
+    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 760;
+  }
+
+  p {
+    margin: 0 0 $spacing-md;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+}
+
+.panelHeaderRow {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+
+  @include mobile {
+    flex-direction: column;
+  }
+}
+
+.panelHint {
+  margin: $spacing-sm 0 0 !important;
+  color: var(--text-tertiary) !important;
+  font-size: 12px !important;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $spacing-sm;
+  align-items: center;
+  margin-bottom: $spacing-md;
+
+  input {
+    width: 100%;
+    min-height: 38px;
+    padding: 0 11px;
+    border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+    border-radius: $radius-md;
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    font-size: 13px;
+    outline: none;
+
+    &:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 16%, transparent);
+    }
+  }
+
+  :global(.btn) {
+    justify-content: center;
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pillList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  button,
+  span {
+    min-height: 28px;
+    padding: 0 9px;
+    border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+    border-radius: $radius-full;
+    color: var(--text-secondary);
+    background: color-mix(in srgb, var(--bg-secondary) 74%, transparent);
+    font-size: 12px;
+    font-weight: 650;
+  }
+
+  button {
+    cursor: pointer;
+
+    &:hover {
+      color: var(--text-primary);
+      border-color: var(--primary-color);
+    }
+  }
+}
+
+.quotaContextList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.quotaContextRow {
+  display: grid;
+  grid-template-columns: minmax(170px, 0.7fr) minmax(220px, 0.9fr) minmax(260px, 1.2fr);
+  gap: $spacing-md;
+  align-items: start;
+  min-width: 0;
+  padding: $spacing-sm;
+  border: 1px solid color-mix(in srgb, var(--border-color) 78%, transparent);
+  border-radius: $radius-md;
+  background: color-mix(in srgb, var(--bg-secondary) 62%, transparent);
+
+  @include tablet {
+    grid-template-columns: 1fr;
+  }
+}
+
+.quotaIdentity {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+
+  strong,
+  span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  strong {
+    color: var(--text-primary);
+    font-size: 13px;
+  }
+
+  span {
+    color: var(--text-tertiary);
+    font-size: 12px;
+  }
+}
+
+.quotaFacts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: $spacing-sm;
+  min-width: 0;
+
+  div {
+    min-width: 0;
+  }
+
+  span,
+  strong {
+    display: block;
+    min-width: 0;
+  }
+
+  span {
+    margin-bottom: 4px;
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  strong {
+    color: var(--text-primary);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.quotaWindowList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $spacing-sm;
+  min-width: 0;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.quotaWindow {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+
+  small {
+    color: var(--text-tertiary);
+    font-size: 11px;
+  }
+}
+
+.quotaWindowHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  min-width: 0;
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  strong {
+    color: var(--text-primary);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.quotaTrack {
+  height: 7px;
+  overflow: hidden;
+  border-radius: $radius-full;
+  background: color-mix(in srgb, var(--bg-hover) 72%, transparent);
+
+  span {
+    display: block;
+    height: 100%;
+    min-width: 3px;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--primary-color), color-mix(in srgb, var(--primary-color) 55%, #22c55e));
+  }
+}
+
+.quotaMessage {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.dataActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+
+  :global(.btn > span) {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+}
+
+.aliasList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aliasRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 0.5fr) auto;
+  gap: $spacing-sm;
+  align-items: center;
+  min-width: 0;
+  padding: 9px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+
+  strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: var(--text-primary);
+    font-size: 13px;
+  }
+
+  button {
+    @include button-reset;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: $radius-md;
+    color: var(--danger-color);
+
+    &:hover {
+      background: rgba($error-color, 0.1);
+    }
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr auto;
+
+    strong {
+      grid-column: 1;
+    }
+  }
 }

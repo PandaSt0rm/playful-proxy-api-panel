@@ -73,6 +73,16 @@ type Config struct {
 	// UsageStatisticsPath stores the automatic usage snapshot. When empty, it defaults to usage-statistics.json next to config.yaml.
 	UsageStatisticsPath string `yaml:"usage-statistics-path,omitempty" json:"usage-statistics-path,omitempty"`
 
+	// UsageStatisticsDBPath stores persistent per-request usage events in SQLite.
+	// When empty, it defaults to usage-statistics.sqlite next to config.yaml when usage statistics are enabled.
+	UsageStatisticsDBPath string `yaml:"usage-statistics-db-path,omitempty" json:"usage-statistics-db-path,omitempty"`
+
+	// UsageStatisticsQueryLimit caps management usage event and summary queries. Default: 50000.
+	UsageStatisticsQueryLimit int `yaml:"usage-statistics-query-limit,omitempty" json:"usage-statistics-query-limit,omitempty"`
+
+	// UsageStatisticsRetentionDays controls SQLite usage event retention. Default 0 keeps events indefinitely.
+	UsageStatisticsRetentionDays int `yaml:"usage-statistics-retention-days,omitempty" json:"usage-statistics-retention-days,omitempty"`
+
 	// UsageStatisticsFlushIntervalSeconds controls how often the usage snapshot is written. Default is 30 seconds.
 	UsageStatisticsFlushIntervalSeconds int `yaml:"usage-statistics-flush-interval-seconds,omitempty" json:"usage-statistics-flush-interval-seconds,omitempty"`
 
@@ -769,6 +779,16 @@ func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 	cfg.Pprof.Addr = strings.TrimSpace(cfg.Pprof.Addr)
 	if cfg.Pprof.Addr == "" {
 		cfg.Pprof.Addr = DefaultPprofAddr
+	}
+
+	if cfg.UsageStatisticsQueryLimit <= 0 {
+		cfg.UsageStatisticsQueryLimit = 50000
+	}
+	if cfg.UsageStatisticsQueryLimit > 200000 {
+		cfg.UsageStatisticsQueryLimit = 200000
+	}
+	if cfg.UsageStatisticsRetentionDays < 0 {
+		cfg.UsageStatisticsRetentionDays = 0
 	}
 
 	if cfg.LogsMaxTotalSizeMB < 0 {

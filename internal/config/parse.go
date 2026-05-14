@@ -54,6 +54,16 @@ func ParseConfigBytes(data []byte) (*Config, error) {
 		cfg.Pprof.Addr = DefaultPprofAddr
 	}
 
+	if cfg.UsageStatisticsQueryLimit <= 0 {
+		cfg.UsageStatisticsQueryLimit = 50000
+	}
+	if cfg.UsageStatisticsQueryLimit > 200000 {
+		cfg.UsageStatisticsQueryLimit = 200000
+	}
+	if cfg.UsageStatisticsRetentionDays < 0 {
+		cfg.UsageStatisticsRetentionDays = 0
+	}
+
 	if cfg.LogsMaxTotalSizeMB < 0 {
 		cfg.LogsMaxTotalSizeMB = 0
 	}

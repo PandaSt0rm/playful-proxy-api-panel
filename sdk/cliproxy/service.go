@@ -758,6 +758,8 @@ func (s *Service) Run(ctx context.Context) error {
 	usage.StartDefault(ctx)
 	stopUsagePersistence := internalusage.StartPersistence(ctx, internalusage.GetRequestStatistics(), s.usageStatisticsPath(), s.usageStatisticsFlushInterval())
 	defer stopUsagePersistence()
+	stopUsageEventStore := internalusage.StartEventStore(ctx, s.usageStatisticsDBPath(), s.usageStatisticsRetentionDays())
+	defer stopUsageEventStore()
 	homeEnabled := s.cfg != nil && s.cfg.Home.Enabled
 	if homeEnabled {
 		forceHomeRuntimeConfig(s.cfg)
@@ -1035,6 +1037,26 @@ func (s *Service) usageStatisticsPath() string {
 		return filepath.Join(filepath.Dir(path), "usage-statistics.json")
 	}
 	return ""
+}
+
+func (s *Service) usageStatisticsDBPath() string {
+	if s == nil || s.cfg == nil || !s.cfg.UsageStatisticsEnabled {
+		return ""
+	}
+	if path := strings.TrimSpace(s.cfg.UsageStatisticsDBPath); path != "" {
+		return path
+	}
+	if path := strings.TrimSpace(s.configPath); path != "" {
+		return filepath.Join(filepath.Dir(path), "usage-statistics.sqlite")
+	}
+	return ""
+}
+
+func (s *Service) usageStatisticsRetentionDays() int {
+	if s == nil || s.cfg == nil || s.cfg.UsageStatisticsRetentionDays <= 0 {
+		return 0
+	}
+	return s.cfg.UsageStatisticsRetentionDays
 }
 
 func (s *Service) usageStatisticsFlushInterval() time.Duration {
