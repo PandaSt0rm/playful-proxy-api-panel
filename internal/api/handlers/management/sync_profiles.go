@@ -49,7 +49,10 @@ func (h *Handler) PutSyncProfiles(c *gin.Context) {
 	// Deep-copy to avoid mutating caller data.
 	profiles = copySyncProfiles(profiles)
 
-	// Validate the raw input first (before sanitize silently removes issues).
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	// Validate the raw input against a copy of the current config (inside lock to avoid races).
 	tmpCfg := *h.cfg
 	tmpCfg.SyncProfiles = profiles
 	if errValidate := tmpCfg.ValidateSyncProfiles(); errValidate != nil {
@@ -60,8 +63,6 @@ func (h *Handler) PutSyncProfiles(c *gin.Context) {
 	// Sanitize for normalization (trim, lowercase, etc.).
 	tmpCfg.SanitizeSyncProfiles()
 
-	h.mu.Lock()
-	defer h.mu.Unlock()
 	h.cfg.SyncProfiles = tmpCfg.SyncProfiles
 	h.persistLocked(c)
 }
