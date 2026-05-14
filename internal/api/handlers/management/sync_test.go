@@ -129,7 +129,7 @@ func TestGetSyncAvailableConfigs_CompleteStructure(t *testing.T) {
 // --- API Key Masking Tests ---
 
 // TestGetSyncAvailableConfigs_APIKeyMasking verifies VAL-SRV-051:
-// API keys show only last 4 characters.
+// API keys show only last 4 characters and include index.
 func TestGetSyncAvailableConfigs_APIKeyMasking(t *testing.T) {
 	cfg := &config.Config{
 		SDKConfig: config.SDKConfig{
@@ -145,7 +145,12 @@ func TestGetSyncAvailableConfigs_APIKeyMasking(t *testing.T) {
 		t.Fatalf("expected 1 api key, got %d", len(resp.APIKeys))
 	}
 
-	masked := resp.APIKeys[0]
+	// Verify index
+	if resp.APIKeys[0].Index != 0 {
+		t.Fatalf("expected index 0, got %d", resp.APIKeys[0].Index)
+	}
+
+	masked := resp.APIKeys[0].Masked
 	// Should show only last 4 chars: "5678"
 	if masked == "sk-abc1234def5678" {
 		t.Fatal("full API key exposed in response")
@@ -720,7 +725,8 @@ func TestGetSyncAvailableConfigs_MultiKeyProviders(t *testing.T) {
 	}
 }
 
-// TestGetSyncAvailableConfigs_MultipleAPIKeys tests multiple API keys are all masked.
+// TestGetSyncAvailableConfigs_MultipleAPIKeys tests multiple API keys are all masked
+// and each has the correct index.
 func TestGetSyncAvailableConfigs_MultipleAPIKeys(t *testing.T) {
 	cfg := &config.Config{
 		SDKConfig: config.SDKConfig{
@@ -736,13 +742,21 @@ func TestGetSyncAvailableConfigs_MultipleAPIKeys(t *testing.T) {
 		t.Fatalf("expected 2 api keys, got %d", len(resp.APIKeys))
 	}
 
+	// Verify indices
+	if resp.APIKeys[0].Index != 0 {
+		t.Errorf("expected first key index 0, got %d", resp.APIKeys[0].Index)
+	}
+	if resp.APIKeys[1].Index != 1 {
+		t.Errorf("expected second key index 1, got %d", resp.APIKeys[1].Index)
+	}
+
 	// First key "sk-short" is 8 chars, mask first 4: "****hort"
-	if resp.APIKeys[0] != "****hort" {
-		t.Errorf("expected masked short key '****hort', got %q", resp.APIKeys[0])
+	if resp.APIKeys[0].Masked != "****hort" {
+		t.Errorf("expected masked short key '****hort', got %q", resp.APIKeys[0].Masked)
 	}
 
 	// Second key: only last 4 visible
-	second := resp.APIKeys[1]
+	second := resp.APIKeys[1].Masked
 	if second[len(second)-4:] != "7890" {
 		t.Errorf("expected last 4 chars '7890', got %q", second[len(second)-4:])
 	}

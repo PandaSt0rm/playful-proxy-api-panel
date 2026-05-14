@@ -17,8 +17,9 @@ type SyncAvailableConfigsResponse struct {
 	// BaseURL is the server's external URL derived from host, port, and TLS config.
 	BaseURL string `json:"base_url"`
 
-	// APIKeys lists all configured client API keys with masking (last 4 chars visible).
-	APIKeys []string `json:"api_keys"`
+	// APIKeys lists all configured client API keys with masking (last 4 chars visible)
+	// and their index for selection by the CLI sync tool.
+	APIKeys []MaskedAPIKey `json:"api_keys"`
 
 	// Providers lists all non-disabled provider entries with their available models.
 	Providers []SyncProvider `json:"providers"`
@@ -28,6 +29,16 @@ type SyncAvailableConfigsResponse struct {
 
 	// AllModels is the deduplicated union of all model names across providers and channels.
 	AllModels []string `json:"all_models"`
+}
+
+// MaskedAPIKey represents an API key with only the last 4 characters visible
+// and its index in the server's key list for selection by the CLI sync tool.
+type MaskedAPIKey struct {
+	// Masked is the key with all but the last 4 characters replaced by '*'.
+	Masked string `json:"masked"`
+
+	// Index is the position of this key in the server's API key configuration.
+	Index int `json:"index"`
 }
 
 // SyncProvider describes a single API provider type and its available models.
@@ -89,15 +100,19 @@ func buildBaseURL(cfg *config.Config) string {
 	return fmt.Sprintf("%s://%s:%d", scheme, host, cfg.Port)
 }
 
-// buildMaskedAPIKeys returns a list of API keys with all but the last 4 chars replaced by '*'.
-func buildMaskedAPIKeys(cfg *config.Config) []string {
+// buildMaskedAPIKeys returns a list of API keys with all but the last 4 chars replaced by '*',
+// each annotated with its index for selection by the CLI sync tool.
+func buildMaskedAPIKeys(cfg *config.Config) []MaskedAPIKey {
 	if cfg == nil || len(cfg.APIKeys) == 0 {
-		return []string{}
+		return []MaskedAPIKey{}
 	}
 
-	keys := make([]string, 0, len(cfg.APIKeys))
-	for _, key := range cfg.APIKeys {
-		keys = append(keys, maskAPIKey(key))
+	keys := make([]MaskedAPIKey, 0, len(cfg.APIKeys))
+	for i, key := range cfg.APIKeys {
+		keys = append(keys, MaskedAPIKey{
+			Masked: maskAPIKey(key),
+			Index:  i,
+		})
 	}
 	return keys
 }
