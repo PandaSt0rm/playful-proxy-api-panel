@@ -428,3 +428,31 @@ nonstream-keepalive-interval: 0
 #       params: # JSON paths (gjson/sjson syntax) to remove from the payload
 #         - "generationConfig.thinkingConfig.thinkingBudget"
 #         - "generationConfig.responseJsonSchema"
+
+# Sync profiles for propagating provider/model configuration to local CLI tool config files via ppap-sync.
+# Each profile has a name and a list of targets. Each target specifies a CLI tool to configure.
+#
+# Supported tool IDs: factory-droid, forgecode, hermes, opencode, claude-code, codex, continue, aider, cursor.
+#
+# sync-profiles:
+#   - name: "dev"
+#     targets:
+#       - tool: "factory-droid"       # CLI tool to sync
+#         model-filter: "^gpt-.*"     # optional regex: only include matching models
+#         api-key-index: 0            # index into the api-keys list above (0-based)
+#         active-model: "gpt-4o"      # optional: set as the default/active model for single-model tools
+#       - tool: "claude-code"
+#         api-key-index: 1
+#         active-model: "claude-sonnet-4-20250514"
+#       - tool: "hermes"
+#         model-filter: ".*"
+#         api-key-index: 0
+#   - name: "production"
+#     targets:
+#       - tool: "forgecode"
+#         api-key-index: 2
+#         active-model: "o3"
+#       - tool: "codex"
+#         api-key-index: 2
+#   - name: "placeholder"
+#     targets: []                     # empty targets: profile exists but not yet configured

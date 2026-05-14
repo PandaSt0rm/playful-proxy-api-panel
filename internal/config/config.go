@@ -153,6 +153,10 @@ type Config struct {
 	// Payload defines default and override rules for provider payload parameters.
 	Payload PayloadConfig `yaml:"payload" json:"payload"`
 
+	// SyncProfiles defines named sync profiles for propagating provider/model
+	// configuration to local CLI tool config files via ppap-sync.
+	SyncProfiles []SyncProfile `yaml:"sync-profiles,omitempty" json:"sync-profiles,omitempty"`
+
 	legacyMigrationPending bool `yaml:"-" json:"-"`
 }
 
@@ -807,6 +811,9 @@ func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 
 	// Validate raw payload rules and drop invalid entries.
 	cfg.SanitizePayloadRules()
+
+	// Sanitize sync profiles: trim, validate tool IDs, deduplicate.
+	cfg.SanitizeSyncProfiles()
 
 	// NOTE: Legacy migration persistence is intentionally disabled together with
 	// startup legacy migration to keep startup read-only for config.yaml.
