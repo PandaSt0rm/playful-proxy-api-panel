@@ -5,17 +5,20 @@ import type {
   ModelAlias,
   OpenAIProviderConfig,
   ProviderKeyConfig,
+  ThinkingSupport,
   AmpcodeConfig,
   AmpcodeModelMapping,
   AmpcodeUpstreamApiKeyMapping,
   SyncProfile,
-  SyncProfileTarget
+  SyncProfileTarget,
 } from '@/types';
 import type { Config } from '@/types/config';
 import { buildHeaderObject } from '@/utils/headers';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
+
+const cloneRecord = (value: Record<string, unknown>): Record<string, unknown> => ({ ...value });
 
 const normalizeBoolean = (value: unknown): boolean | undefined => {
   if (value === undefined || value === null) return undefined;
@@ -27,6 +30,40 @@ const normalizeBoolean = (value: unknown): boolean | undefined => {
     if (['false', '0', 'no', 'n', 'off'].includes(trimmed)) return false;
   }
   return Boolean(value);
+};
+
+const normalizeNumber = (value: unknown): number | undefined => {
+  if (value === undefined || value === null || String(value).trim() === '') return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
+
+const normalizeThinkingSupport = (thinking: unknown): ThinkingSupport | undefined => {
+  if (!isRecord(thinking)) return undefined;
+  const support: ThinkingSupport = {};
+  const min = normalizeNumber(thinking.min);
+  if (min !== undefined) support.min = min;
+  const max = normalizeNumber(thinking.max);
+  if (max !== undefined) support.max = max;
+  const zeroAllowed = normalizeBoolean(
+    thinking['zero-allowed'] ?? thinking.zero_allowed ?? thinking.zeroAllowed
+  );
+  if (zeroAllowed !== undefined) support.zeroAllowed = zeroAllowed;
+  const dynamicAllowed = normalizeBoolean(
+    thinking['dynamic-allowed'] ?? thinking.dynamic_allowed ?? thinking.dynamicAllowed
+  );
+  if (dynamicAllowed !== undefined) support.dynamicAllowed = dynamicAllowed;
+  if (Array.isArray(thinking.levels)) {
+    const levels = thinking.levels
+      .map((level) =>
+        String(level ?? '')
+          .trim()
+          .toLowerCase()
+      )
+      .filter(Boolean);
+    if (levels.length) support.levels = levels;
+  }
+  return Object.keys(support).length ? support : undefined;
 };
 
 const normalizeModelAliases = (models: unknown): ModelAlias[] => {
@@ -45,7 +82,7 @@ const normalizeModelAliases = (models: unknown): ModelAlias[] => {
       const alias = item.alias || item.display_name || item.displayName;
       const priority = item.priority ?? item['priority'];
       const testModel = item['test-model'] ?? item.testModel;
-      const entry: ModelAlias = { name: String(name) };
+      const entry: ModelAlias = { name: String(name), raw: cloneRecord(item) };
       if (alias && alias !== name) {
         entry.alias = String(alias);
       }
@@ -58,13 +95,11 @@ const normalizeModelAliases = (models: unknown): ModelAlias[] => {
       if (testModel) {
         entry.testModel = String(testModel);
       }
-      const thinking = item.thinking;
-      if (isRecord(thinking) && Array.isArray(thinking.levels)) {
-        const levels = thinking.levels
-          .map((level) => String(level ?? '').trim().toLowerCase())
-          .filter(Boolean);
-        if (levels.length) {
-          entry.thinkingLevels = levels;
+      const thinking = normalizeThinkingSupport(item.thinking);
+      if (thinking) {
+        entry.thinking = thinking;
+        if (Array.isArray(thinking.levels) && thinking.levels.length) {
+          entry.thinkingLevels = thinking.levels;
         }
       }
       return entry;
@@ -83,7 +118,11 @@ const normalizeHeaders = (headers: unknown) => {
 };
 
 const normalizeExcludedModels = (input: unknown): string[] => {
-  const rawList = Array.isArray(input) ? input : typeof input === 'string' ? input.split(/[\n,]/) : [];
+  const rawList = Array.isArray(input)
+    ? input
+    : typeof input === 'string'
+      ? input.split(/[\n,]/)
+      : [];
   const seen = new Set<string>();
   const normalized: string[] = [];
 
@@ -130,7 +169,7 @@ const normalizeSyncProfiles = (input: unknown): SyncProfile[] | undefined => {
     if (!name) continue;
     const rawTargets = item.targets;
     const targets: SyncProfileTarget[] = Array.isArray(rawTargets)
-      ? rawTargets.map(normalizeSyncProfileTarget).filter(Boolean) as SyncProfileTarget[]
+      ? (rawTargets.map(normalizeSyncProfileTarget).filter(Boolean) as SyncProfileTarget[])
       : [];
     profiles.push({ name, targets });
   }
@@ -153,11 +192,14 @@ const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
   if (entry === undefined || entry === null) return null;
   const record = isRecord(entry) ? entry : null;
   const apiKey =
-    record?.['api-key'] ?? record?.apiKey ?? record?.key ?? (typeof entry === 'string' ? entry : '');
+    record?.['api-key'] ??
+    record?.apiKey ??
+    record?.key ??
+    (typeof entry === 'string' ? entry : '');
   const trimmed = String(apiKey || '').trim();
   if (!trimmed) return null;
 
-  const proxyUrl = record ? record['proxy-url'] ?? record.proxyUrl : undefined;
+  const proxyUrl = record ? (record['proxy-url'] ?? record.proxyUrl) : undefined;
   const headers = record ? normalizeHeaders(record.headers) : undefined;
   const authIndex = normalizeAuthIndex(
     record?.['auth-index'] ?? record?.authIndex ?? record?.['auth_index']
@@ -166,7 +208,8 @@ const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
   const result: ApiKeyEntry = {
     apiKey: trimmed,
     proxyUrl: proxyUrl ? String(proxyUrl) : undefined,
-    headers
+    headers,
+    raw: record ? cloneRecord(record) : undefined,
   };
   if (authIndex) result.authIndex = authIndex;
   return result;
@@ -179,7 +222,10 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
   const trimmed = String(apiKey || '').trim();
   if (!trimmed) return null;
 
-  const config: ProviderKeyConfig = { apiKey: trimmed };
+  const config: ProviderKeyConfig = {
+    apiKey: trimmed,
+    raw: record ? cloneRecord(record) : undefined,
+  };
   const priority = record?.priority ?? record?.['priority'];
   if (priority !== undefined && priority !== null && String(priority).trim() !== '') {
     const parsed = Number(priority);
@@ -189,8 +235,8 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
   }
   const prefix = normalizePrefix(record?.prefix ?? record?.['prefix']);
   if (prefix) config.prefix = prefix;
-  const baseUrl = record ? record['base-url'] ?? record.baseUrl : undefined;
-  const proxyUrl = record ? record['proxy-url'] ?? record.proxyUrl : undefined;
+  const baseUrl = record ? (record['base-url'] ?? record.baseUrl) : undefined;
+  const proxyUrl = record ? (record['proxy-url'] ?? record.proxyUrl) : undefined;
   if (baseUrl) config.baseUrl = String(baseUrl);
   const websockets = normalizeBoolean(record?.websockets ?? record?.['websockets']);
   if (websockets !== undefined) config.websockets = websockets;
@@ -206,6 +252,18 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
       record?.excluded_models
   );
   if (excludedModels.length) config.excludedModels = excludedModels;
+  const disableCooling = normalizeBoolean(
+    record?.['disable-cooling'] ?? record?.disableCooling ?? record?.disable_cooling
+  );
+  if (disableCooling !== undefined) config.disableCooling = disableCooling;
+  const experimentalCCHSigning = normalizeBoolean(
+    record?.['experimental-cch-signing'] ??
+      record?.experimentalCCHSigning ??
+      record?.experimental_cch_signing
+  );
+  if (experimentalCCHSigning !== undefined) {
+    config.experimentalCCHSigning = experimentalCCHSigning;
+  }
   const authIndex = normalizeAuthIndex(
     record?.['auth-index'] ?? record?.authIndex ?? record?.['auth_index']
   );
@@ -213,7 +271,7 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
 
   const cloakRaw = record?.cloak;
   if (isRecord(cloakRaw)) {
-    const cloak: CloakConfig = {};
+    const cloak: CloakConfig = { raw: cloneRecord(cloakRaw) };
     const mode = cloakRaw.mode ?? cloakRaw['mode'];
     if (typeof mode === 'string' && mode.trim()) {
       cloak.mode = mode.trim();
@@ -229,6 +287,15 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
     );
     if (sensitiveWords.length) {
       cloak.sensitiveWords = sensitiveWords;
+    }
+    const cacheUserId = normalizeBoolean(
+      cloakRaw['cache-user-id'] ??
+        cloakRaw.cacheUserId ??
+        cloakRaw.cacheUserID ??
+        cloakRaw.cache_user_id
+    );
+    if (cacheUserId !== undefined) {
+      cloak.cacheUserId = cacheUserId;
     }
     if (Object.keys(cloak).length) {
       config.cloak = cloak;
@@ -248,7 +315,10 @@ const normalizeGeminiKeyConfig = (item: unknown): GeminiKeyConfig | null => {
   const trimmed = String(apiKey || '').trim();
   if (!trimmed) return null;
 
-  const config: GeminiKeyConfig = { apiKey: trimmed };
+  const config: GeminiKeyConfig = {
+    apiKey: trimmed,
+    raw: record ? cloneRecord(record) : undefined,
+  };
   const priority = record?.priority ?? record?.['priority'];
   if (priority !== undefined && priority !== null && String(priority).trim() !== '') {
     const parsed = Number(priority);
@@ -258,16 +328,24 @@ const normalizeGeminiKeyConfig = (item: unknown): GeminiKeyConfig | null => {
   }
   const prefix = normalizePrefix(record?.prefix ?? record?.['prefix']);
   if (prefix) config.prefix = prefix;
-  const baseUrl = record ? record['base-url'] ?? record.baseUrl ?? record['base_url'] : undefined;
+  const baseUrl = record ? (record['base-url'] ?? record.baseUrl ?? record['base_url']) : undefined;
   if (baseUrl) config.baseUrl = String(baseUrl);
-  const proxyUrl = record ? record['proxy-url'] ?? record.proxyUrl ?? record['proxy_url'] : undefined;
+  const proxyUrl = record
+    ? (record['proxy-url'] ?? record.proxyUrl ?? record['proxy_url'])
+    : undefined;
   if (proxyUrl) config.proxyUrl = String(proxyUrl);
   const models = normalizeModelAliases(record?.models);
   if (models.length) config.models = models;
   const headers = normalizeHeaders(record?.headers);
   if (headers) config.headers = headers;
-  const excludedModels = normalizeExcludedModels(record?.['excluded-models'] ?? record?.excludedModels);
+  const excludedModels = normalizeExcludedModels(
+    record?.['excluded-models'] ?? record?.excludedModels
+  );
   if (excludedModels.length) config.excludedModels = excludedModels;
+  const disableCooling = normalizeBoolean(
+    record?.['disable-cooling'] ?? record?.disableCooling ?? record?.disable_cooling
+  );
+  if (disableCooling !== undefined) config.disableCooling = disableCooling;
   const authIndex = normalizeAuthIndex(
     record?.['auth-index'] ?? record?.authIndex ?? record?.['auth_index']
   );
@@ -300,7 +378,8 @@ const normalizeOpenAIProvider = (provider: unknown): OpenAIProviderConfig | null
   const result: OpenAIProviderConfig = {
     name: String(name),
     baseUrl: String(baseUrl),
-    apiKeyEntries
+    apiKeyEntries,
+    raw: cloneRecord(provider),
   };
 
   const disabled = normalizeBoolean(provider.disabled ?? provider['disabled']);
@@ -311,6 +390,10 @@ const normalizeOpenAIProvider = (provider: unknown): OpenAIProviderConfig | null
   if (models.length) result.models = models;
   if (priority !== undefined) result.priority = Number(priority);
   if (testModel) result.testModel = String(testModel);
+  const disableCooling = normalizeBoolean(
+    provider['disable-cooling'] ?? provider.disableCooling ?? provider.disable_cooling
+  );
+  if (disableCooling !== undefined) result.disableCooling = disableCooling;
   const authIndex = normalizeAuthIndex(
     provider['auth-index'] ?? provider.authIndex ?? provider['auth_index']
   );
@@ -345,7 +428,12 @@ const normalizeAmpcodeModelMappings = (input: unknown): AmpcodeModelMapping[] =>
     const key = from.toLowerCase();
     if (seen.has(key)) return;
     seen.add(key);
-    mappings.push({ from, to });
+    const mapping: AmpcodeModelMapping = { from, to };
+    const regex = normalizeBoolean(entry.regex ?? entry['regex']);
+    if (regex !== undefined) {
+      mapping.regex = regex;
+    }
+    mappings.push(mapping);
   });
 
   return mappings;
@@ -383,10 +471,11 @@ const normalizeAmpcodeConfig = (payload: unknown): AmpcodeConfig | undefined => 
   if (!isRecord(sourceRaw)) return undefined;
   const source = sourceRaw;
 
-  const config: AmpcodeConfig = {};
+  const config: AmpcodeConfig = { raw: cloneRecord(source) };
   const upstreamUrl = source['upstream-url'] ?? source.upstreamUrl ?? source['upstream_url'];
   if (upstreamUrl) config.upstreamUrl = String(upstreamUrl);
-  const upstreamApiKey = source['upstream-api-key'] ?? source.upstreamApiKey ?? source['upstream_api_key'];
+  const upstreamApiKey =
+    source['upstream-api-key'] ?? source.upstreamApiKey ?? source['upstream_api_key'];
   if (upstreamApiKey) config.upstreamApiKey = String(upstreamApiKey);
 
   const upstreamApiKeys = normalizeAmpcodeUpstreamApiKeys(
@@ -394,6 +483,15 @@ const normalizeAmpcodeConfig = (payload: unknown): AmpcodeConfig | undefined => 
   );
   if (upstreamApiKeys.length) {
     config.upstreamApiKeys = upstreamApiKeys;
+  }
+
+  const restrictManagementToLocalhost = normalizeBoolean(
+    source['restrict-management-to-localhost'] ??
+      source.restrictManagementToLocalhost ??
+      source['restrict_management_to_localhost']
+  );
+  if (restrictManagementToLocalhost !== undefined) {
+    config.restrictManagementToLocalhost = restrictManagementToLocalhost;
   }
 
   const forceModelMappings = normalizeBoolean(
@@ -423,9 +521,33 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
   }
 
   config.debug = normalizeBoolean(raw.debug);
+  config.passthroughHeaders = normalizeBoolean(
+    raw['passthrough-headers'] ?? raw.passthroughHeaders
+  );
+  const disableImageGeneration = raw['disable-image-generation'] ?? raw.disableImageGeneration;
+  if (
+    disableImageGeneration === true ||
+    disableImageGeneration === false ||
+    disableImageGeneration === 'chat'
+  ) {
+    config.disableImageGeneration = disableImageGeneration;
+  } else if (
+    String(disableImageGeneration ?? '')
+      .trim()
+      .toLowerCase() === 'chat'
+  ) {
+    config.disableImageGeneration = 'chat';
+  }
+  config.enableGeminiCliEndpoint = normalizeBoolean(
+    raw['enable-gemini-cli-endpoint'] ?? raw.enableGeminiCliEndpoint
+  );
   const proxyUrl = raw['proxy-url'] ?? raw.proxyUrl;
   config.proxyUrl =
-    typeof proxyUrl === 'string' ? proxyUrl : proxyUrl === undefined || proxyUrl === null ? undefined : String(proxyUrl);
+    typeof proxyUrl === 'string'
+      ? proxyUrl
+      : proxyUrl === undefined || proxyUrl === null
+        ? undefined
+        : String(proxyUrl);
   const requestRetry = raw['request-retry'] ?? raw.requestRetry;
   if (typeof requestRetry === 'number' && Number.isFinite(requestRetry)) {
     config.requestRetry = requestRetry;
@@ -435,6 +557,12 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
       config.requestRetry = parsed;
     }
   }
+  const maxRetryCredentials = normalizeNumber(
+    raw['max-retry-credentials'] ?? raw.maxRetryCredentials
+  );
+  if (maxRetryCredentials !== undefined) config.maxRetryCredentials = maxRetryCredentials;
+  const maxRetryInterval = normalizeNumber(raw['max-retry-interval'] ?? raw.maxRetryInterval);
+  if (maxRetryInterval !== undefined) config.maxRetryInterval = maxRetryInterval;
 
   const quota = raw['quota-exceeded'] ?? raw.quotaExceeded;
   if (isRecord(quota)) {
@@ -445,7 +573,7 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
       ),
       antigravityCredits: normalizeBoolean(
         quota['antigravity-credits'] ?? quota.antigravityCredits
-      )
+      ),
     };
   }
 
@@ -460,8 +588,67 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
       config.logsMaxTotalSizeMb = parsed;
     }
   }
+  const errorLogsMaxFiles = normalizeNumber(raw['error-logs-max-files'] ?? raw.errorLogsMaxFiles);
+  if (errorLogsMaxFiles !== undefined) config.errorLogsMaxFiles = errorLogsMaxFiles;
+  config.usageStatisticsEnabled = normalizeBoolean(
+    raw['usage-statistics-enabled'] ?? raw.usageStatisticsEnabled
+  );
+  const usageStatisticsPath = raw['usage-statistics-path'] ?? raw.usageStatisticsPath;
+  if (usageStatisticsPath !== undefined && usageStatisticsPath !== null) {
+    config.usageStatisticsPath = String(usageStatisticsPath);
+  }
+  const usageStatisticsFlushIntervalSeconds = normalizeNumber(
+    raw['usage-statistics-flush-interval-seconds'] ?? raw.usageStatisticsFlushIntervalSeconds
+  );
+  if (usageStatisticsFlushIntervalSeconds !== undefined) {
+    config.usageStatisticsFlushIntervalSeconds = usageStatisticsFlushIntervalSeconds;
+  }
+  const redisUsageQueueRetentionSeconds = normalizeNumber(
+    raw['redis-usage-queue-retention-seconds'] ?? raw.redisUsageQueueRetentionSeconds
+  );
+  if (redisUsageQueueRetentionSeconds !== undefined) {
+    config.redisUsageQueueRetentionSeconds = redisUsageQueueRetentionSeconds;
+  }
+  config.disableCooling = normalizeBoolean(raw['disable-cooling'] ?? raw.disableCooling);
+  const authAutoRefreshWorkers = normalizeNumber(
+    raw['auth-auto-refresh-workers'] ?? raw.authAutoRefreshWorkers
+  );
+  if (authAutoRefreshWorkers !== undefined) config.authAutoRefreshWorkers = authAutoRefreshWorkers;
+  const pprofRaw = raw.pprof;
+  if (isRecord(pprofRaw)) {
+    config.pprof = {
+      enable: normalizeBoolean(pprofRaw.enable),
+      addr:
+        pprofRaw.addr === undefined || pprofRaw.addr === null ? undefined : String(pprofRaw.addr),
+    };
+  }
   config.wsAuth = normalizeBoolean(raw['ws-auth'] ?? raw.wsAuth);
   config.forceModelPrefix = normalizeBoolean(raw['force-model-prefix'] ?? raw.forceModelPrefix);
+  const upstreamConcurrencyRaw = raw['upstream-concurrency'] ?? raw.upstreamConcurrency;
+  if (isRecord(upstreamConcurrencyRaw)) {
+    const providersRaw = upstreamConcurrencyRaw.providers;
+    const providers: Record<string, number> = {};
+    if (isRecord(providersRaw)) {
+      Object.entries(providersRaw).forEach(([provider, value]) => {
+        const parsed = normalizeNumber(value);
+        if (parsed !== undefined) providers[provider] = parsed;
+      });
+    }
+    config.upstreamConcurrency = {
+      default: normalizeNumber(upstreamConcurrencyRaw.default),
+      providers: Object.keys(providers).length ? providers : undefined,
+      queueTimeoutSeconds: normalizeNumber(
+        upstreamConcurrencyRaw['queue-timeout-seconds'] ??
+          upstreamConcurrencyRaw.queueTimeoutSeconds
+      ),
+    };
+  }
+  config.antigravitySignatureCacheEnabled = normalizeBoolean(
+    raw['antigravity-signature-cache-enabled'] ?? raw.antigravitySignatureCacheEnabled
+  );
+  config.antigravitySignatureBypassStrict = normalizeBoolean(
+    raw['antigravity-signature-bypass-strict'] ?? raw.antigravitySignatureBypassStrict
+  );
   const routing = raw.routing;
   const strategyRaw = isRecord(routing)
     ? (routing.strategy ?? routing['strategy'])
@@ -502,7 +689,8 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
       .filter(Boolean) as ProviderKeyConfig[];
   }
 
-  const openaiList = raw['openai-compatibility'] ?? raw.openaiCompatibility ?? raw.openAICompatibility;
+  const openaiList =
+    raw['openai-compatibility'] ?? raw.openaiCompatibility ?? raw.openAICompatibility;
   if (Array.isArray(openaiList)) {
     config.openaiCompatibility = openaiList
       .map((item) => normalizeOpenAIProvider(item))
@@ -514,7 +702,9 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
     config.ampcode = ampcode;
   }
 
-  const oauthExcluded = normalizeOauthExcluded(raw['oauth-excluded-models'] ?? raw.oauthExcludedModels);
+  const oauthExcluded = normalizeOauthExcluded(
+    raw['oauth-excluded-models'] ?? raw.oauthExcludedModels
+  );
   if (oauthExcluded) {
     config.oauthExcludedModels = oauthExcluded;
   }
@@ -538,5 +728,5 @@ export {
   normalizeExcludedModels,
   normalizeAmpcodeConfig,
   normalizeAmpcodeModelMappings,
-  normalizeAmpcodeUpstreamApiKeys
+  normalizeAmpcodeUpstreamApiKeys,
 };

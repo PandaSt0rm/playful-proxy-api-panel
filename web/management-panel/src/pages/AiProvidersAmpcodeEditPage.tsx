@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { ModelInputList } from '@/components/ui/ModelInputList';
+import { ModelInputList, type ModelInputListRowExtrasArgs } from '@/components/ui/ModelInputList';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
@@ -30,18 +30,22 @@ const getErrorMessage = (err: unknown) => {
   return '';
 };
 
-const normalizeMappingEntries = (entries: Array<{ name: string; alias: string }>) =>
-  (entries ?? []).reduce<Array<{ from: string; to: string }>>((acc, entry) => {
+const normalizeMappingEntries = (
+  entries: Array<{ name: string; alias: string; regex?: boolean }>
+) =>
+  (entries ?? []).reduce<Array<{ from: string; to: string; regex: boolean }>>((acc, entry) => {
     const from = String(entry?.name ?? '').trim();
     const to = String(entry?.alias ?? '').trim();
+    const regex = Boolean(entry.regex);
     if (!from && !to) return acc;
-    acc.push({ from, to });
+    acc.push({ from, to, regex });
     return acc;
   }, []);
 
 type AmpcodeFormBaseline = {
   upstreamUrl: string;
   upstreamApiKey: string;
+  restrictManagementToLocalhost: boolean;
   forceModelMappings: boolean;
   upstreamApiKeys: ReturnType<typeof entriesToAmpcodeUpstreamApiKeys>;
   modelMappings: ReturnType<typeof normalizeMappingEntries>;
@@ -50,6 +54,7 @@ type AmpcodeFormBaseline = {
 const buildAmpcodeBaseline = (form: AmpcodeFormState): AmpcodeFormBaseline => ({
   upstreamUrl: String(form.upstreamUrl ?? '').trim(),
   upstreamApiKey: String(form.upstreamApiKey ?? '').trim(),
+  restrictManagementToLocalhost: Boolean(form.restrictManagementToLocalhost),
   forceModelMappings: Boolean(form.forceModelMappings),
   upstreamApiKeys: entriesToAmpcodeUpstreamApiKeys(form.upstreamApiKeyEntries),
   modelMappings: normalizeMappingEntries(form.mappingEntries),
@@ -72,8 +77,8 @@ const areUpstreamApiKeysEqual = (
 };
 
 const areModelMappingsEqual = (
-  a: readonly { from: string; to: string }[],
-  b: readonly { from: string; to: string }[]
+  a: readonly { from: string; to: string; regex?: boolean }[],
+  b: readonly { from: string; to: string; regex?: boolean }[]
 ) => {
   if (a === b) return true;
   if (a.length !== b.length) return false;
@@ -81,7 +86,8 @@ const areModelMappingsEqual = (
     const left = a[i];
     const right = b[i];
     if (!left || !right) return false;
-    if (left.from !== right.from || left.to !== right.to) return false;
+    if (left.from !== right.from || left.to !== right.to || left.regex !== right.regex)
+      return false;
   }
   return true;
 };
@@ -193,6 +199,7 @@ export function AiProvidersAmpcodeEditPage() {
   const isDirty =
     baseline.upstreamUrl !== form.upstreamUrl.trim() ||
     baseline.upstreamApiKey !== form.upstreamApiKey.trim() ||
+    baseline.restrictManagementToLocalhost !== Boolean(form.restrictManagementToLocalhost) ||
     baseline.forceModelMappings !== Boolean(form.forceModelMappings) ||
     isUpstreamApiKeysDirty ||
     isModelMappingsDirtyNormalized;
@@ -256,6 +263,7 @@ export function AiProvidersAmpcodeEditPage() {
         await ampcodeApi.clearUpstreamUrl();
       }
 
+      await ampcodeApi.updateRestrictManagementToLocalhost(form.restrictManagementToLocalhost);
       await ampcodeApi.updateForceModelMappings(form.forceModelMappings);
 
       if (loaded || upstreamApiKeysDirty) {
@@ -281,6 +289,7 @@ export function AiProvidersAmpcodeEditPage() {
       const previous = config?.ampcode ?? {};
       const next: AmpcodeConfig = {
         ...previous,
+        restrictManagementToLocalhost: form.restrictManagementToLocalhost,
         forceModelMappings: form.forceModelMappings,
       };
 
@@ -341,6 +350,22 @@ export function AiProvidersAmpcodeEditPage() {
   };
 
   const canSave = !disableControls && !saving && !loading;
+  const renderMappingExtras = useCallback(
+    ({ entry, disabled, updateEntry }: ModelInputListRowExtrasArgs) => (
+      <ToggleSwitch
+        checked={Boolean(entry.regex)}
+        onChange={(regex) => updateEntry({ regex })}
+        disabled={disabled || loading || saving || disableControls}
+        ariaLabel={t('ai_providers.ampcode_model_mappings_regex_label', {
+          defaultValue: 'Regex mapping',
+        })}
+        label={t('ai_providers.ampcode_model_mappings_regex_label', {
+          defaultValue: 'Regex',
+        })}
+      />
+    ),
+    [disableControls, loading, saving, t]
+  );
 
   return (
     <SecondaryScreenShell
@@ -450,7 +475,9 @@ export function AiProvidersAmpcodeEditPage() {
                     onClick={() => {
                       setUpstreamApiKeysDirty(true);
                       setForm((prev) => {
-                        const nextEntries = prev.upstreamApiKeyEntries.filter((_, entryIndex) => entryIndex !== index);
+                        const nextEntries = prev.upstreamApiKeyEntries.filter(
+                          (_, entryIndex) => entryIndex !== index
+                        );
                         return {
                           ...prev,
                           upstreamApiKeyEntries: nextEntries.length
@@ -507,6 +534,25 @@ export function AiProvidersAmpcodeEditPage() {
 
         <div className="form-group">
           <ToggleSwitch
+            label={t('ai_providers.ampcode_restrict_management_label', {
+              defaultValue: 'Restrict management routes to localhost',
+            })}
+            checked={form.restrictManagementToLocalhost}
+            onChange={(value) =>
+              setForm((prev) => ({ ...prev, restrictManagementToLocalhost: value }))
+            }
+            disabled={loading || saving || disableControls}
+          />
+          <div className="hint">
+            {t('ai_providers.ampcode_restrict_management_hint', {
+              defaultValue:
+                'Allow Amp management endpoints only from localhost while keeping API-key authentication for requests.',
+            })}
+          </div>
+        </div>
+
+        <div className="form-group">
+          <ToggleSwitch
             label={t('ai_providers.ampcode_force_model_mappings_label')}
             checked={form.forceModelMappings}
             onChange={(value) => setForm((prev) => ({ ...prev, forceModelMappings: value }))}
@@ -529,6 +575,7 @@ export function AiProvidersAmpcodeEditPage() {
             removeButtonTitle={t('common.delete')}
             removeButtonAriaLabel={t('common.delete')}
             disabled={loading || saving || disableControls}
+            renderRowExtras={renderMappingExtras}
           />
           <div className="hint">{t('ai_providers.ampcode_model_mappings_hint')}</div>
         </div>

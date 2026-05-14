@@ -3,12 +3,22 @@
  * 基于原项目 src/modules/ai-providers.js
  */
 
+export interface ThinkingSupport {
+  min?: number;
+  max?: number;
+  zeroAllowed?: boolean;
+  dynamicAllowed?: boolean;
+  levels?: string[];
+}
+
 export interface ModelAlias {
   name: string;
   alias?: string;
   priority?: number;
   testModel?: string;
+  thinking?: ThinkingSupport;
   thinkingLevels?: string[];
+  raw?: Record<string, unknown>;
 }
 
 export interface ApiKeyEntry {
@@ -16,12 +26,15 @@ export interface ApiKeyEntry {
   proxyUrl?: string;
   headers?: Record<string, string>;
   authIndex?: string;
+  raw?: Record<string, unknown>;
 }
 
 export interface CloakConfig {
   mode?: string;
   strictMode?: boolean;
   sensitiveWords?: string[];
+  cacheUserId?: boolean;
+  raw?: Record<string, unknown>;
 }
 
 export interface GeminiKeyConfig {
@@ -33,7 +46,9 @@ export interface GeminiKeyConfig {
   models?: ModelAlias[];
   headers?: Record<string, string>;
   excludedModels?: string[];
+  disableCooling?: boolean;
   authIndex?: string;
+  raw?: Record<string, unknown>;
 }
 
 export interface ProviderKeyConfig {
@@ -46,8 +61,11 @@ export interface ProviderKeyConfig {
   headers?: Record<string, string>;
   models?: ModelAlias[];
   excludedModels?: string[];
+  disableCooling?: boolean;
+  experimentalCCHSigning?: boolean;
   cloak?: CloakConfig;
   authIndex?: string;
+  raw?: Record<string, unknown>;
 }
 
 export interface OpenAIProviderConfig {
@@ -60,6 +78,8 @@ export interface OpenAIProviderConfig {
   models?: ModelAlias[];
   priority?: number;
   testModel?: string;
+  disableCooling?: boolean;
   authIndex?: string;
+  raw?: Record<string, unknown>;
   [key: string]: unknown;
 }

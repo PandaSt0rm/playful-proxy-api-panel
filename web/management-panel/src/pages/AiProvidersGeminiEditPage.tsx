@@ -17,7 +17,11 @@ import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { GeminiKeyConfig } from '@/types';
 import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/utils/headers';
 import { fetchModelsProxyPreference } from '@/utils/fetchModelsProxyPreference';
-import { areKeyValueEntriesEqual, areModelEntriesEqual, areStringArraysEqual } from '@/utils/compare';
+import {
+  areKeyValueEntriesEqual,
+  areModelEntriesEqual,
+  areStringArraysEqual,
+} from '@/utils/compare';
 import type { ModelInfo } from '@/utils/models';
 import { entriesToModels, modelsToEntries } from '@/components/ui/modelInputListUtils';
 import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
@@ -37,6 +41,7 @@ const buildEmptyForm = (): GeminiFormState => ({
   modelEntries: [{ name: '', alias: '' }],
   excludedModels: [],
   excludedText: '',
+  disableCooling: undefined,
 });
 
 const parseIndexParam = (value: string | undefined) => {
@@ -72,18 +77,22 @@ type GeminiFormBaseline = {
   headers: ReturnType<typeof normalizeHeaderEntries>;
   models: ReturnType<typeof normalizeModelEntries>;
   excludedModels: string[];
+  disableCooling: boolean | null;
 };
 
 const buildGeminiBaseline = (form: GeminiFormState): GeminiFormBaseline => ({
   apiKey: String(form.apiKey ?? '').trim(),
   priority:
-    form.priority !== undefined && Number.isFinite(form.priority) ? Math.trunc(form.priority) : null,
+    form.priority !== undefined && Number.isFinite(form.priority)
+      ? Math.trunc(form.priority)
+      : null,
   prefix: String(form.prefix ?? '').trim(),
   baseUrl: String(form.baseUrl ?? '').trim(),
   proxyUrl: String(form.proxyUrl ?? '').trim(),
   headers: normalizeHeaderEntries(form.headers),
   models: normalizeModelEntries(form.modelEntries),
   excludedModels: parseExcludedModels(form.excludedText ?? ''),
+  disableCooling: form.disableCooling === undefined ? null : Boolean(form.disableCooling),
 });
 
 export function AiProvidersGeminiEditPage() {
@@ -346,7 +355,14 @@ export function AiProvidersGeminiEditPage() {
     autoFetchSignatureRef.current = signature;
 
     void fetchGeminiModelDiscovery();
-  }, [effectiveProxyUrl, fetchGeminiModelDiscovery, form.apiKey, form.baseUrl, form.headers, modelDiscoveryOpen]);
+  }, [
+    effectiveProxyUrl,
+    fetchGeminiModelDiscovery,
+    form.apiKey,
+    form.baseUrl,
+    form.headers,
+    modelDiscoveryOpen,
+  ]);
 
   useEffect(() => {
     const availableNames = new Set(discoveredModels.map((model) => model.name));
@@ -430,6 +446,8 @@ export function AiProvidersGeminiEditPage() {
     baseline.prefix !== String(form.prefix ?? '').trim() ||
     baseline.baseUrl !== String(form.baseUrl ?? '').trim() ||
     baseline.proxyUrl !== String(form.proxyUrl ?? '').trim() ||
+    baseline.disableCooling !==
+      (form.disableCooling === undefined ? null : Boolean(form.disableCooling)) ||
     isHeadersDirty ||
     isModelsDirty ||
     isExcludedModelsDirty;
@@ -461,6 +479,7 @@ export function AiProvidersGeminiEditPage() {
 
       const payload: GeminiKeyConfig = {
         apiKey: form.apiKey.trim(),
+        raw: initialData?.raw,
         priority: form.priority !== undefined ? Math.trunc(form.priority) : undefined,
         prefix: form.prefix?.trim() || undefined,
         baseUrl: form.baseUrl?.trim() || undefined,
@@ -468,6 +487,7 @@ export function AiProvidersGeminiEditPage() {
         headers: buildHeaderObject(form.headers),
         models: entriesToModels(normalizedModelEntries),
         excludedModels: parseExcludedModels(form.excludedText),
+        disableCooling: form.disableCooling,
       };
 
       const nextList =
@@ -502,6 +522,7 @@ export function AiProvidersGeminiEditPage() {
     editIndex,
     form,
     handleBack,
+    initialData?.raw,
     showNotification,
     t,
     updateConfigValue,
@@ -597,6 +618,16 @@ export function AiProvidersGeminiEditPage() {
               onChange={(e) => setForm((prev) => ({ ...prev, proxyUrl: e.target.value }))}
               disabled={disableControls || saving}
             />
+            <div className="form-group">
+              <ToggleSwitch
+                checked={Boolean(form.disableCooling)}
+                onChange={(disableCooling) => setForm((prev) => ({ ...prev, disableCooling }))}
+                disabled={disableControls || saving}
+                ariaLabel={t('auth_files.disable_cooling_label')}
+                label={t('auth_files.disable_cooling_label')}
+              />
+              <div className="hint">{t('auth_files.disable_cooling_hint')}</div>
+            </div>
             <HeaderInputList
               entries={form.headers}
               onChange={(entries) => setForm((prev) => ({ ...prev, headers: entries }))}

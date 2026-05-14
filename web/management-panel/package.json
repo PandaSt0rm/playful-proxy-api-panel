@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,scss}\"",
+    "check:config-roundtrip": "node scripts/config-roundtrip-check.mjs",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

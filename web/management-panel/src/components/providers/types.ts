@@ -1,9 +1,11 @@
-import type { ApiKeyEntry, GeminiKeyConfig, ProviderKeyConfig } from '@/types';
+import type { ApiKeyEntry, GeminiKeyConfig, ProviderKeyConfig, ThinkingSupport } from '@/types';
 import type { HeaderEntry } from '@/utils/headers';
 
 export interface ModelEntry {
   name: string;
   alias: string;
+  regex?: boolean;
+  thinking?: ThinkingSupport;
   thinkingLevels?: string[];
 }
 
@@ -14,6 +16,7 @@ export interface OpenAIFormState {
   baseUrl: string;
   headers: HeaderEntry[];
   testModel?: string;
+  disableCooling?: boolean;
   modelEntries: ModelEntry[];
   apiKeyEntries: ApiKeyEntry[];
 }
@@ -26,6 +29,7 @@ export interface AmpcodeUpstreamApiKeyEntry {
 export interface AmpcodeFormState {
   upstreamUrl: string;
   upstreamApiKey: string;
+  restrictManagementToLocalhost: boolean;
   forceModelMappings: boolean;
   mappingEntries: ModelEntry[];
   upstreamApiKeyEntries: AmpcodeUpstreamApiKeyEntry[];

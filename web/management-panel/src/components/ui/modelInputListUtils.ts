@@ -1,10 +1,22 @@
-import type { ModelAlias } from '@/types';
+import type { ModelAlias, ThinkingSupport } from '@/types';
 
 export interface ModelEntry {
   name: string;
   alias: string;
+  regex?: boolean;
+  thinking?: ThinkingSupport;
   thinkingLevels?: string[];
 }
+
+const hasThinkingConfig = (thinking?: ThinkingSupport): thinking is ThinkingSupport =>
+  Boolean(
+    thinking &&
+    (thinking.min !== undefined ||
+      thinking.max !== undefined ||
+      thinking.zeroAllowed !== undefined ||
+      thinking.dynamicAllowed !== undefined ||
+      (Array.isArray(thinking.levels) && thinking.levels.length > 0))
+  );
 
 export const modelsToEntries = (models?: ModelAlias[]): ModelEntry[] => {
   if (!Array.isArray(models) || models.length === 0) {
@@ -13,10 +25,15 @@ export const modelsToEntries = (models?: ModelAlias[]): ModelEntry[] => {
   return models.map((model) => {
     const entry: ModelEntry = {
       name: model.name || '',
-      alias: model.alias || ''
+      alias: model.alias || '',
     };
+    if (model.thinking) {
+      entry.thinking = { ...model.thinking };
+    }
     if (Array.isArray(model.thinkingLevels) && model.thinkingLevels.length) {
       entry.thinkingLevels = [...model.thinkingLevels];
+    } else if (Array.isArray(model.thinking?.levels) && model.thinking.levels.length) {
+      entry.thinkingLevels = [...model.thinking.levels];
     }
     return entry;
   });
@@ -31,8 +48,13 @@ export const entriesToModels = (entries: ModelEntry[]): ModelAlias[] => {
       if (alias && alias !== model.name) {
         model.alias = alias;
       }
+      const thinking = entry.thinking ? { ...entry.thinking } : undefined;
       if (Array.isArray(entry.thinkingLevels) && entry.thinkingLevels.length) {
-        model.thinkingLevels = [...entry.thinkingLevels];
+        const levels = [...entry.thinkingLevels];
+        model.thinking = { ...(thinking ?? {}), levels };
+        model.thinkingLevels = levels;
+      } else if (hasThinkingConfig(thinking)) {
+        model.thinking = thinking;
       }
       return model;
     });

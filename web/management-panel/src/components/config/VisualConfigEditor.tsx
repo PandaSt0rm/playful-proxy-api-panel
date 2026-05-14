@@ -211,9 +211,30 @@ export function VisualConfigEditor({
   const portError = getValidationMessage(t, validationErrors?.port);
   const homePortError = getValidationMessage(t, validationErrors?.['home.port']);
   const logsMaxSizeError = getValidationMessage(t, validationErrors?.logsMaxTotalSizeMb);
+  const errorLogsMaxFilesError = getValidationMessage(t, validationErrors?.errorLogsMaxFiles);
+  const usageFlushError = getValidationMessage(
+    t,
+    validationErrors?.usageStatisticsFlushIntervalSeconds
+  );
+  const redisRetentionError = getValidationMessage(
+    t,
+    validationErrors?.redisUsageQueueRetentionSeconds
+  );
+  const authAutoRefreshWorkersError = getValidationMessage(
+    t,
+    validationErrors?.authAutoRefreshWorkers
+  );
   const requestRetryError = getValidationMessage(t, validationErrors?.requestRetry);
   const maxRetryCredentialsError = getValidationMessage(t, validationErrors?.maxRetryCredentials);
   const maxRetryIntervalError = getValidationMessage(t, validationErrors?.maxRetryInterval);
+  const upstreamDefaultError = getValidationMessage(
+    t,
+    validationErrors?.['upstreamConcurrency.default']
+  );
+  const upstreamQueueTimeoutError = getValidationMessage(
+    t,
+    validationErrors?.['upstreamConcurrency.queueTimeoutSeconds']
+  );
   const keepaliveError = getValidationMessage(t, validationErrors?.['streaming.keepaliveSeconds']);
   const bootstrapRetriesError = getValidationMessage(
     t,
@@ -297,14 +318,26 @@ export function VisualConfigEditor({
         title: t('config_management.visual.sections.system.title'),
         description: t('config_management.visual.sections.system.description'),
         icon: IconDiamond,
-        errorCount: countErrors(['logsMaxTotalSizeMb']),
+        errorCount: countErrors([
+          'logsMaxTotalSizeMb',
+          'errorLogsMaxFiles',
+          'usageStatisticsFlushIntervalSeconds',
+          'redisUsageQueueRetentionSeconds',
+          'authAutoRefreshWorkers',
+        ]),
       },
       {
         id: 'network',
         title: t('config_management.visual.sections.network.title'),
         description: t('config_management.visual.sections.network.description'),
         icon: IconTrendingUp,
-        errorCount: countErrors(['requestRetry', 'maxRetryCredentials', 'maxRetryInterval']),
+        errorCount: countErrors([
+          'requestRetry',
+          'maxRetryCredentials',
+          'maxRetryInterval',
+          'upstreamConcurrency.default',
+          'upstreamConcurrency.queueTimeoutSeconds',
+        ]),
       },
       {
         id: 'quota',
@@ -449,7 +482,8 @@ export function VisualConfigEditor({
         220
       );
       const maxHeight = Math.max(window.innerHeight - top - viewportPadding, 160);
-      const isVisible = workspaceRect.bottom > stickyTop + 24 && anchorRect.top < window.innerHeight;
+      const isVisible =
+        workspaceRect.bottom > stickyTop + 24 && anchorRect.top < window.innerHeight;
 
       floatingElement.style.transform = `translate3d(${left}px, ${top}px, 0)`;
       floatingElement.style.width = `${width}px`;
@@ -763,6 +797,21 @@ export function VisualConfigEditor({
                 disabled={disabled}
                 onChange={(rmDisableControlPanel) => onChange({ rmDisableControlPanel })}
               />
+              <ToggleRow
+                title={t('config_management.visual.sections.remote.disable_auto_update_panel', {
+                  defaultValue: 'Disable Panel Auto Update',
+                })}
+                description={t(
+                  'config_management.visual.sections.remote.disable_auto_update_panel_desc',
+                  {
+                    defaultValue:
+                      'Keep the bundled management panel instead of fetching upstream releases.',
+                  }
+                )}
+                checked={values.rmDisableAutoUpdatePanel}
+                disabled={disabled}
+                onChange={(rmDisableAutoUpdatePanel) => onChange({ rmDisableAutoUpdatePanel })}
+              />
               <SectionGrid>
                 <Input
                   label={t('config_management.visual.sections.remote.secret_key')}
@@ -845,6 +894,17 @@ export function VisualConfigEditor({
                   disabled={disabled}
                   onChange={(loggingToFile) => onChange({ loggingToFile })}
                 />
+                <ToggleRow
+                  title={t('config_management.visual.sections.system.request_log', {
+                    defaultValue: 'Request Log',
+                  })}
+                  description={t('config_management.visual.sections.system.request_log_desc', {
+                    defaultValue: 'Enable detailed request logging endpoints and storage.',
+                  })}
+                  checked={values.requestLog}
+                  disabled={disabled}
+                  onChange={(requestLog) => onChange({ requestLog })}
+                />
               </SectionGrid>
 
               <SectionGrid>
@@ -857,7 +917,289 @@ export function VisualConfigEditor({
                   disabled={disabled}
                   error={logsMaxSizeError}
                 />
+                <Input
+                  label={t('config_management.visual.sections.system.error_logs_max_files', {
+                    defaultValue: 'Error Log File Count',
+                  })}
+                  type="number"
+                  placeholder="0"
+                  value={values.errorLogsMaxFiles}
+                  onChange={(e) => onChange({ errorLogsMaxFiles: e.target.value })}
+                  disabled={disabled}
+                  error={errorLogsMaxFilesError}
+                />
+                <Input
+                  label={t('config_management.visual.sections.system.redis_usage_retention', {
+                    defaultValue: 'Redis Usage Retention (seconds)',
+                  })}
+                  type="number"
+                  placeholder="60"
+                  value={values.redisUsageQueueRetentionSeconds}
+                  onChange={(e) => onChange({ redisUsageQueueRetentionSeconds: e.target.value })}
+                  disabled={disabled}
+                  error={redisRetentionError}
+                />
+                <Input
+                  label={t('config_management.visual.sections.system.auth_auto_refresh_workers', {
+                    defaultValue: 'Auth Auto Refresh Workers',
+                  })}
+                  type="number"
+                  placeholder="16"
+                  value={values.authAutoRefreshWorkers}
+                  onChange={(e) => onChange({ authAutoRefreshWorkers: e.target.value })}
+                  disabled={disabled}
+                  error={authAutoRefreshWorkersError}
+                />
               </SectionGrid>
+
+              <Divider />
+
+              <SectionSubsection
+                title={t('config_management.visual.sections.system.usage_statistics_title', {
+                  defaultValue: 'Usage Statistics',
+                })}
+                description={t('config_management.visual.sections.system.usage_statistics_desc', {
+                  defaultValue: 'Configure local usage snapshot persistence.',
+                })}
+              >
+                <SectionStack>
+                  <ToggleRow
+                    title={t('config_management.visual.sections.system.usage_statistics_enabled', {
+                      defaultValue: 'Enable Usage Statistics',
+                    })}
+                    checked={values.usageStatisticsEnabled}
+                    disabled={disabled}
+                    onChange={(usageStatisticsEnabled) => onChange({ usageStatisticsEnabled })}
+                  />
+                  <SectionGrid>
+                    <Input
+                      label={t('config_management.visual.sections.system.usage_statistics_path', {
+                        defaultValue: 'Usage Statistics Path',
+                      })}
+                      placeholder="usage-statistics.json"
+                      value={values.usageStatisticsPath}
+                      onChange={(e) => onChange({ usageStatisticsPath: e.target.value })}
+                      disabled={disabled}
+                    />
+                    <Input
+                      label={t('config_management.visual.sections.system.usage_statistics_flush', {
+                        defaultValue: 'Flush Interval (seconds)',
+                      })}
+                      type="number"
+                      placeholder="30"
+                      value={values.usageStatisticsFlushIntervalSeconds}
+                      onChange={(e) =>
+                        onChange({ usageStatisticsFlushIntervalSeconds: e.target.value })
+                      }
+                      disabled={disabled}
+                      error={usageFlushError}
+                    />
+                  </SectionGrid>
+                </SectionStack>
+              </SectionSubsection>
+
+              <Divider />
+
+              <SectionSubsection
+                title={t('config_management.visual.sections.system.pprof_title', {
+                  defaultValue: 'pprof Debug Server',
+                })}
+                description={t('config_management.visual.sections.system.pprof_desc', {
+                  defaultValue: 'Expose Go runtime profiling on a separate address.',
+                })}
+              >
+                <SectionGrid>
+                  <ToggleRow
+                    title={t('config_management.visual.sections.system.pprof_enable', {
+                      defaultValue: 'Enable pprof',
+                    })}
+                    checked={values.pprofEnable}
+                    disabled={disabled}
+                    onChange={(pprofEnable) => onChange({ pprofEnable })}
+                  />
+                  <Input
+                    label={t('config_management.visual.sections.system.pprof_addr', {
+                      defaultValue: 'pprof Address',
+                    })}
+                    placeholder="127.0.0.1:6060"
+                    value={values.pprofAddr}
+                    onChange={(e) => onChange({ pprofAddr: e.target.value })}
+                    disabled={disabled}
+                  />
+                </SectionGrid>
+              </SectionSubsection>
+
+              <Divider />
+
+              <SectionSubsection
+                title={t('config_management.visual.sections.system.claude_header_defaults_title', {
+                  defaultValue: 'Claude Header Defaults',
+                })}
+                description={t(
+                  'config_management.visual.sections.system.claude_header_defaults_desc',
+                  {
+                    defaultValue:
+                      'Fallback Claude request fingerprint values used when clients omit them.',
+                  }
+                )}
+              >
+                <SectionGrid>
+                  <Input
+                    label={t('config_management.visual.sections.system.header_user_agent', {
+                      defaultValue: 'User-Agent',
+                    })}
+                    value={values.claudeHeaderDefaults.userAgent}
+                    onChange={(e) =>
+                      onChange({
+                        claudeHeaderDefaults: {
+                          ...values.claudeHeaderDefaults,
+                          userAgent: e.target.value,
+                        },
+                      })
+                    }
+                    disabled={disabled}
+                  />
+                  <Input
+                    label={t('config_management.visual.sections.system.header_package_version', {
+                      defaultValue: 'Package Version',
+                    })}
+                    value={values.claudeHeaderDefaults.packageVersion}
+                    onChange={(e) =>
+                      onChange({
+                        claudeHeaderDefaults: {
+                          ...values.claudeHeaderDefaults,
+                          packageVersion: e.target.value,
+                        },
+                      })
+                    }
+                    disabled={disabled}
+                  />
+                  <Input
+                    label={t('config_management.visual.sections.system.header_runtime_version', {
+                      defaultValue: 'Runtime Version',
+                    })}
+                    value={values.claudeHeaderDefaults.runtimeVersion}
+                    onChange={(e) =>
+                      onChange({
+                        claudeHeaderDefaults: {
+                          ...values.claudeHeaderDefaults,
+                          runtimeVersion: e.target.value,
+                        },
+                      })
+                    }
+                    disabled={disabled}
+                  />
+                  <Input
+                    label={t('config_management.visual.sections.system.header_os', {
+                      defaultValue: 'OS',
+                    })}
+                    value={values.claudeHeaderDefaults.os}
+                    onChange={(e) =>
+                      onChange({
+                        claudeHeaderDefaults: {
+                          ...values.claudeHeaderDefaults,
+                          os: e.target.value,
+                        },
+                      })
+                    }
+                    disabled={disabled}
+                  />
+                  <Input
+                    label={t('config_management.visual.sections.system.header_arch', {
+                      defaultValue: 'Arch',
+                    })}
+                    value={values.claudeHeaderDefaults.arch}
+                    onChange={(e) =>
+                      onChange({
+                        claudeHeaderDefaults: {
+                          ...values.claudeHeaderDefaults,
+                          arch: e.target.value,
+                        },
+                      })
+                    }
+                    disabled={disabled}
+                  />
+                  <Input
+                    label={t('config_management.visual.sections.system.header_timeout', {
+                      defaultValue: 'Timeout',
+                    })}
+                    value={values.claudeHeaderDefaults.timeout}
+                    onChange={(e) =>
+                      onChange({
+                        claudeHeaderDefaults: {
+                          ...values.claudeHeaderDefaults,
+                          timeout: e.target.value,
+                        },
+                      })
+                    }
+                    disabled={disabled}
+                  />
+                </SectionGrid>
+                <ToggleRow
+                  title={t(
+                    'config_management.visual.sections.system.header_stabilize_device_profile',
+                    { defaultValue: 'Stabilize Device Profile' }
+                  )}
+                  checked={values.claudeHeaderDefaults.stabilizeDeviceProfile}
+                  disabled={disabled}
+                  onChange={(stabilizeDeviceProfile) =>
+                    onChange({
+                      claudeHeaderDefaults: {
+                        ...values.claudeHeaderDefaults,
+                        stabilizeDeviceProfile,
+                      },
+                    })
+                  }
+                />
+              </SectionSubsection>
+
+              <Divider />
+
+              <SectionSubsection
+                title={t('config_management.visual.sections.system.codex_header_defaults_title', {
+                  defaultValue: 'Codex Header Defaults',
+                })}
+                description={t(
+                  'config_management.visual.sections.system.codex_header_defaults_desc',
+                  {
+                    defaultValue:
+                      'Fallback Codex HTTP and websocket headers for OAuth/file-backed auth.',
+                  }
+                )}
+              >
+                <SectionGrid>
+                  <Input
+                    label={t('config_management.visual.sections.system.header_user_agent', {
+                      defaultValue: 'User-Agent',
+                    })}
+                    value={values.codexHeaderDefaults.userAgent}
+                    onChange={(e) =>
+                      onChange({
+                        codexHeaderDefaults: {
+                          ...values.codexHeaderDefaults,
+                          userAgent: e.target.value,
+                        },
+                      })
+                    }
+                    disabled={disabled}
+                  />
+                  <Input
+                    label={t('config_management.visual.sections.system.header_beta_features', {
+                      defaultValue: 'Beta Features',
+                    })}
+                    value={values.codexHeaderDefaults.betaFeaturesText}
+                    onChange={(e) =>
+                      onChange({
+                        codexHeaderDefaults: {
+                          ...values.codexHeaderDefaults,
+                          betaFeaturesText: e.target.value,
+                        },
+                      })
+                    }
+                    disabled={disabled}
+                  />
+                </SectionGrid>
+              </SectionSubsection>
             </SectionStack>
           </ConfigSection>
 
@@ -909,6 +1251,49 @@ export function VisualConfigEditor({
                   error={maxRetryIntervalError}
                 />
                 <FieldShell
+                  label={t('config_management.visual.sections.network.disable_image_generation', {
+                    defaultValue: 'Disable Image Generation',
+                  })}
+                  hint={t(
+                    'config_management.visual.sections.network.disable_image_generation_hint',
+                    {
+                      defaultValue:
+                        'false keeps image tools enabled, true disables them everywhere, chat disables injection outside image endpoints.',
+                    }
+                  )}
+                >
+                  <Select
+                    value={values.disableImageGeneration}
+                    options={[
+                      {
+                        value: 'false',
+                        label: t('common.disabled', { defaultValue: 'Disabled' }),
+                      },
+                      {
+                        value: 'true',
+                        label: t('common.enabled', { defaultValue: 'Enabled' }),
+                      },
+                      {
+                        value: 'chat',
+                        label: t('config_management.visual.sections.network.disable_image_chat', {
+                          defaultValue: 'Chat only',
+                        }),
+                      },
+                    ]}
+                    disabled={disabled}
+                    ariaLabel={t(
+                      'config_management.visual.sections.network.disable_image_generation',
+                      { defaultValue: 'Disable Image Generation' }
+                    )}
+                    onChange={(nextValue) =>
+                      onChange({
+                        disableImageGeneration:
+                          nextValue as VisualConfigValues['disableImageGeneration'],
+                      })
+                    }
+                  />
+                </FieldShell>
+                <FieldShell
                   label={t('config_management.visual.sections.network.routing_strategy')}
                   labelId={routingStrategyLabelId}
                   hint={t('config_management.visual.sections.network.routing_strategy_hint')}
@@ -957,6 +1342,34 @@ export function VisualConfigEditor({
                   onChange={(forceModelPrefix) => onChange({ forceModelPrefix })}
                 />
                 <ToggleRow
+                  title={t('config_management.visual.sections.network.passthrough_headers', {
+                    defaultValue: 'Passthrough Upstream Headers',
+                  })}
+                  description={t(
+                    'config_management.visual.sections.network.passthrough_headers_desc',
+                    {
+                      defaultValue: 'Forward upstream response headers to downstream clients.',
+                    }
+                  )}
+                  checked={values.passthroughHeaders}
+                  disabled={disabled}
+                  onChange={(passthroughHeaders) => onChange({ passthroughHeaders })}
+                />
+                <ToggleRow
+                  title={t('config_management.visual.sections.network.enable_gemini_cli_endpoint', {
+                    defaultValue: 'Enable Gemini CLI Internal Endpoint',
+                  })}
+                  description={t(
+                    'config_management.visual.sections.network.enable_gemini_cli_endpoint_desc',
+                    {
+                      defaultValue: 'Allow /v1internal:* Gemini CLI requests.',
+                    }
+                  )}
+                  checked={values.enableGeminiCliEndpoint}
+                  disabled={disabled}
+                  onChange={(enableGeminiCliEndpoint) => onChange({ enableGeminiCliEndpoint })}
+                />
+                <ToggleRow
                   title={t('config_management.visual.sections.network.session_affinity')}
                   checked={values.routingSessionAffinity}
                   disabled={disabled}
@@ -970,6 +1383,87 @@ export function VisualConfigEditor({
                   onChange={(wsAuth) => onChange({ wsAuth })}
                 />
               </SectionGrid>
+
+              <Divider />
+
+              <SectionSubsection
+                title={t('config_management.visual.sections.network.upstream_concurrency_title', {
+                  defaultValue: 'Upstream Concurrency',
+                })}
+                description={t(
+                  'config_management.visual.sections.network.upstream_concurrency_desc',
+                  {
+                    defaultValue:
+                      'Limit concurrent upstream requests globally or per provider; zero means unlimited.',
+                  }
+                )}
+              >
+                <SectionGrid>
+                  <Input
+                    label={t('config_management.visual.sections.network.upstream_default', {
+                      defaultValue: 'Default Limit',
+                    })}
+                    type="number"
+                    placeholder="0"
+                    value={values.upstreamConcurrency.defaultLimit}
+                    onChange={(e) =>
+                      onChange({
+                        upstreamConcurrency: {
+                          ...values.upstreamConcurrency,
+                          defaultLimit: e.target.value,
+                        },
+                      })
+                    }
+                    disabled={disabled}
+                    error={upstreamDefaultError}
+                  />
+                  <Input
+                    label={t('config_management.visual.sections.network.upstream_queue_timeout', {
+                      defaultValue: 'Queue Timeout (seconds)',
+                    })}
+                    type="number"
+                    placeholder="30"
+                    value={values.upstreamConcurrency.queueTimeoutSeconds}
+                    onChange={(e) =>
+                      onChange({
+                        upstreamConcurrency: {
+                          ...values.upstreamConcurrency,
+                          queueTimeoutSeconds: e.target.value,
+                        },
+                      })
+                    }
+                    disabled={disabled}
+                    error={upstreamQueueTimeoutError}
+                  />
+                </SectionGrid>
+                <div className="form-group">
+                  <label>
+                    {t('config_management.visual.sections.network.upstream_providers', {
+                      defaultValue: 'Provider Limits',
+                    })}
+                  </label>
+                  <textarea
+                    className="input"
+                    placeholder={'codex=2\nclaude=4'}
+                    value={values.upstreamConcurrency.providersText}
+                    onChange={(e) =>
+                      onChange({
+                        upstreamConcurrency: {
+                          ...values.upstreamConcurrency,
+                          providersText: e.target.value,
+                        },
+                      })
+                    }
+                    rows={4}
+                    disabled={disabled}
+                  />
+                  <div className="hint">
+                    {t('config_management.visual.sections.network.upstream_providers_hint', {
+                      defaultValue: 'One provider=limit entry per line, for example codex=2.',
+                    })}
+                  </div>
+                </div>
+              </SectionSubsection>
             </SectionStack>
           </ConfigSection>
 
@@ -1000,12 +1494,43 @@ export function VisualConfigEditor({
               />
               <ToggleRow
                 title={t('config_management.visual.sections.quota.antigravity_credits')}
-                description={t(
-                  'config_management.visual.sections.quota.antigravity_credits_desc'
-                )}
+                description={t('config_management.visual.sections.quota.antigravity_credits_desc')}
                 checked={values.quotaAntigravityCredits}
                 disabled={disabled}
                 onChange={(quotaAntigravityCredits) => onChange({ quotaAntigravityCredits })}
+              />
+              <ToggleRow
+                title={t('config_management.visual.sections.quota.antigravity_signature_cache', {
+                  defaultValue: 'Antigravity Signature Cache',
+                })}
+                description={t(
+                  'config_management.visual.sections.quota.antigravity_signature_cache_desc',
+                  {
+                    defaultValue: 'Enable signature cache validation for thinking blocks.',
+                  }
+                )}
+                checked={values.antigravitySignatureCacheEnabled}
+                disabled={disabled}
+                onChange={(antigravitySignatureCacheEnabled) =>
+                  onChange({ antigravitySignatureCacheEnabled })
+                }
+              />
+              <ToggleRow
+                title={t('config_management.visual.sections.quota.antigravity_signature_bypass', {
+                  defaultValue: 'Antigravity Signature Strict Bypass',
+                })}
+                description={t(
+                  'config_management.visual.sections.quota.antigravity_signature_bypass_desc',
+                  {
+                    defaultValue:
+                      'Bypass strict signature failures for Antigravity thinking blocks.',
+                  }
+                )}
+                checked={values.antigravitySignatureBypassStrict}
+                disabled={disabled}
+                onChange={(antigravitySignatureBypassStrict) =>
+                  onChange({ antigravitySignatureBypassStrict })
+                }
               />
             </SectionGrid>
           </ConfigSection>

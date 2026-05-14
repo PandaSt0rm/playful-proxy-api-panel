@@ -18,6 +18,7 @@ export type ClaudeCloakBaseline = {
   mode: string;
   strictMode: boolean;
   sensitiveWords: string[] | null;
+  cacheUserId: boolean | null;
 } | null;
 
 export type ClaudeEditBaseline = {
@@ -29,6 +30,8 @@ export type ClaudeEditBaseline = {
   headers: Array<{ key: string; value: string }>;
   models: Array<{ name: string; alias: string }>;
   excludedModels: string[];
+  disableCooling: boolean | null;
+  experimentalCCHSigning: boolean | null;
   cloak: ClaudeCloakBaseline;
 };
 
@@ -47,25 +50,16 @@ interface ClaudeEditDraftState {
   acquireDraft: (key: string) => void;
   releaseDraft: (key: string) => void;
   ensureDraft: (key: string) => void;
-  initDraft: (
-    key: string,
-    draft: Omit<ClaudeEditDraft, 'initialized'>
-  ) => void;
+  initDraft: (key: string, draft: Omit<ClaudeEditDraft, 'initialized'>) => void;
   setDraftBaseline: (key: string, baseline: ClaudeEditBaseline) => void;
-  setDraftForm: (
-    key: string,
-    action: SetStateAction<ProviderFormState>
-  ) => void;
+  setDraftForm: (key: string, action: SetStateAction<ProviderFormState>) => void;
   setDraftTestModel: (key: string, action: SetStateAction<string>) => void;
-  setDraftTestStatus: (
-    key: string,
-    action: SetStateAction<ClaudeTestStatus>
-  ) => void;
+  setDraftTestStatus: (key: string, action: SetStateAction<ClaudeTestStatus>) => void;
   setDraftTestMessage: (key: string, action: SetStateAction<string>) => void;
   clearDraft: (key: string) => void;
 }
 
-const resolveAction = <T,>(action: SetStateAction<T>, prev: T): T =>
+const resolveAction = <T>(action: SetStateAction<T>, prev: T): T =>
   typeof action === 'function' ? (action as (previous: T) => T)(prev) : action;
 
 const buildEmptyForm = (): ProviderFormState => ({
@@ -78,6 +72,8 @@ const buildEmptyForm = (): ProviderFormState => ({
   excludedModels: [],
   modelEntries: [{ name: '', alias: '' }],
   excludedText: '',
+  disableCooling: undefined,
+  experimentalCCHSigning: undefined,
 });
 
 const buildEmptyDraft = (): ClaudeEditDraft => ({

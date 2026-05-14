@@ -25,8 +25,12 @@ export const ampcodeApi = {
   updateUpstreamUrl: (url: string) => apiClient.put('/ampcode/upstream-url', { value: url }),
   clearUpstreamUrl: () => apiClient.delete('/ampcode/upstream-url'),
 
-  updateUpstreamApiKey: (apiKey: string) => apiClient.put('/ampcode/upstream-api-key', { value: apiKey }),
+  updateUpstreamApiKey: (apiKey: string) =>
+    apiClient.put('/ampcode/upstream-api-key', { value: apiKey }),
   clearUpstreamApiKey: () => apiClient.delete('/ampcode/upstream-api-key'),
+
+  updateRestrictManagementToLocalhost: (enabled: boolean) =>
+    apiClient.put('/ampcode/restrict-management-to-localhost', { value: enabled }),
 
   async getUpstreamApiKeys(): Promise<AmpcodeUpstreamApiKeyMapping[]> {
     const data = await apiClient.get<Record<string, unknown>>('/ampcode/upstream-api-keys');
@@ -35,9 +39,13 @@ export const ampcodeApi = {
   },
 
   saveUpstreamApiKeys: (mappings: AmpcodeUpstreamApiKeyMapping[]) =>
-    apiClient.put('/ampcode/upstream-api-keys', { value: serializeUpstreamApiKeyMappings(mappings) }),
+    apiClient.put('/ampcode/upstream-api-keys', {
+      value: serializeUpstreamApiKeyMappings(mappings),
+    }),
   patchUpstreamApiKeys: (mappings: AmpcodeUpstreamApiKeyMapping[]) =>
-    apiClient.patch('/ampcode/upstream-api-keys', { value: serializeUpstreamApiKeyMappings(mappings) }),
+    apiClient.patch('/ampcode/upstream-api-keys', {
+      value: serializeUpstreamApiKeyMappings(mappings),
+    }),
   deleteUpstreamApiKeys: (upstreamApiKeys: string[]) =>
     apiClient.delete('/ampcode/upstream-api-keys', { data: { value: upstreamApiKeys } }),
 
@@ -55,5 +63,6 @@ export const ampcodeApi = {
   deleteModelMappings: (fromList: string[]) =>
     apiClient.delete('/ampcode/model-mappings', { data: { value: fromList } }),
 
-  updateForceModelMappings: (enabled: boolean) => apiClient.put('/ampcode/force-model-mappings', { value: enabled })
+  updateForceModelMappings: (enabled: boolean) =>
+    apiClient.put('/ampcode/force-model-mappings', { value: enabled }),
 };

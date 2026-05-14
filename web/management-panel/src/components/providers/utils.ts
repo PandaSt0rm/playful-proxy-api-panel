@@ -109,7 +109,9 @@ const EMPTY_RECENT_USAGE_ENTRY: RecentRequestUsageEntry = {
 };
 
 const normalizeProviderRecentKey = (value: unknown): string =>
-  String(value ?? '').trim().toLowerCase();
+  String(value ?? '')
+    .trim()
+    .toLowerCase();
 
 export function getProviderRecentUsageEntry(
   usageByProvider: ProviderRecentUsageMap,
@@ -132,12 +134,7 @@ export function getProviderRecentBuckets(
   apiKey?: string,
   baseUrl?: string
 ): RecentRequestBucket[] {
-  return getProviderRecentUsageEntry(
-    usageByProvider,
-    provider,
-    apiKey,
-    baseUrl
-  ).recentRequests;
+  return getProviderRecentUsageEntry(usageByProvider, provider, apiKey, baseUrl).recentRequests;
 }
 
 export function getProviderTotalStats(
@@ -284,6 +281,7 @@ export const ampcodeMappingsToEntries = (mappings?: AmpcodeModelMapping[]): Mode
   return mappings.map((mapping) => ({
     name: mapping.from ?? '',
     alias: mapping.to ?? '',
+    regex: Boolean(mapping.regex),
   }));
 };
 
@@ -298,7 +296,11 @@ export const entriesToAmpcodeMappings = (entries: ModelEntry[]): AmpcodeModelMap
     const key = from.toLowerCase();
     if (seen.has(key)) return;
     seen.add(key);
-    mappings.push({ from, to });
+    const mapping: AmpcodeModelMapping = { from, to };
+    if (entry.regex) {
+      mapping.regex = true;
+    }
+    mappings.push(mapping);
   });
 
   return mappings;
@@ -340,6 +342,7 @@ export const entriesToAmpcodeUpstreamApiKeys = (
 export const buildAmpcodeFormState = (ampcode?: AmpcodeConfig | null): AmpcodeFormState => ({
   upstreamUrl: ampcode?.upstreamUrl ?? '',
   upstreamApiKey: '',
+  restrictManagementToLocalhost: Boolean(ampcode?.restrictManagementToLocalhost),
   forceModelMappings: ampcode?.forceModelMappings ?? false,
   mappingEntries: ampcodeMappingsToEntries(ampcode?.modelMappings),
   upstreamApiKeyEntries: ampcodeUpstreamApiKeysToEntries(ampcode?.upstreamApiKeys),

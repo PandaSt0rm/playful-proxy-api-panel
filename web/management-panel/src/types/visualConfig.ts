@@ -8,9 +8,15 @@ export type VisualConfigFieldPath =
   | 'port'
   | 'home.port'
   | 'logsMaxTotalSizeMb'
+  | 'errorLogsMaxFiles'
+  | 'usageStatisticsFlushIntervalSeconds'
+  | 'redisUsageQueueRetentionSeconds'
+  | 'authAutoRefreshWorkers'
   | 'requestRetry'
   | 'maxRetryCredentials'
   | 'maxRetryInterval'
+  | 'upstreamConcurrency.default'
+  | 'upstreamConcurrency.queueTimeoutSeconds'
   | 'streaming.keepaliveSeconds'
   | 'streaming.bootstrapRetries'
   | 'streaming.nonstreamKeepaliveInterval';
@@ -52,6 +58,25 @@ export interface StreamingConfig {
   nonstreamKeepaliveInterval: string;
 }
 
+export type DisableImageGenerationMode = 'false' | 'true' | 'chat';
+
+export interface UpstreamConcurrencyVisualConfig {
+  defaultLimit: string;
+  providersText: string;
+  queueTimeoutSeconds: string;
+}
+
+export interface HeaderDefaultsVisualConfig {
+  userAgent: string;
+  packageVersion: string;
+  runtimeVersion: string;
+  os: string;
+  arch: string;
+  timeout: string;
+  stabilizeDeviceProfile: boolean;
+  betaFeaturesText: string;
+}
+
 export type VisualConfigValues = {
   host: string;
   port: string;
@@ -65,21 +90,38 @@ export type VisualConfigValues = {
   rmAllowRemote: boolean;
   rmSecretKey: string;
   rmDisableControlPanel: boolean;
+  rmDisableAutoUpdatePanel: boolean;
   rmPanelRepo: string;
   authDir: string;
   apiKeysText: string;
   debug: boolean;
   commercialMode: boolean;
   loggingToFile: boolean;
+  requestLog: boolean;
   logsMaxTotalSizeMb: string;
+  errorLogsMaxFiles: string;
+  usageStatisticsEnabled: boolean;
+  usageStatisticsPath: string;
+  usageStatisticsFlushIntervalSeconds: string;
+  redisUsageQueueRetentionSeconds: string;
+  disableCooling: boolean;
+  authAutoRefreshWorkers: string;
+  pprofEnable: boolean;
+  pprofAddr: string;
   proxyUrl: string;
   forceModelPrefix: boolean;
+  passthroughHeaders: boolean;
+  disableImageGeneration: DisableImageGenerationMode;
+  enableGeminiCliEndpoint: boolean;
   requestRetry: string;
   maxRetryCredentials: string;
   maxRetryInterval: string;
+  upstreamConcurrency: UpstreamConcurrencyVisualConfig;
   quotaSwitchProject: boolean;
   quotaSwitchPreviewModel: boolean;
   quotaAntigravityCredits: boolean;
+  antigravitySignatureCacheEnabled: boolean;
+  antigravitySignatureBypassStrict: boolean;
   routingStrategy: 'round-robin' | 'fill-first';
   routingSessionAffinity: boolean;
   routingSessionAffinityTTL: string;
@@ -90,6 +132,8 @@ export type VisualConfigValues = {
   payloadOverrideRawRules: PayloadRule[];
   payloadFilterRules: PayloadFilterRule[];
   streaming: StreamingConfig;
+  claudeHeaderDefaults: HeaderDefaultsVisualConfig;
+  codexHeaderDefaults: HeaderDefaultsVisualConfig;
 };
 
 export const makeClientId = () => {
@@ -110,21 +154,42 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   rmAllowRemote: false,
   rmSecretKey: '',
   rmDisableControlPanel: false,
+  rmDisableAutoUpdatePanel: false,
   rmPanelRepo: '',
   authDir: '',
   apiKeysText: '',
   debug: false,
   commercialMode: false,
   loggingToFile: false,
+  requestLog: false,
   logsMaxTotalSizeMb: '',
+  errorLogsMaxFiles: '',
+  usageStatisticsEnabled: false,
+  usageStatisticsPath: '',
+  usageStatisticsFlushIntervalSeconds: '',
+  redisUsageQueueRetentionSeconds: '',
+  disableCooling: false,
+  authAutoRefreshWorkers: '',
+  pprofEnable: false,
+  pprofAddr: '',
   proxyUrl: '',
   forceModelPrefix: false,
+  passthroughHeaders: false,
+  disableImageGeneration: 'false',
+  enableGeminiCliEndpoint: false,
   requestRetry: '',
   maxRetryCredentials: '',
   maxRetryInterval: '',
+  upstreamConcurrency: {
+    defaultLimit: '',
+    providersText: '',
+    queueTimeoutSeconds: '',
+  },
   quotaSwitchProject: true,
   quotaSwitchPreviewModel: true,
   quotaAntigravityCredits: false,
+  antigravitySignatureCacheEnabled: false,
+  antigravitySignatureBypassStrict: false,
   routingStrategy: 'round-robin',
   routingSessionAffinity: false,
   routingSessionAffinityTTL: '',
@@ -138,5 +203,25 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
     keepaliveSeconds: '',
     bootstrapRetries: '',
     nonstreamKeepaliveInterval: '',
+  },
+  claudeHeaderDefaults: {
+    userAgent: '',
+    packageVersion: '',
+    runtimeVersion: '',
+    os: '',
+    arch: '',
+    timeout: '',
+    stabilizeDeviceProfile: false,
+    betaFeaturesText: '',
+  },
+  codexHeaderDefaults: {
+    userAgent: '',
+    packageVersion: '',
+    runtimeVersion: '',
+    os: '',
+    arch: '',
+    timeout: '',
+    stabilizeDeviceProfile: false,
+    betaFeaturesText: '',
   },
 };

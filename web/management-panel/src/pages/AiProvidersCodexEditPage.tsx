@@ -17,7 +17,11 @@ import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { ProviderKeyConfig } from '@/types';
 import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/utils/headers';
 import { fetchModelsProxyPreference } from '@/utils/fetchModelsProxyPreference';
-import { areKeyValueEntriesEqual, areModelEntriesEqual, areStringArraysEqual } from '@/utils/compare';
+import {
+  areKeyValueEntriesEqual,
+  areModelEntriesEqual,
+  areStringArraysEqual,
+} from '@/utils/compare';
 import { entriesToModels, modelsToEntries } from '@/components/ui/modelInputListUtils';
 import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
 import type { ProviderFormState } from '@/components/providers';
@@ -39,6 +43,7 @@ const buildEmptyForm = (): ProviderFormState => ({
   excludedModels: [],
   modelEntries: [{ name: '', alias: '' }],
   excludedText: '',
+  disableCooling: undefined,
 });
 
 const parseIndexParam = (value: string | undefined) => {
@@ -75,12 +80,15 @@ type CodexFormBaseline = {
   headers: ReturnType<typeof normalizeHeaderEntries>;
   models: ReturnType<typeof normalizeModelEntries>;
   excludedModels: string[];
+  disableCooling: boolean | null;
 };
 
 const buildCodexBaseline = (form: ProviderFormState): CodexFormBaseline => ({
   apiKey: String(form.apiKey ?? '').trim(),
   priority:
-    form.priority !== undefined && Number.isFinite(form.priority) ? Math.trunc(form.priority) : null,
+    form.priority !== undefined && Number.isFinite(form.priority)
+      ? Math.trunc(form.priority)
+      : null,
   prefix: String(form.prefix ?? '').trim(),
   baseUrl: String(form.baseUrl ?? '').trim(),
   websockets: Boolean(form.websockets),
@@ -88,6 +96,7 @@ const buildCodexBaseline = (form: ProviderFormState): CodexFormBaseline => ({
   headers: normalizeHeaderEntries(form.headers),
   models: normalizeModelEntries(form.modelEntries),
   excludedModels: parseExcludedModels(form.excludedText ?? ''),
+  disableCooling: form.disableCooling === undefined ? null : Boolean(form.disableCooling),
 });
 
 export function AiProvidersCodexEditPage() {
@@ -246,6 +255,8 @@ export function AiProvidersCodexEditPage() {
     baseline.baseUrl !== String(form.baseUrl ?? '').trim() ||
     baseline.websockets !== Boolean(form.websockets) ||
     baseline.proxyUrl !== String(form.proxyUrl ?? '').trim() ||
+    baseline.disableCooling !==
+      (form.disableCooling === undefined ? null : Boolean(form.disableCooling)) ||
     isHeadersDirty ||
     isModelsDirty ||
     isExcludedModelsDirty;
@@ -392,7 +403,14 @@ export function AiProvidersCodexEditPage() {
     autoFetchSignatureRef.current = signature;
 
     void fetchCodexModelDiscovery();
-  }, [effectiveProxyUrl, fetchCodexModelDiscovery, form.apiKey, form.baseUrl, form.headers, modelDiscoveryOpen]);
+  }, [
+    effectiveProxyUrl,
+    fetchCodexModelDiscovery,
+    form.apiKey,
+    form.baseUrl,
+    form.headers,
+    modelDiscoveryOpen,
+  ]);
 
   useEffect(() => {
     const availableNames = new Set(discoveredModels.map((model) => model.name));
@@ -459,6 +477,7 @@ export function AiProvidersCodexEditPage() {
     try {
       const payload: ProviderKeyConfig = {
         apiKey: form.apiKey.trim(),
+        raw: initialData?.raw,
         priority: form.priority !== undefined ? Math.trunc(form.priority) : undefined,
         prefix: form.prefix?.trim() || undefined,
         baseUrl,
@@ -467,6 +486,7 @@ export function AiProvidersCodexEditPage() {
         headers: buildHeaderObject(form.headers),
         models: entriesToModels(form.modelEntries),
         excludedModels: parseExcludedModels(form.excludedText),
+        disableCooling: form.disableCooling,
       };
 
       const nextList =
@@ -501,6 +521,7 @@ export function AiProvidersCodexEditPage() {
     editIndex,
     form,
     handleBack,
+    initialData?.raw,
     showNotification,
     t,
     updateConfigValue,
@@ -601,6 +622,16 @@ export function AiProvidersCodexEditPage() {
                 ariaLabel={t('ai_providers.codex_websockets_label')}
               />
               <div className="hint">{t('ai_providers.codex_websockets_hint')}</div>
+            </div>
+            <div className="form-group">
+              <ToggleSwitch
+                checked={Boolean(form.disableCooling)}
+                onChange={(disableCooling) => setForm((prev) => ({ ...prev, disableCooling }))}
+                disabled={disableControls || saving}
+                ariaLabel={t('auth_files.disable_cooling_label')}
+                label={t('auth_files.disable_cooling_label')}
+              />
+              <div className="hint">{t('auth_files.disable_cooling_hint')}</div>
             </div>
             <Input
               label={t('ai_providers.codex_add_modal_proxy_label')}

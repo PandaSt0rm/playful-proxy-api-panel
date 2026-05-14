@@ -31,8 +31,14 @@ export type OpenAIEditBaseline = {
     proxyUrl: string;
     headers: Array<{ key: string; value: string }>;
   }>;
-  models: Array<{ name: string; alias: string }>;
+  models: Array<{
+    name: string;
+    alias: string;
+    thinking?: OpenAIFormState['modelEntries'][number]['thinking'];
+    thinkingLevels?: OpenAIFormState['modelEntries'][number]['thinkingLevels'];
+  }>;
   testModel: string;
+  disableCooling: boolean | null;
 };
 
 export type OpenAIEditDraft = {
@@ -62,7 +68,7 @@ interface OpenAIEditDraftState {
   clearDraft: (key: string) => void;
 }
 
-const resolveAction = <T,>(action: SetStateAction<T>, prev: T): T =>
+const resolveAction = <T>(action: SetStateAction<T>, prev: T): T =>
   typeof action === 'function' ? (action as (previous: T) => T)(prev) : action;
 
 const buildEmptyForm = (): OpenAIFormState => ({
@@ -73,6 +79,7 @@ const buildEmptyForm = (): OpenAIFormState => ({
   apiKeyEntries: [buildApiKeyEntry()],
   modelEntries: [{ name: '', alias: '' }],
   testModel: undefined,
+  disableCooling: undefined,
 });
 
 const buildEmptyDraft = (): OpenAIEditDraft => ({

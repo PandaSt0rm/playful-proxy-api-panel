@@ -23,8 +23,20 @@ export function areKeyValueEntriesEqual(
 }
 
 export function areModelEntriesEqual(
-  a: readonly { name: string; alias: string }[],
-  b: readonly { name: string; alias: string }[]
+  a: readonly {
+    name: string;
+    alias: string;
+    regex?: boolean;
+    thinking?: unknown;
+    thinkingLevels?: readonly string[];
+  }[],
+  b: readonly {
+    name: string;
+    alias: string;
+    regex?: boolean;
+    thinking?: unknown;
+    thinkingLevels?: readonly string[];
+  }[]
 ): boolean {
   if (a === b) return true;
   if (a.length !== b.length) return false;
@@ -33,7 +45,13 @@ export function areModelEntriesEqual(
     const right = b[i];
     if (!left || !right) return false;
     if (left.name !== right.name || left.alias !== right.alias) return false;
+    if (Boolean(left.regex) !== Boolean(right.regex)) return false;
+    const leftThinkingLevels = left.thinkingLevels ?? [];
+    const rightThinkingLevels = right.thinkingLevels ?? [];
+    if (!areStringArraysEqual(leftThinkingLevels, rightThinkingLevels)) return false;
+    if (JSON.stringify(left.thinking ?? null) !== JSON.stringify(right.thinking ?? null)) {
+      return false;
+    }
   }
   return true;
 }
-

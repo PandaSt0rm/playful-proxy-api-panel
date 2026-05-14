@@ -13,17 +13,46 @@ export interface QuotaExceededConfig {
   antigravityCredits?: boolean;
 }
 
+export interface UpstreamConcurrencyConfig {
+  default?: number;
+  providers?: Record<string, number>;
+  queueTimeoutSeconds?: number;
+}
+
+export interface PprofConfig {
+  enable?: boolean;
+  addr?: string;
+}
+
+export type DisableImageGenerationConfig = false | true | 'chat';
+
 export interface Config {
   debug?: boolean;
   proxyUrl?: string;
+  passthroughHeaders?: boolean;
+  disableImageGeneration?: DisableImageGenerationConfig;
+  enableGeminiCliEndpoint?: boolean;
   requestRetry?: number;
+  maxRetryCredentials?: number;
+  maxRetryInterval?: number;
   quotaExceeded?: QuotaExceededConfig;
   requestLog?: boolean;
   loggingToFile?: boolean;
   logsMaxTotalSizeMb?: number;
+  errorLogsMaxFiles?: number;
+  usageStatisticsEnabled?: boolean;
+  usageStatisticsPath?: string;
+  usageStatisticsFlushIntervalSeconds?: number;
+  redisUsageQueueRetentionSeconds?: number;
+  disableCooling?: boolean;
+  authAutoRefreshWorkers?: number;
+  pprof?: PprofConfig;
   wsAuth?: boolean;
   forceModelPrefix?: boolean;
   routingStrategy?: string;
+  upstreamConcurrency?: UpstreamConcurrencyConfig;
+  antigravitySignatureCacheEnabled?: boolean;
+  antigravitySignatureBypassStrict?: boolean;
   apiKeys?: string[];
   ampcode?: AmpcodeConfig;
   geminiApiKeys?: GeminiKeyConfig[];
