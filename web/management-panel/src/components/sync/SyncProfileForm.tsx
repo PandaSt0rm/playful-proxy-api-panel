@@ -1,18 +1,24 @@
 /**
- * Create/Edit sync profile form.
- * Handles name input, tool selection checkboxes, per-tool model filter,
- * active model dropdown, and API key index selector.
+ * Create/Edit sync profile form. Renders a profile name input and a
+ * vertical list of ToolCards — each tool is a slim row when unselected and
+ * an expandable card with model picker, model filter (chips or regex), and
+ * API key selector when selected. The persisted `model-filter` schema is
+ * unchanged: chips serialise to a canonical anchored regex on save and are
+ * decoded back from that shape on load.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Select, type SelectOption } from '@/components/ui/Select';
+import { type SelectOption } from '@/components/ui/Select';
 import { syncApi } from '@/services/api/sync';
 import { useNotificationStore } from '@/stores';
 import type { SyncProfile, SyncProfileTarget, SyncAvailableConfigs } from '@/types';
 import { SYNC_TOOLS, type SyncToolId } from './constants';
+import { ToolCard, type ToolCardConfig } from './ToolCard';
+import { groupModels } from './modelGrouping';
+import { decodeRegexAsList, encodeListAsRegex } from './modelFilterCodec';
 import styles from './sync.module.scss';
 
 interface SyncProfileFormProps {
@@ -22,22 +28,34 @@ interface SyncProfileFormProps {
   onSaved: () => void;
 }
 
-interface ToolConfig {
-  tool: SyncToolId;
-  modelFilter: string;
-  apiKeyIndex: string;
-  activeModel: string;
+type ToolConfigMap = Record<string, ToolCardConfig>;
+
+function initialConfigFromTarget(target: SyncProfileTarget): ToolCardConfig {
+  const decoded = decodeRegexAsList(target['model-filter'] ?? '');
+  return {
+    modelFilter: decoded.raw,
+    modelFilterMode: decoded.mode,
+    modelFilterChips: decoded.ids,
+    apiKeyIndex: target['api-key-index'] !== undefined ? String(target['api-key-index']) : '',
+    activeModel: target['active-model'] ?? '',
+    collapsed: false,
+  };
 }
 
-function toolLabel(t: (key: string, options?: Record<string, unknown>) => string, toolId: string): string {
-  const entry = SYNC_TOOLS.find((t) => t.id === toolId);
-  return entry ? t(entry.labelKey, { defaultValue: toolId }) : toolId;
+function emptyConfig(): ToolCardConfig {
+  return {
+    modelFilter: '',
+    modelFilterMode: 'list',
+    modelFilterChips: [],
+    apiKeyIndex: '',
+    activeModel: '',
+    collapsed: false,
+  };
 }
 
 export function SyncProfileForm({ profile, profileIndex, onClose, onSaved }: SyncProfileFormProps) {
   const { t } = useTranslation();
   const showNotification = useNotificationStore((s) => s.showNotification);
-
   const isEdit = profile !== undefined && profileIndex !== undefined;
 
   const [name, setName] = useState(profile?.name ?? '');
@@ -48,15 +66,10 @@ export function SyncProfileForm({ profile, profileIndex, onClose, onSaved }: Syn
     });
     return initial;
   });
-  const [toolConfigs, setToolConfigs] = useState<Record<string, ToolConfig>>(() => {
-    const configs: Record<string, ToolConfig> = {};
+  const [toolConfigs, setToolConfigs] = useState<ToolConfigMap>(() => {
+    const configs: ToolConfigMap = {};
     profile?.targets?.forEach((target) => {
-      configs[target.tool] = {
-        tool: target.tool as SyncToolId,
-        modelFilter: target['model-filter'] ?? '',
-        apiKeyIndex: target['api-key-index'] !== undefined ? String(target['api-key-index']) : '',
-        activeModel: target['active-model'] ?? '',
-      };
+      configs[target.tool] = initialConfigFromTarget(target);
     });
     return configs;
   });
@@ -67,18 +80,16 @@ export function SyncProfileForm({ profile, profileIndex, onClose, onSaved }: Syn
   const [toolsError, setToolsError] = useState('');
   const [serverError, setServerError] = useState('');
 
-  // Fetch available configs for model dropdowns and API key selectors
   useEffect(() => {
     let cancelled = false;
     setConfigsLoading(true);
     syncApi
       .getSyncAvailableConfigs()
       .then((configs) => {
-        if (cancelled) return;
-        setAvailableConfigs(configs);
+        if (!cancelled) setAvailableConfigs(configs);
       })
       .catch(() => {
-        // Silently fail — dropdowns will just be empty
+        // Silently fail — pickers will simply show an empty catalog.
       })
       .finally(() => {
         if (!cancelled) setConfigsLoading(false);
@@ -88,96 +99,145 @@ export function SyncProfileForm({ profile, profileIndex, onClose, onSaved }: Syn
     };
   }, []);
 
-  const modelOptions: SelectOption[] = useMemo(() => {
-    if (!availableConfigs) return [];
-    return availableConfigs.all_models.map((model) => ({
-      value: model,
-      label: model,
-    }));
-  }, [availableConfigs]);
+  const groups = useMemo(() => groupModels(availableConfigs), [availableConfigs]);
 
   const apiKeyOptions: SelectOption[] = useMemo(() => {
     if (!availableConfigs) return [];
-    const options: SelectOption[] = [
-      { value: '', label: t('sync_profiles.form.api_key_default', { defaultValue: 'Default (first key)' }) },
-    ];
+    const defaultMasked = availableConfigs.api_keys[0]?.masked;
+    const defaultTail = defaultMasked ? extractTail(defaultMasked) : '';
+    const defaultLabel = defaultTail
+      ? t('sync_profiles.form.api_key_default_with_tail', {
+          defaultValue: 'Default (Key #1 · ****{{tail}})',
+          tail: defaultTail,
+        })
+      : t('sync_profiles.form.api_key_default', { defaultValue: 'Default (first key)' });
+    const options: SelectOption[] = [{ value: '', label: defaultLabel }];
     availableConfigs.api_keys.forEach((key) => {
+      const tail = extractTail(key.masked);
       options.push({
         value: String(key.index),
-        label: t('sync_profiles.form.api_key_option', {
-          defaultValue: 'Key #{{index}}: {{masked}}',
+        label: t('sync_profiles.form.api_key_option_v2', {
+          defaultValue: 'Key #{{index}} · ****{{tail}}',
           index: key.index + 1,
-          masked: key.masked,
+          tail,
         }),
       });
     });
     return options;
   }, [availableConfigs, t]);
 
-  const toggleTool = useCallback((toolId: SyncToolId) => {
+  const toggleSelected = useCallback((toolId: SyncToolId) => {
     setSelectedTools((prev) => {
       const next = new Set(prev);
       if (next.has(toolId)) {
         next.delete(toolId);
       } else {
         next.add(toolId);
-        // Initialize config defaults if not present
-        setToolConfigs((prevConfigs) => {
-          if (prevConfigs[toolId]) return prevConfigs;
-          return {
-            ...prevConfigs,
-            [toolId]: { tool: toolId, modelFilter: '', apiKeyIndex: '', activeModel: '' },
-          };
-        });
+        setToolConfigs((cfgs) => (cfgs[toolId] ? cfgs : { ...cfgs, [toolId]: emptyConfig() }));
       }
       return next;
     });
   }, []);
 
-  const updateToolConfig = useCallback(
-    (toolId: string, field: keyof ToolConfig, value: string) => {
-      setToolConfigs((prev) => ({
-        ...prev,
+  const toggleCollapsed = useCallback((toolId: SyncToolId) => {
+    setToolConfigs((cfgs) => {
+      const current = cfgs[toolId] ?? emptyConfig();
+      return { ...cfgs, [toolId]: { ...current, collapsed: !current.collapsed } };
+    });
+  }, []);
+
+  const patchConfig = useCallback((toolId: SyncToolId, patch: Partial<ToolCardConfig>) => {
+    setToolConfigs((cfgs) => {
+      const current = cfgs[toolId] ?? emptyConfig();
+      return { ...cfgs, [toolId]: { ...current, ...patch } };
+    });
+  }, []);
+
+  const requestModeSwitch = useCallback((toolId: SyncToolId, nextMode: 'list' | 'regex') => {
+    setToolConfigs((cfgs) => {
+      const current = cfgs[toolId] ?? emptyConfig();
+      if (current.modelFilterMode === nextMode) return cfgs;
+
+      if (nextMode === 'regex') {
+        // list → regex: seed the input with the encoded chip set so the user
+        // has a working starting point to edit.
+        const encoded = encodeListAsRegex(current.modelFilterChips);
+        return {
+          ...cfgs,
+          [toolId]: {
+            ...current,
+            modelFilterMode: 'regex',
+            modelFilter: encoded || current.modelFilter,
+          },
+        };
+      }
+
+      // regex → list: decode the raw regex if it's expressible as a chip list,
+      // otherwise warn and clear. Users can confirm to drop the regex.
+      const decoded = decodeRegexAsList(current.modelFilter);
+      if (decoded.mode === 'list') {
+        return {
+          ...cfgs,
+          [toolId]: {
+            ...current,
+            modelFilterMode: 'list',
+            modelFilterChips: decoded.ids,
+          },
+        };
+      }
+      const ok =
+        current.modelFilter.trim() === '' ||
+        window.confirm(
+          // Inline string fallback — the form's t() isn't reachable from this callback
+          // without threading; the prompt is short enough to inline safely.
+          "The current regex can't be expressed as a list of model IDs. Switching modes will clear it. Continue?"
+        );
+      if (!ok) return cfgs;
+      return {
+        ...cfgs,
         [toolId]: {
-          ...(prev[toolId] ?? { tool: toolId as SyncToolId, modelFilter: '', apiKeyIndex: '', activeModel: '' }),
-          [field]: value,
+          ...current,
+          modelFilterMode: 'list',
+          modelFilter: '',
+          modelFilterChips: [],
         },
-      }));
-    },
-    [],
-  );
+      };
+    });
+  }, []);
 
   const validate = (): boolean => {
     let valid = true;
     setNameError('');
     setToolsError('');
-
-    const trimmedName = name.trim();
-    if (!trimmedName) {
+    if (!name.trim()) {
       setNameError(t('sync_profiles.validation.name_required', { defaultValue: 'Profile name is required' }));
       valid = false;
     }
-
     if (selectedTools.size === 0) {
       setToolsError(t('sync_profiles.validation.tools_required', { defaultValue: 'Select at least one tool' }));
       valid = false;
     }
-
     return valid;
   };
 
   const buildTargets = (): SyncProfileTarget[] => {
     return Array.from(selectedTools).map((toolId) => {
-      const config = toolConfigs[toolId];
+      const cfg = toolConfigs[toolId] ?? emptyConfig();
       const target: SyncProfileTarget = { tool: toolId };
-      if (config?.modelFilter?.trim()) {
-        target['model-filter'] = config.modelFilter.trim();
+
+      let filter = '';
+      if (cfg.modelFilterMode === 'regex') {
+        filter = cfg.modelFilter.trim();
+      } else if (cfg.modelFilterChips.length > 0) {
+        filter = encodeListAsRegex(cfg.modelFilterChips);
       }
-      if (config?.apiKeyIndex !== undefined && config.apiKeyIndex !== '') {
-        target['api-key-index'] = parseInt(config.apiKeyIndex, 10);
+      if (filter) target['model-filter'] = filter;
+
+      if (cfg.apiKeyIndex !== '') {
+        target['api-key-index'] = parseInt(cfg.apiKeyIndex, 10);
       }
-      if (config?.activeModel?.trim()) {
-        target['active-model'] = config.activeModel.trim();
+      if (cfg.activeModel.trim()) {
+        target['active-model'] = cfg.activeModel.trim();
       }
       return target;
     });
@@ -187,24 +247,17 @@ export function SyncProfileForm({ profile, profileIndex, onClose, onSaved }: Syn
     if (!validate()) return;
     setServerError('');
     setSubmitting(true);
-
     try {
-      const profileData: SyncProfile = {
-        name: name.trim(),
-        targets: buildTargets(),
-      };
+      const profileData: SyncProfile = { name: name.trim(), targets: buildTargets() };
 
       if (isEdit) {
-        // For edit, we need to update the profile in the full list.
-        // Fetch the current list, replace the profile at the given index, and PUT the full list.
-        const currentProfiles = await syncApi.getSyncProfiles();
-        const updatedProfiles = [...currentProfiles];
-        updatedProfiles[profileIndex] = profileData;
-        await syncApi.saveSyncProfiles(updatedProfiles);
+        const current = await syncApi.getSyncProfiles();
+        const updated = [...current];
+        updated[profileIndex] = profileData;
+        await syncApi.saveSyncProfiles(updated);
       } else {
-        // For create, fetch current list, append, and PUT.
-        const currentProfiles = await syncApi.getSyncProfiles();
-        await syncApi.saveSyncProfiles([...currentProfiles, profileData]);
+        const current = await syncApi.getSyncProfiles();
+        await syncApi.saveSyncProfiles([...current, profileData]);
       }
 
       showNotification(
@@ -212,7 +265,7 @@ export function SyncProfileForm({ profile, profileIndex, onClose, onSaved }: Syn
           defaultValue: isEdit ? 'Profile updated' : 'Profile created',
           name: name.trim(),
         }),
-        'success',
+        'success'
       );
       onSaved();
     } catch (error: unknown) {
@@ -220,152 +273,71 @@ export function SyncProfileForm({ profile, profileIndex, onClose, onSaved }: Syn
       setServerError(message);
       showNotification(
         t('sync_profiles.notifications.save_error', { defaultValue: 'Failed to save profile' }),
-        'error',
+        'error'
       );
     } finally {
       setSubmitting(false);
     }
   };
 
-  const sortedTools = Array.from(selectedTools).sort();
-
   return (
     <div className={styles.form}>
       {serverError && <div className={styles.formError}>{serverError}</div>}
 
-      {/* Profile Name */}
       <div className={styles.formSection}>
-        <div className={styles.formRow}>
-          <label className={styles.formLabel} htmlFor="sync-profile-name">
-            {t('sync_profiles.form.name_label', { defaultValue: 'Profile name' })}
-          </label>
-          <div className={styles.formField}>
-            <Input
-              id="sync-profile-name"
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                if (nameError) setNameError('');
-              }}
-              placeholder={t('sync_profiles.form.name_placeholder', {
-                defaultValue: 'e.g., Production, Staging',
-              })}
-              error={nameError}
-              disabled={submitting}
-              aria-describedby={nameError ? 'sync-profile-name-error' : undefined}
-            />
-          </div>
-        </div>
+        <label className={styles.formLabel} htmlFor="sync-profile-name">
+          {t('sync_profiles.form.name_label', { defaultValue: 'Profile name' })}
+        </label>
+        <Input
+          id="sync-profile-name"
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            if (nameError) setNameError('');
+          }}
+          placeholder={t('sync_profiles.form.name_placeholder', {
+            defaultValue: 'e.g., Production, Staging',
+          })}
+          error={nameError}
+          disabled={submitting}
+        />
       </div>
 
-      {/* Tool Selection */}
       <div className={styles.formSection}>
         <h4 className={styles.formSectionTitle}>
-          {t('sync_profiles.form.tools_section', { defaultValue: 'Select tools to sync' })}
+          {t('sync_profiles.form.tools_section', { defaultValue: 'Tools' })}
         </h4>
-        <div className={styles.toolGrid}>
+        <p className={styles.formSectionHint}>
+          {t('sync_profiles.form.tools_section_hint', {
+            defaultValue:
+              'Pick the tools this profile should configure. Selected tools expand into a config card.',
+          })}
+        </p>
+        <div className={styles.toolCardList}>
           {SYNC_TOOLS.map((tool) => {
-            const checked = selectedTools.has(tool.id);
+            const selected = selectedTools.has(tool.id);
+            const config = toolConfigs[tool.id] ?? emptyConfig();
             return (
-              <label
+              <ToolCard
                 key={tool.id}
-                className={`${styles.toolCheckbox} ${checked ? styles.toolCheckboxChecked : ''}`.trim()}
-              >
-                <input
-                  type="checkbox"
-                  className={styles.toolCheckboxInput}
-                  checked={checked}
-                  onChange={() => toggleTool(tool.id)}
-                  disabled={submitting}
-                />
-                <span className={styles.toolCheckboxLabel}>{t(tool.labelKey, { defaultValue: tool.id })}</span>
-              </label>
+                toolId={tool.id}
+                selected={selected}
+                config={config}
+                groups={groups}
+                apiKeyOptions={apiKeyOptions}
+                configsLoading={configsLoading}
+                disabled={submitting}
+                onToggleSelected={toggleSelected}
+                onToggleCollapsed={toggleCollapsed}
+                onChange={patchConfig}
+                onRequestModeSwitch={requestModeSwitch}
+              />
             );
           })}
         </div>
         {toolsError && <div className={styles.toolsError}>{toolsError}</div>}
       </div>
 
-      {/* Per-Tool Configuration */}
-      {sortedTools.length > 0 && (
-        <div className={styles.formSection}>
-          <h4 className={styles.formSectionTitle}>
-            {t('sync_profiles.form.per_tool_config', { defaultValue: 'Per-tool configuration' })}
-          </h4>
-          <div className={styles.toolConfigs}>
-            {sortedTools.map((toolId) => {
-              const config = toolConfigs[toolId] ?? {
-                tool: toolId,
-                modelFilter: '',
-                apiKeyIndex: '',
-                activeModel: '',
-              };
-              return (
-                <div key={toolId} className={styles.toolConfigBlock}>
-                  <div className={styles.toolConfigHeader}>
-                    {toolLabel(t, toolId)}
-                  </div>
-                  <div className={styles.toolConfigBody}>
-                    <div className={styles.toolConfigField}>
-                      <label className={styles.toolConfigLabel} htmlFor={`filter-${toolId}`}>
-                        {t('sync_profiles.form.model_filter_label', { defaultValue: 'Model filter (regex)' })}
-                      </label>
-                      <Input
-                        id={`filter-${toolId}`}
-                        value={config.modelFilter}
-                        onChange={(e) => updateToolConfig(toolId, 'modelFilter', e.target.value)}
-                        placeholder={t('sync_profiles.form.model_filter_placeholder', {
-                          defaultValue: 'e.g., gpt-4.*',
-                        })}
-                        disabled={submitting}
-                        hint={t('sync_profiles.form.model_filter_hint', {
-                          defaultValue: 'Optional regex to filter models',
-                        })}
-                      />
-                    </div>
-                    <div className={styles.toolConfigField}>
-                      <label className={styles.toolConfigLabel} htmlFor={`model-${toolId}`}>
-                        {t('sync_profiles.form.active_model_label', { defaultValue: 'Active model' })}
-                      </label>
-                      <Select
-                        id={`model-${toolId}`}
-                        value={config.activeModel}
-                        options={modelOptions}
-                        onChange={(val) => updateToolConfig(toolId, 'activeModel', val)}
-                        disabled={submitting || configsLoading}
-                        placeholder={t('sync_profiles.form.active_model_placeholder', {
-                          defaultValue: configsLoading
-                            ? t('common.loading', { defaultValue: 'Loading...' })
-                            : t('sync_profiles.form.active_model_none', { defaultValue: 'None (use first available)' }),
-                        })}
-                        ariaLabel={t('sync_profiles.form.active_model_label', { defaultValue: 'Active model' })}
-                      />
-                    </div>
-                    <div className={styles.toolConfigField}>
-                      <label className={styles.toolConfigLabel} htmlFor={`apikey-${toolId}`}>
-                        {t('sync_profiles.form.api_key_label', { defaultValue: 'API key' })}
-                      </label>
-                      <Select
-                        id={`apikey-${toolId}`}
-                        value={config.apiKeyIndex}
-                        options={apiKeyOptions}
-                        onChange={(val) => updateToolConfig(toolId, 'apiKeyIndex', val)}
-                        disabled={submitting || configsLoading}
-                        placeholder={t('sync_profiles.form.api_key_placeholder', {
-                          defaultValue: 'Default',
-                        })}
-                        ariaLabel={t('sync_profiles.form.api_key_label', { defaultValue: 'API key' })}
-                      />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Form Actions */}
       <div className={styles.formActions}>
         <Button variant="secondary" onClick={onClose} disabled={submitting}>
           {t('common.cancel', { defaultValue: 'Cancel' })}
@@ -378,4 +350,9 @@ export function SyncProfileForm({ profile, profileIndex, onClose, onSaved }: Syn
       </div>
     </div>
   );
+}
+
+function extractTail(masked: string): string {
+  // Mask format is `**...**abcd` — strip leading '*' to get the visible tail.
+  return masked.replace(/^\**/, '');
 }

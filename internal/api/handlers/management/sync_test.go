@@ -10,7 +10,16 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/config"
+	"github.com/router-for-me/CLIProxyAPI/v6/internal/registry"
+	coreauth "github.com/router-for-me/CLIProxyAPI/v6/sdk/cliproxy/auth"
 )
+
+// stubAuthLister provides a minimal authLister implementation for tests.
+type stubAuthLister struct {
+	auths []*coreauth.Auth
+}
+
+func (s *stubAuthLister) List() []*coreauth.Auth { return s.auths }
 
 // setupSyncTest creates a handler with a temp config file for testing.
 func setupSyncTest(t *testing.T, cfg *config.Config) (*Handler, string) {
@@ -763,6 +772,177 @@ func TestGetSyncAvailableConfigs_MultipleAPIKeys(t *testing.T) {
 	for i := 0; i < len(second)-4; i++ {
 		if second[i] != '*' {
 			t.Errorf("expected '*' at position %d, got %c", i, second[i])
+		}
+	}
+}
+
+// --- OAuth Channel Discovery Tests (verify GPT-models fix) ---
+
+// TestBuildOAuthChannels_FromAuthManager verifies that authed accounts feed
+// channel discovery and that models come from the live per-auth registry.
+func TestBuildOAuthChannels_FromAuthManager(t *testing.T) {
+	const authID = "test-codex-auth"
+	reg := registry.GetGlobalRegistry()
+	reg.RegisterClient(authID, "codex", []*registry.ModelInfo{
+		{ID: "gpt-5.2", Object: "model", Type: "openai"},
+		{ID: "gpt-5.3-codex", Object: "model", Type: "openai"},
+	})
+	t.Cleanup(func() { reg.UnregisterClient(authID) })
+
+	lister := &stubAuthLister{auths: []*coreauth.Auth{
+		{ID: authID, Provider: "codex"},
+	}}
+
+	channels := buildOAuthChannels(&config.Config{}, lister)
+	if len(channels) != 1 {
+		t.Fatalf("expected 1 channel, got %d", len(channels))
+	}
+	ch := channels[0]
+	if ch.Channel != "codex" {
+		t.Errorf("expected channel 'codex', got %q", ch.Channel)
+	}
+	if ch.AccountCount != 1 {
+		t.Errorf("expected account_count 1, got %d", ch.AccountCount)
+	}
+	if ch.DisplayName != "Codex (OAuth)" {
+		t.Errorf("expected display_name 'Codex (OAuth)', got %q", ch.DisplayName)
+	}
+	modelSet := make(map[string]bool)
+	for _, m := range ch.Models {
+		modelSet[m] = true
+	}
+	if !modelSet["gpt-5.2"] || !modelSet["gpt-5.3-codex"] {
+		t.Errorf("expected registered models in channel, got %v", ch.Models)
+	}
+}
+
+// TestBuildOAuthChannels_FallbackToStaticCatalog verifies that when the live
+// registry has no entries for an authed account, the static channel catalog is
+// used as a fallback so the UI still shows the channel's supported models.
+func TestBuildOAuthChannels_FallbackToStaticCatalog(t *testing.T) {
+	// Do NOT register the auth ID with the global registry.
+	lister := &stubAuthLister{auths: []*coreauth.Auth{
+		{ID: "unknown-codex-auth", Provider: "codex"},
+	}}
+
+	channels := buildOAuthChannels(&config.Config{}, lister)
+	if len(channels) != 1 {
+		t.Fatalf("expected 1 channel, got %d", len(channels))
+	}
+	ch := channels[0]
+	if ch.Channel != "codex" {
+		t.Errorf("expected channel 'codex', got %q", ch.Channel)
+	}
+	if ch.AccountCount != 1 {
+		t.Errorf("expected account_count 1, got %d", ch.AccountCount)
+	}
+
+	// Static codex catalog should contain at least one gpt-5.x model.
+	staticIDs := make(map[string]bool)
+	for _, m := range registry.GetStaticModelDefinitionsByChannel("codex") {
+		staticIDs[m.ID] = true
+	}
+	if len(staticIDs) == 0 {
+		t.Fatal("static codex catalog is unexpectedly empty")
+	}
+	for _, m := range ch.Models {
+		if !staticIDs[m] {
+			t.Errorf("model %q in fallback list is not in the static codex catalog", m)
+		}
+	}
+	if len(ch.Models) == 0 {
+		t.Error("expected fallback to populate models from static catalog")
+	}
+}
+
+// TestBuildOAuthChannels_AliasOverridesDiscovery verifies that when
+// oauth-model-alias is configured for a channel, the alias-derived models
+// replace anything discovered from the auth manager, preserving the original
+// alias contract.
+func TestBuildOAuthChannels_AliasOverridesDiscovery(t *testing.T) {
+	const authID = "test-codex-alias-auth"
+	reg := registry.GetGlobalRegistry()
+	reg.RegisterClient(authID, "codex", []*registry.ModelInfo{
+		{ID: "gpt-5.2", Object: "model", Type: "openai"},
+	})
+	t.Cleanup(func() { reg.UnregisterClient(authID) })
+
+	lister := &stubAuthLister{auths: []*coreauth.Auth{
+		{ID: authID, Provider: "codex"},
+	}}
+
+	cfg := &config.Config{
+		OAuthModelAlias: map[string][]config.OAuthModelAlias{
+			"codex": {
+				{Name: "gpt-5.2", Alias: "codex-latest", Fork: false},
+			},
+		},
+	}
+
+	channels := buildOAuthChannels(cfg, lister)
+	if len(channels) != 1 {
+		t.Fatalf("expected 1 channel, got %d", len(channels))
+	}
+	ch := channels[0]
+	// Fork=false: only the alias should appear, not the original model name.
+	if len(ch.Models) != 1 || ch.Models[0] != "codex-latest" {
+		t.Errorf("expected alias-only model list ['codex-latest'], got %v", ch.Models)
+	}
+	if ch.AccountCount != 1 {
+		t.Errorf("expected account_count 1 from the discovered auth, got %d", ch.AccountCount)
+	}
+}
+
+// TestBuildOAuthChannels_NilLister verifies that a nil-typed auth manager
+// (handler wired without one) is safe and preserves alias-only behavior.
+func TestBuildOAuthChannels_NilLister(t *testing.T) {
+	cfg := &config.Config{
+		OAuthModelAlias: map[string][]config.OAuthModelAlias{
+			"claude": {{Name: "claude-sonnet-4-20250514", Alias: "sonnet", Fork: false}},
+		},
+	}
+
+	// Typed nil — what GetSyncAvailableConfigs passes when h.authManager is nil.
+	var nilManager *coreauth.Manager
+	channels := buildOAuthChannels(cfg, nilManager)
+	if len(channels) != 1 {
+		t.Fatalf("expected 1 channel (alias-only), got %d", len(channels))
+	}
+	if channels[0].Channel != "claude" {
+		t.Errorf("expected channel 'claude', got %q", channels[0].Channel)
+	}
+	if channels[0].AccountCount != 0 {
+		t.Errorf("expected account_count 0 (no auths), got %d", channels[0].AccountCount)
+	}
+}
+
+// TestBuildOAuthChannels_DiscoveredChannelRespectsExclusions verifies that
+// oauth-excluded-models applies to discovered models when no alias overrides.
+func TestBuildOAuthChannels_DiscoveredChannelRespectsExclusions(t *testing.T) {
+	const authID = "test-codex-excluded-auth"
+	reg := registry.GetGlobalRegistry()
+	reg.RegisterClient(authID, "codex", []*registry.ModelInfo{
+		{ID: "gpt-5.2", Object: "model", Type: "openai"},
+		{ID: "codex-auto-review", Object: "model", Type: "openai"},
+	})
+	t.Cleanup(func() { reg.UnregisterClient(authID) })
+
+	lister := &stubAuthLister{auths: []*coreauth.Auth{
+		{ID: authID, Provider: "codex"},
+	}}
+	cfg := &config.Config{
+		OAuthExcludedModels: map[string][]string{
+			"codex": {"codex-*"},
+		},
+	}
+
+	channels := buildOAuthChannels(cfg, lister)
+	if len(channels) != 1 {
+		t.Fatalf("expected 1 channel, got %d", len(channels))
+	}
+	for _, m := range channels[0].Models {
+		if m == "codex-auto-review" {
+			t.Errorf("excluded model 'codex-auto-review' should not appear, got models %v", channels[0].Models)
 		}
 	}
 }

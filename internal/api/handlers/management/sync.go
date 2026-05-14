@@ -7,6 +7,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/config"
+	"github.com/router-for-me/CLIProxyAPI/v6/internal/registry"
+	coreauth "github.com/router-for-me/CLIProxyAPI/v6/sdk/cliproxy/auth"
 )
 
 // Response types for the sync available-configs aggregation endpoint.
@@ -60,6 +62,13 @@ type SyncOAuthChannel struct {
 
 	// Models lists the available models after applying aliases and exclusion filters.
 	Models []string `json:"models"`
+
+	// AccountCount is the number of authenticated accounts contributing to this channel.
+	// Zero when the channel comes only from oauth-model-alias config with no live auths.
+	AccountCount int `json:"account_count,omitempty"`
+
+	// DisplayName is a human-readable label for UI grouping (e.g., "Codex (OAuth)").
+	DisplayName string `json:"display_name,omitempty"`
 }
 
 // GetSyncAvailableConfigs returns aggregated config data for the sync tool.
@@ -74,7 +83,7 @@ func (h *Handler) GetSyncAvailableConfigs(c *gin.Context) {
 		BaseURL:       buildBaseURL(cfg),
 		APIKeys:       buildMaskedAPIKeys(cfg),
 		Providers:     buildProviders(cfg),
-		OAuthChannels: buildOAuthChannels(cfg),
+		OAuthChannels: buildOAuthChannels(cfg, h.authManager),
 	}
 	resp.AllModels = buildAllModels(resp.Providers, resp.OAuthChannels)
 
@@ -261,35 +270,205 @@ func mergeStringSlices(base, additions []string) []string {
 	return base
 }
 
-// buildOAuthChannels aggregates OAuth channel data from oauth-model-alias and
-// oauth-excluded-models configuration. Only channels with alias configuration
-// produce entries; the models list is derived from the alias definitions with
-// exclusion filters applied.
-func buildOAuthChannels(cfg *config.Config) []SyncOAuthChannel {
-	if cfg == nil || len(cfg.OAuthModelAlias) == 0 {
+// authLister is the minimal subset of the auth manager needed by sync aggregation.
+// Implemented by *coreauth.Manager; allows tests to inject a stub.
+type authLister interface {
+	List() []*coreauth.Auth
+}
+
+// oauthChannelDisplayNames maps a normalized auth provider key to a human-readable label.
+// The keys here also define which auth Provider values are treated as real OAuth
+// channels for sync — anything outside this set is ignored (e.g., openai-compatibility
+// provider names register internal auths whose Provider equals the provider's name).
+var oauthChannelDisplayNames = map[string]string{
+	"claude":      "Claude (OAuth)",
+	"codex":       "Codex (OAuth)",
+	"gemini":      "Gemini (OAuth)",
+	"gemini-cli":  "Gemini CLI (OAuth)",
+	"aistudio":    "AI Studio (OAuth)",
+	"kimi":        "Kimi (OAuth)",
+	"antigravity": "Antigravity (OAuth)",
+}
+
+// isKnownOAuthChannel reports whether the given (normalized) provider key
+// corresponds to a real OAuth/file-backed channel that should surface in sync.
+func isKnownOAuthChannel(channel string) bool {
+	_, ok := oauthChannelDisplayNames[channel]
+	return ok
+}
+
+// buildOAuthChannels aggregates OAuth channel data from three sources:
+//   - authed accounts discovered via the auth manager (live registry models, with
+//     fallback to the static catalog when the registry has not yet been populated),
+//   - oauth-model-alias config (alias overrides; takes precedence when present),
+//   - oauth-excluded-models config (applied to discovered models when no alias overrides).
+//
+// A nil-typed lister (e.g. when no auth manager is wired) is safe; the result then
+// reflects only the alias config, preserving the original behavior.
+func buildOAuthChannels(cfg *config.Config, lister authLister) []SyncOAuthChannel {
+	if cfg == nil {
 		return []SyncOAuthChannel{}
 	}
 
-	var channels []SyncOAuthChannel
-	for channel, aliases := range cfg.OAuthModelAlias {
+	// 1. Discover channels from authed accounts: channel -> sorted authIDs (deterministic order).
+	// Only real OAuth/file-backed channels are surfaced; openai-compatibility providers
+	// register internal auths under their own name and would otherwise duplicate the
+	// entries already returned in `providers`.
+	discovered := make(map[string][]string)
+	if !isNilLister(lister) {
+		for _, auth := range lister.List() {
+			if auth == nil || auth.Disabled {
+				continue
+			}
+			ch := strings.ToLower(strings.TrimSpace(auth.Provider))
+			if ch == "" || !isKnownOAuthChannel(ch) {
+				continue
+			}
+			discovered[ch] = append(discovered[ch], auth.ID)
+		}
+	}
+
+	// 2. Build the unique channel set as the union of discovered + alias-configured channels.
+	channelSet := make(map[string]struct{})
+	for ch := range discovered {
+		channelSet[ch] = struct{}{}
+	}
+	for channel := range cfg.OAuthModelAlias {
 		ch := strings.ToLower(strings.TrimSpace(channel))
-		if ch == "" || len(aliases) == 0 {
+		if ch != "" {
+			channelSet[ch] = struct{}{}
+		}
+	}
+	if len(channelSet) == 0 {
+		return []SyncOAuthChannel{}
+	}
+
+	channels := make([]SyncOAuthChannel, 0, len(channelSet))
+	for ch := range channelSet {
+		aliases := cfg.OAuthModelAlias[ch]
+		excluded := cfg.OAuthExcludedModels[ch]
+		authIDs := discovered[ch]
+
+		var models []string
+		if len(aliases) > 0 {
+			// Alias config wins outright — preserves the contract for users who configure aliases.
+			models = buildOAuthChannelModels(aliases, excluded)
+		} else {
+			models = discoverChannelModels(ch, authIDs)
+			if len(excluded) > 0 {
+				models = filterExcluded(models, excluded)
+			}
+		}
+
+		if len(models) == 0 {
 			continue
 		}
 
-		models := buildOAuthChannelModels(aliases, cfg.OAuthExcludedModels[ch])
-		if len(models) > 0 {
-			channels = append(channels, SyncOAuthChannel{
-				Channel: ch,
-				Models:  models,
-			})
+		channels = append(channels, SyncOAuthChannel{
+			Channel:      ch,
+			Models:       models,
+			AccountCount: len(authIDs),
+			DisplayName:  oauthChannelDisplayName(ch),
+		})
+	}
+
+	return channels
+}
+
+// discoverChannelModels unions the live registry's per-auth model lists across all
+// authIDs for a channel, falling back to the static catalog when nothing is registered.
+func discoverChannelModels(channel string, authIDs []string) []string {
+	seen := make(map[string]struct{})
+	var models []string
+
+	reg := registry.GetGlobalRegistry()
+	if reg != nil {
+		for _, id := range authIDs {
+			id = strings.TrimSpace(id)
+			if id == "" {
+				continue
+			}
+			for _, info := range reg.GetModelsForClient(id) {
+				if info == nil {
+					continue
+				}
+				modelID := strings.TrimSpace(info.ID)
+				if modelID == "" {
+					continue
+				}
+				key := strings.ToLower(modelID)
+				if _, ok := seen[key]; ok {
+					continue
+				}
+				seen[key] = struct{}{}
+				models = append(models, modelID)
+			}
 		}
 	}
 
-	if channels == nil {
-		return []SyncOAuthChannel{}
+	if len(models) > 0 {
+		return models
 	}
-	return channels
+
+	// Fallback: the per-auth registry has not been populated for this channel yet
+	// (e.g., fresh server with auths on disk but no executor warm-up). Use the
+	// embedded static catalog so the UI still shows what the channel supports.
+	for _, info := range registry.GetStaticModelDefinitionsByChannel(channel) {
+		if info == nil {
+			continue
+		}
+		modelID := strings.TrimSpace(info.ID)
+		if modelID == "" {
+			continue
+		}
+		key := strings.ToLower(modelID)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		models = append(models, modelID)
+	}
+
+	return models
+}
+
+// filterExcluded returns models that do not match any exclusion pattern.
+func filterExcluded(models, excluded []string) []string {
+	if len(excluded) == 0 {
+		return models
+	}
+	result := make([]string, 0, len(models))
+	for _, m := range models {
+		if !isModelExcluded(m, excluded) {
+			result = append(result, m)
+		}
+	}
+	return result
+}
+
+// oauthChannelDisplayName returns a UI label for a channel, falling back to a
+// titlecased channel name suffixed with "(OAuth)" when the channel is unknown.
+func oauthChannelDisplayName(channel string) string {
+	if name, ok := oauthChannelDisplayNames[channel]; ok {
+		return name
+	}
+	trimmed := strings.TrimSpace(channel)
+	if trimmed == "" {
+		return ""
+	}
+	return strings.ToUpper(trimmed[:1]) + trimmed[1:] + " (OAuth)"
+}
+
+// isNilLister reports whether lister is nil, including a typed nil
+// (e.g., a (*coreauth.Manager)(nil) wrapped in the interface).
+func isNilLister(lister authLister) bool {
+	if lister == nil {
+		return true
+	}
+	if m, ok := lister.(*coreauth.Manager); ok && m == nil {
+		return true
+	}
+	return false
 }
 
 // buildOAuthChannelModels derives the model list for an OAuth channel from

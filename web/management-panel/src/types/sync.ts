@@ -52,6 +52,10 @@ export interface SyncOAuthChannel {
   channel: string;
   /** Available models after applying aliases and exclusion filters. */
   models: string[];
+  /** Number of authenticated accounts contributing to this channel. */
+  account_count?: number;
+  /** Human-readable label for UI grouping (e.g., "Codex (OAuth)"). */
+  display_name?: string;
 }
 
 /** Aggregated sync-available configuration response. */
