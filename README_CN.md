@@ -4,7 +4,7 @@
 
 **PPAP 是一个面向自托管的 CLIProxyAPI 兼容 fork：内置管理面板、使用量统计、成本估算和更顺手的 Codex 模型别名。**
 
-它保留 [`router-for-me/CLIProxyAPI`](https://github.com/router-for-me/CLIProxyAPI) 熟悉的 OpenAI/Gemini/Claude/Codex 兼容代理接口，同时补上长期运行时最需要的东西：可持久化的 usage 快照、请求与成本指标、和后端同 tag 发布的管理面板、以及更安全的 thinking 强度别名。
+它保留 [`router-for-me/CLIProxyAPI`](https://github.com/router-for-me/CLIProxyAPI) 熟悉的 OpenAI/Gemini/Claude/Codex/Grok 兼容代理接口，同时补上长期运行时最需要的东西：可持久化的 usage 快照、请求与成本指标、和后端同 tag 发布的管理面板、以及更安全的 thinking 强度别名。
 
 如果你只想用原版项目，用上游 CLIProxyAPI。  
 如果你想要上游代理能力，同时希望本地看得见用量、延迟、缓存命中和 Codex 强度路由，用 PPAP。
@@ -19,12 +19,12 @@
 
 ## 核心能力
 
-- OpenAI/Gemini/Claude/Codex 兼容 API 端点
-- OpenAI Codex 和 Claude Code OAuth 登录
+- OpenAI/Gemini/Claude/Codex/Grok 兼容 API 端点
+- OpenAI Codex、Claude Code、Grok (xAI) OAuth 登录
 - 流式与非流式响应
-- 函数调用、工具调用、多模态输入
+- 函数调用、工具调用、多模态输入（文本、图片，以及 xAI Grok 的图像与视频模型）
 - 多账户路由和负载均衡
-- Gemini CLI、AI Studio Build、Claude Code、OpenAI Codex、Amp CLI 支持
+- Gemini CLI、AI Studio Build、Claude Code、OpenAI Codex、xAI Grok、Amp CLI 支持
 - 通过配置接入 OpenAI-compatible 上游，例如 OpenRouter
 - 可复用 Go SDK
 

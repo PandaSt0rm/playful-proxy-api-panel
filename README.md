@@ -4,7 +4,7 @@ English | [中文](README_CN.md) | [日本語](README_JA.md)
 
 **PPAP is a self-hosted, upstream-compatible CLIProxyAPI fork with a built-in management panel, persistent usage analytics, and Codex-focused model ergonomics.**
 
-It keeps the familiar OpenAI/Gemini/Claude/Codex-compatible proxy surface from [`router-for-me/CLIProxyAPI`](https://github.com/router-for-me/CLIProxyAPI), then adds the pieces that matter when you run it every day: usage snapshots, cost estimates, panel assets released with the backend, and safer thinking-strength aliases.
+It keeps the familiar OpenAI/Gemini/Claude/Codex/Grok-compatible proxy surface from [`router-for-me/CLIProxyAPI`](https://github.com/router-for-me/CLIProxyAPI), then adds the pieces that matter when you run it every day: usage snapshots, cost estimates, panel assets released with the backend, and safer thinking-strength aliases.
 
 Use upstream CLIProxyAPI when you want the vanilla project. Use PPAP when you want the same proxy style with more local visibility and a tighter operations loop.
 
@@ -18,12 +18,12 @@ Use upstream CLIProxyAPI when you want the vanilla project. Use PPAP when you wa
 
 ## Core Features
 
-- OpenAI/Gemini/Claude/Codex-compatible API endpoints for CLI models
-- OAuth login for OpenAI Codex and Claude Code
+- OpenAI/Gemini/Claude/Codex/Grok-compatible API endpoints for CLI models
+- OAuth login for OpenAI Codex, Claude Code, and Grok (xAI)
 - Streaming and non-streaming responses
-- Function calling/tools and multimodal input
+- Function calling/tools and multimodal input (text, images, and xAI Grok image and video models)
 - Multi-account routing and load balancing
-- Gemini CLI, AI Studio Build, Claude Code, OpenAI Codex, and Amp CLI support
+- Gemini CLI, AI Studio Build, Claude Code, OpenAI Codex, xAI Grok, and Amp CLI support
 - OpenAI-compatible upstream providers such as OpenRouter through config
 - Reusable Go SDK for embedding the proxy
 

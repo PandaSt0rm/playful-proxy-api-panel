@@ -4,7 +4,7 @@
 
 **PPAP は、自ホスト向けの CLIProxyAPI 互換 fork です。管理パネル、永続化される使用量分析、コスト推定、Codex 向け model alias をまとめて提供します。**
 
-[`router-for-me/CLIProxyAPI`](https://github.com/router-for-me/CLIProxyAPI) の OpenAI/Gemini/Claude/Codex 互換 proxy surface を保ちながら、日常運用で必要になる usage snapshot、request/cost metrics、backend と同じ tag で配布される管理パネル、より安全な thinking strength alias を追加しています。
+[`router-for-me/CLIProxyAPI`](https://github.com/router-for-me/CLIProxyAPI) の OpenAI/Gemini/Claude/Codex/Grok 互換 proxy surface を保ちながら、日常運用で必要になる usage snapshot、request/cost metrics、backend と同じ tag で配布される管理パネル、より安全な thinking strength alias を追加しています。
 
 素の CLIProxyAPI が必要なら上流を使ってください。  
 使用量、latency、cache hit、Codex strength routing をローカルで見たいなら PPAP を使ってください。
@@ -19,12 +19,12 @@
 
 ## Core Features
 
-- OpenAI/Gemini/Claude/Codex-compatible API endpoints
-- OAuth login for OpenAI Codex and Claude Code
+- OpenAI/Gemini/Claude/Codex/Grok-compatible API endpoints
+- OAuth login for OpenAI Codex, Claude Code, and Grok (xAI)
 - Streaming and non-streaming responses
-- Function calling, tools, and multimodal input
+- Function calling, tools, and multimodal input (text, images, and xAI Grok image and video models)
 - Multi-account routing and load balancing
-- Gemini CLI, AI Studio Build, Claude Code, OpenAI Codex, and Amp CLI support
+- Gemini CLI, AI Studio Build, Claude Code, OpenAI Codex, xAI Grok, and Amp CLI support
 - OpenAI-compatible upstream providers such as OpenRouter through config
 - Reusable Go SDK
 
