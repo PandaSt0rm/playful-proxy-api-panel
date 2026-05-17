@@ -1210,7 +1210,8 @@
           "disable_panel_desc": "停用內建的 Web 控制面板",
           "secret_key": "管理金鑰",
           "secret_key_placeholder": "設定管理金鑰",
-          "panel_repo": "面板儲存庫"
+          "panel_repo": "面板儲存庫",
+          "spoofed_ip_notice": "自 v7.1.10 起代理不再信任 X-Forwarded-For 標頭。MANAGEMENT_PASSWORD 僅對來自 127.0.0.1 的請求生效。若透過反向代理或其他主機存取，請改在下方設定管理金鑰。"
         },
         "auth": {
           "title": "驗證設定",

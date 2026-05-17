@@ -1185,7 +1185,8 @@
           "disable_panel_desc": "Disable the built-in web control panel",
           "secret_key": "Management Key",
           "secret_key_placeholder": "Set management key",
-          "panel_repo": "Panel Repository"
+          "panel_repo": "Panel Repository",
+          "spoofed_ip_notice": "Since v7.1.10 the proxy ignores X-Forwarded-For headers. MANAGEMENT_PASSWORD only authorizes requests from 127.0.0.1. For reverse-proxied or remote access, configure the Management Key below instead."
         },
         "auth": {
           "title": "Authentication Configuration",

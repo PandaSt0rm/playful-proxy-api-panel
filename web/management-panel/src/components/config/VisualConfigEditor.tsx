@@ -845,6 +845,12 @@ export function VisualConfigEditor({
             description={t('config_management.visual.sections.remote.description')}
           >
             <SectionStack>
+              <p className={styles.spoofedIpNotice}>
+                {t('config_management.visual.sections.remote.spoofed_ip_notice', {
+                  defaultValue:
+                    'Since v7.1.10 the proxy ignores X-Forwarded-For headers. MANAGEMENT_PASSWORD only authorizes requests from 127.0.0.1. For reverse-proxied or remote access, configure the Management Key below instead.',
+                })}
+              </p>
               <ToggleRow
                 title={t('config_management.visual.sections.remote.allow_remote')}
                 description={t('config_management.visual.sections.remote.allow_remote_desc')}

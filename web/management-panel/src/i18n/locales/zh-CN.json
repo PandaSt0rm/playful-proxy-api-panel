@@ -1184,7 +1184,8 @@
           "disable_panel_desc": "禁用内置的 Web 控制面板",
           "secret_key": "管理密钥",
           "secret_key_placeholder": "设置管理密钥",
-          "panel_repo": "面板仓库"
+          "panel_repo": "面板仓库",
+          "spoofed_ip_notice": "自 v7.1.10 起代理不再信任 X-Forwarded-For 请求头。MANAGEMENT_PASSWORD 仅对来自 127.0.0.1 的请求生效。若通过反向代理或其他主机访问，请改为在下方配置管理密钥。"
         },
         "auth": {
           "title": "认证配置",
