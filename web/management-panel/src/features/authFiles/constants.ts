@@ -4,6 +4,7 @@ import iconClaude from '@/assets/icons/claude.svg';
 import iconCodex from '@/assets/icons/codex.svg';
 import iconGemini from '@/assets/icons/gemini.svg';
 import iconGlm from '@/assets/icons/glm.svg';
+import iconGrok from '@/assets/icons/grok.svg';
 import iconIflow from '@/assets/icons/iflow.svg';
 import iconKimiDark from '@/assets/icons/kimi-dark.svg';
 import iconKimiLight from '@/assets/icons/kimi-light.svg';
@@ -53,6 +54,11 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
   kimi: {
     light: { bg: '#dce8ff', text: '#0560cf' },
     dark: { bg: '#003880', text: '#70b5ff' },
+  },
+  // xAI / Grok: monochromatic slate matching the xAI brand mark.
+  xai: {
+    light: { bg: '#e9ecef', text: '#1f2933' },
+    dark: { bg: '#1f2933', text: '#cbd5e1' },
   },
   // Z.AI / GLM: crisp blue matching the GLM family mark.
   zai: {
@@ -120,6 +126,7 @@ export const AUTH_FILE_ICONS: Record<string, AuthFileIconAsset> = {
   kimi: { light: iconKimiLight, dark: iconKimiDark },
   qwen: iconQwen,
   vertex: iconVertex,
+  xai: iconGrok,
   zai: iconGlm,
 };
 
