@@ -2,6 +2,7 @@ import { type ChangeEvent, type CSSProperties, type ReactNode, useCallback, useE
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { AutocompleteInput } from '@/components/ui/AutocompleteInput';
 import { CODEX_CONFIG } from '@/components/quota';
 import {
   IconChartLine,
@@ -19,11 +20,14 @@ import {
   IconTrash2,
   IconTrendingUp,
   IconUpload,
+  IconX,
 } from '@/components/ui/icons';
 import pricingConfigRaw from '@/data/openaiModelPricing.json?raw';
+import { useModelsStore } from '@/stores';
+import type { ModelInfo } from '@/utils/models';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { authFilesApi, usageApi } from '@/services/api';
-import { useAuthStore, useNotificationStore, useQuotaStore } from '@/stores';
+import { useAuthStore, useConfigStore, useNotificationStore, useQuotaStore } from '@/stores';
 import type {
   AuthFileItem,
   CodexQuotaState,
@@ -608,9 +612,15 @@ function TrendChart({
 export function UsagePage() {
   const { t, i18n } = useTranslation();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
+  const apiBase = useAuthStore((state) => state.apiBase);
+  const managementKey = useAuthStore((state) => state.managementKey);
   const codexQuota = useQuotaStore((state) => state.codexQuota);
   const setCodexQuota = useQuotaStore((state) => state.setCodexQuota);
   const { showNotification } = useNotificationStore();
+  const config = useConfigStore((state) => state.config);
+  const systemModels = useModelsStore((state) => state.models);
+  const modelsLoading = useModelsStore((state) => state.loading);
+  const fetchModelsFromStore = useModelsStore((state) => state.fetchModels);
 
   const [response, setResponse] = useState<UsageStatisticsResponse | null>(null);
   const [events, setEvents] = useState<UsageEvent[]>([]);
@@ -639,6 +649,7 @@ export function UsagePage() {
   const [priceInput, setPriceInput] = useState('');
   const [priceCached, setPriceCached] = useState('');
   const [priceOutput, setPriceOutput] = useState('');
+  const [priceFilter, setPriceFilter] = useState('');
   const [codexFiles, setCodexFiles] = useState<AuthFileItem[]>([]);
 
   const importInputRef = useRef<HTMLInputElement | null>(null);
@@ -696,6 +707,48 @@ export function UsagePage() {
     () => Array.from(new Set(filteredRecords.filter((record) => record.cost === null).map((record) => record.modelName))).sort(),
     [filteredRecords]
   );
+
+  // Live system models (from proxy registry via useModelsStore) + usage + static + existing prices for frictionless Cost Setup dropdown
+  const priceSuggestions = useMemo(() => {
+    const set = new Set<string>();
+    // Primary: actual models the connected system supports (name + alias variants)
+    systemModels.forEach((m: ModelInfo) => {
+      if (m.name) set.add(m.name);
+      if (m.alias && m.alias !== m.name) set.add(m.alias);
+    });
+    // Supplements for historical / unpriced / catalog coverage
+    unpricedModels.forEach((m) => set.add(m));
+    filteredRecords.forEach((r) => r.modelName && set.add(r.modelName));
+    Object.keys(pricingConfig.models || {}).forEach((m) => set.add(m));
+    modelPrices.forEach((p) => p.model && set.add(p.model));
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [systemModels, unpricedModels, filteredRecords, modelPrices]); // pricingConfig is module-level constant from JSON, stable across renders
+
+  const filteredPrices = useMemo(
+    () => (priceFilter.trim() ? modelPrices.filter((p) => p.model.toLowerCase().includes(priceFilter.trim().toLowerCase())) : modelPrices),
+    [modelPrices, priceFilter]
+  );
+
+  // Auto-fetch live system models when user opens the Cost Setup tab (option A)
+  // This makes the model selector useful without requiring a prior visit to Dashboard.
+  useEffect(() => {
+    if (
+      activeTab === 'costs' &&
+      connectionStatus === 'connected' &&
+      apiBase &&
+      systemModels.length === 0 &&
+      !modelsLoading
+    ) {
+      // Prefer a real API key from config if available (best for /v1/models)
+      const configKeys = Array.isArray(config?.apiKeys) ? config.apiKeys : [];
+      const preferredKey = configKeys.length ? String(configKeys[0]).trim() : managementKey?.trim() || undefined;
+
+      fetchModelsFromStore(apiBase, preferredKey).catch(() => {
+        // Non-fatal: we still have the static OpenAI pricing JSON + usage-derived models as fallback
+      });
+    }
+  }, [activeTab, connectionStatus, apiBase, systemModels.length, modelsLoading, config?.apiKeys, managementKey, fetchModelsFromStore]);
+
   const hasUsage = totalRequests > 0 || Object.keys(usage.apis ?? {}).length > 0 || events.length > 0;
 
   const numberFormatter = useMemo(() => new Intl.NumberFormat(i18n.language || undefined), [i18n.language]);
@@ -1063,10 +1116,7 @@ export function UsagePage() {
     };
     try {
       await usageApi.saveModelPrices([nextPrice]);
-      setPriceModel('');
-      setPriceInput('');
-      setPriceCached('');
-      setPriceOutput('');
+      clearPriceForm();
       showNotification(t('usage_statistics.price_saved'), 'success');
       await loadUsage();
     } catch (err: unknown) {
@@ -1074,6 +1124,13 @@ export function UsagePage() {
       showNotification(message, 'error');
     }
   };
+
+  const clearPriceForm = useCallback(() => {
+    setPriceModel('');
+    setPriceInput('');
+    setPriceCached('');
+    setPriceOutput('');
+  }, []);
 
   const loadCodexQuotaContext = useCallback(async () => {
     if (connectionStatus !== 'connected') {
@@ -1613,22 +1670,40 @@ export function UsagePage() {
                 </Button>
               </div>
               <div className={styles.formGrid}>
-                <input value={priceModel} onChange={(event) => setPriceModel(event.currentTarget.value)} placeholder={t('usage_statistics.price_model')} />
+                <AutocompleteInput
+                  value={priceModel}
+                  onChange={setPriceModel}
+                  options={priceSuggestions}
+                  placeholder={t('usage_statistics.price_model')}
+                  disabled={!status.enabled}
+                  wrapperStyle={{ marginBottom: 0 }}
+                />
                 <input value={priceInput} onChange={(event) => setPriceInput(event.currentTarget.value)} placeholder={t('usage_statistics.price_input')} inputMode="decimal" />
                 <input value={priceCached} onChange={(event) => setPriceCached(event.currentTarget.value)} placeholder={t('usage_statistics.price_cached')} inputMode="decimal" />
                 <input value={priceOutput} onChange={(event) => setPriceOutput(event.currentTarget.value)} placeholder={t('usage_statistics.price_output')} inputMode="decimal" />
-                <Button type="button" variant="primary" size="sm" onClick={handleSavePrice} disabled={!status.enabled}>
-                  {t('usage_statistics.save_price')}
-                </Button>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <Button type="button" variant="primary" size="sm" onClick={handleSavePrice} disabled={!status.enabled} style={{ flex: 1 }}>
+                    {t('usage_statistics.save_price')}
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={clearPriceForm} disabled={!status.enabled} title={t('usage_statistics.clear_form')}>
+                    <IconX size={14} />
+                  </Button>
+                </div>
               </div>
               <div className={styles.pillList}>
-                {unpricedModels.slice(0, 16).map((model) => (
+                {unpricedModels.map((model) => (
                   <button type="button" key={model} onClick={() => setPriceModel(model)}>{model}</button>
                 ))}
                 {!unpricedModels.length && <span>{t('usage_statistics.no_unpriced_models')}</span>}
               </div>
             </div>
             <div className={styles.tableScroll}>
+              <input
+                value={priceFilter}
+                onChange={(e) => setPriceFilter(e.currentTarget.value)}
+                placeholder={t('usage_statistics.price_filter_placeholder')}
+                style={{ width: '100%', marginBottom: 8, padding: '6px 10px', fontSize: 12 }}
+              />
               <table className={styles.table}>
                 <thead>
                   <tr>
@@ -1640,8 +1715,18 @@ export function UsagePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {modelPrices.slice(0, 80).map((price) => (
-                    <tr key={price.model}>
+                  {filteredPrices.map((price) => (
+                    <tr
+                      key={price.model}
+                      onClick={() => {
+                        setPriceModel(price.model);
+                        setPriceInput(String(price.input_per_million ?? 0));
+                        setPriceCached(String(price.cached_input_per_million ?? 0));
+                        setPriceOutput(String(price.output_per_million ?? 0));
+                      }}
+                      style={{ cursor: 'pointer' }}
+                      title={t('usage_statistics.click_to_edit_price')}
+                    >
                       <td className={styles.monoCell}>{price.model}</td>
                       <td>{formatCost(price.input_per_million)}</td>
                       <td>{formatCost(price.cached_input_per_million)}</td>
@@ -1649,7 +1734,7 @@ export function UsagePage() {
                       <td>{formatTimestamp(Date.parse(price.updated_at))}</td>
                     </tr>
                   ))}
-                  {!modelPrices.length && (
+                  {!filteredPrices.length && (
                     <tr>
                       <td colSpan={5} className={styles.emptyCell}>{t('usage_statistics.no_model_prices')}</td>
                     </tr>

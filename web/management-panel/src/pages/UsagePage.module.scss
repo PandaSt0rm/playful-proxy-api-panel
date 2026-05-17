@@ -873,6 +873,17 @@
   @include mobile {
     grid-template-columns: 1fr;
   }
+
+  // AutocompleteInput wrapper inside the grid (its internal .input gets base styling from global)
+  > :global(.form-group) {
+    min-width: 0;
+    margin-bottom: 0;
+  }
+
+  // Ensure the autocomplete dropdown matches panel text size
+  :global(.autocomplete-dropdown) {
+    font-size: 13px;
+  }
 }
 
 .pillList {
