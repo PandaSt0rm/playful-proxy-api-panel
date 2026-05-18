@@ -103,3 +103,42 @@ func TestRefreshTokensPostsClientIDAndRefreshToken(t *testing.T) {
 		t.Fatalf("refresh_token = %q, want old-refresh", gotForm.Get("refresh_token"))
 	}
 }
+
+func TestExchangeCodeForTokensPostsPKCEChallenge(t *testing.T) {
+	var gotForm url.Values
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Fatalf("ParseForm() error = %v", err)
+		}
+		gotForm = r.PostForm
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"access_token":  "access",
+			"refresh_token": "refresh",
+			"token_type":    "Bearer",
+			"expires_in":    3600,
+		})
+	}))
+	defer server.Close()
+
+	auth := NewXAIAuth(nil)
+	_, err := auth.ExchangeCodeForTokens(
+		context.Background(),
+		"authorization-code",
+		"http://127.0.0.1:56121/callback",
+		&PKCECodes{CodeVerifier: "verifier", CodeChallenge: "challenge"},
+		server.URL,
+	)
+	if err != nil {
+		t.Fatalf("ExchangeCodeForTokens() error = %v", err)
+	}
+	if got := gotForm.Get("code_verifier"); got != "verifier" {
+		t.Fatalf("code_verifier = %q, want verifier", got)
+	}
+	if got := gotForm.Get("code_challenge"); got != "challenge" {
+		t.Fatalf("code_challenge = %q, want challenge", got)
+	}
+	if got := gotForm.Get("code_challenge_method"); got != "S256" {
+		t.Fatalf("code_challenge_method = %q, want S256", got)
+	}
+}

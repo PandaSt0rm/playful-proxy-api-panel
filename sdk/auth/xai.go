@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -144,7 +145,7 @@ waitForCallback:
 				break waitForCallback
 			default:
 			}
-			manualInputCh, manualInputErrCh = misc.AsyncPrompt(opts.Prompt, "Paste the xAI callback Token (or press Enter to keep waiting): ")
+			manualInputCh, manualInputErrCh = misc.AsyncPrompt(opts.Prompt, "Paste the xAI callback URL or code (or press Enter to keep waiting): ")
 			continue
 		case input := <-manualInputCh:
 			manualInputCh = nil
@@ -228,14 +229,24 @@ waitForCallback:
 }
 
 func parseXAIManualCallbackToken(input string, state string) (callbackResult, bool, error) {
-	token := strings.TrimSpace(input)
-	if token == "" {
+	parsed, err := misc.ParseOAuthCallbackInput(input, state)
+	if err != nil {
+		if errors.Is(err, misc.ErrOAuthAuthorizationURL) {
+			return callbackResult{}, false, fmt.Errorf("xai: authorization URL submitted; paste the callback URL or the authorization code shown by xAI")
+		}
+		return callbackResult{}, false, err
+	}
+	if parsed == nil {
 		return callbackResult{}, false, nil
 	}
-	if strings.Contains(token, "://") || strings.Contains(token, "?") || strings.Contains(token, "code=") {
-		return callbackResult{}, false, fmt.Errorf("xai: paste only the callback token")
+	if strings.TrimSpace(parsed.ErrorDescription) != "" && strings.TrimSpace(parsed.Error) == "" {
+		parsed.Error = parsed.ErrorDescription
 	}
-	return callbackResult{Code: token, State: state}, true, nil
+	return callbackResult{
+		Code:  strings.TrimSpace(parsed.Code),
+		State: strings.TrimSpace(parsed.State),
+		Error: strings.TrimSpace(parsed.Error),
+	}, true, nil
 }
 
 func startXAICallbackServer(port int) (*http.Server, int, <-chan callbackResult, error) {

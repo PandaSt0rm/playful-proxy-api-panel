@@ -265,6 +265,7 @@ export function OAuthPage() {
 
   const submitCallback = async (provider: OAuthProvider) => {
     const redirectUrl = (states[provider]?.callbackUrl || '').trim();
+    const callbackState = states[provider]?.state;
     if (!redirectUrl) {
       showNotification(t('auth_login.oauth_callback_required'), 'warning');
       return;
@@ -275,7 +276,7 @@ export function OAuthPage() {
       callbackError: undefined
     });
     try {
-      await oauthApi.submitCallback(provider, redirectUrl);
+      await oauthApi.submitCallback(provider, redirectUrl, callbackState);
       updateProviderState(provider, { callbackSubmitting: false, callbackStatus: 'success' });
       showNotification(t('auth_login.oauth_callback_success'), 'success');
     } catch (err: unknown) {

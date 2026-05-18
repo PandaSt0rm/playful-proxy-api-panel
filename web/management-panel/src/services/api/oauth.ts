@@ -45,11 +45,12 @@ export const oauthApi = {
       params: { state }
     }),
 
-  submitCallback: (provider: OAuthProvider, redirectUrl: string) => {
+  submitCallback: (provider: OAuthProvider, redirectUrl: string, state?: string) => {
     const callbackProvider = CALLBACK_PROVIDER_MAP[provider] ?? provider;
     return apiClient.post<OAuthCallbackResponse>('/oauth-callback', {
       provider: callbackProvider,
-      redirect_url: redirectUrl
+      redirect_url: redirectUrl,
+      state
     });
   }
 };

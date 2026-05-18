@@ -142,6 +142,12 @@ func (a *XAIAuth) ExchangeCodeForTokens(ctx context.Context, code, redirectURI s
 	if pkceCodes == nil {
 		return nil, fmt.Errorf("xai token exchange: PKCE codes are required")
 	}
+	if strings.TrimSpace(pkceCodes.CodeVerifier) == "" {
+		return nil, fmt.Errorf("xai token exchange: code verifier is required")
+	}
+	if strings.TrimSpace(pkceCodes.CodeChallenge) == "" {
+		return nil, fmt.Errorf("xai token exchange: code challenge is required")
+	}
 	if strings.TrimSpace(code) == "" {
 		return nil, fmt.Errorf("xai token exchange: authorization code is required")
 	}
@@ -160,7 +166,10 @@ func (a *XAIAuth) ExchangeCodeForTokens(ctx context.Context, code, redirectURI s
 		"code":          {strings.TrimSpace(code)},
 		"redirect_uri":  {strings.TrimSpace(redirectURI)},
 		"client_id":     {ClientID},
-		"code_verifier": {pkceCodes.CodeVerifier},
+		"code_verifier": {strings.TrimSpace(pkceCodes.CodeVerifier)},
+		// xAI currently re-validates the original PKCE challenge at the token endpoint.
+		"code_challenge":        {strings.TrimSpace(pkceCodes.CodeChallenge)},
+		"code_challenge_method": {"S256"},
 	}
 	tokenData, err := a.postTokenForm(ctx, tokenEndpoint, form)
 	if err != nil {

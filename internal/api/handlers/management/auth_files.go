@@ -130,7 +130,9 @@ func isWebUIRequest(c *gin.Context) bool {
 	}
 }
 
-func startCallbackForwarder(port int, provider, targetBase string) (*callbackForwarder, error) {
+const callbackForwarderSuccessHTML = `<html><head><meta charset="utf-8"><title>Authentication successful</title><script>setTimeout(function(){window.close();},5000);</script></head><body><h1>Authentication successful!</h1><p>You can close this window.</p><p>This window will close automatically in 5 seconds.</p></body></html>`
+
+func startCallbackForwarder(port int, provider, authDir string) (*callbackForwarder, error) {
 	callbackForwardersMu.Lock()
 	prev := callbackForwarders[port]
 	if prev != nil {
@@ -148,21 +150,8 @@ func startCallbackForwarder(port int, provider, targetBase string) (*callbackFor
 		return nil, fmt.Errorf("failed to listen on %s: %w", addr, err)
 	}
 
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		target := targetBase
-		if raw := r.URL.RawQuery; raw != "" {
-			if strings.Contains(target, "?") {
-				target = target + "&" + raw
-			} else {
-				target = target + "?" + raw
-			}
-		}
-		w.Header().Set("Cache-Control", "no-store")
-		http.Redirect(w, r, target, http.StatusFound)
-	})
-
 	srv := &http.Server{
-		Handler:           handler,
+		Handler:           newCallbackForwarderHandler(provider, authDir),
 		ReadHeaderTimeout: 5 * time.Second,
 		WriteTimeout:      5 * time.Second,
 	}
@@ -188,6 +177,71 @@ func startCallbackForwarder(port int, provider, targetBase string) (*callbackFor
 	log.Infof("callback forwarder for %s listening on %s", provider, addr)
 
 	return forwarder, nil
+}
+
+func newCallbackForwarderHandler(provider, authDir string) http.Handler {
+	canonicalProvider, err := NormalizeOAuthProvider(provider)
+	if err != nil {
+		canonicalProvider = strings.ToLower(strings.TrimSpace(provider))
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		setCallbackForwarderHeaders(w, r)
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		if r.Method != http.MethodGet && r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		if errParse := r.ParseForm(); errParse != nil {
+			http.Error(w, "invalid callback request", http.StatusBadRequest)
+			return
+		}
+
+		state := strings.TrimSpace(r.Form.Get("state"))
+		code := strings.TrimSpace(r.Form.Get("code"))
+		errStr := strings.TrimSpace(r.Form.Get("error"))
+		if errStr == "" {
+			errStr = strings.TrimSpace(r.Form.Get("error_description"))
+		}
+		if state == "" {
+			http.Error(w, "state is required", http.StatusBadRequest)
+			return
+		}
+		if code == "" && errStr == "" {
+			http.Error(w, "code or error is required", http.StatusBadRequest)
+			return
+		}
+		if _, errWrite := WriteOAuthCallbackFileForPendingSession(authDir, canonicalProvider, state, code, errStr); errWrite != nil {
+			log.WithError(errWrite).Warnf("failed to persist %s oauth callback", canonicalProvider)
+			if errors.Is(errWrite, errOAuthSessionNotPending) {
+				http.Error(w, "oauth flow is not pending", http.StatusConflict)
+				return
+			}
+			http.Error(w, "failed to persist oauth callback", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(w, callbackForwarderSuccessHTML)
+	})
+}
+
+func setCallbackForwarderHeaders(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Private-Network", "true")
+	origin := strings.TrimSpace(r.Header.Get("Origin"))
+	if origin == "" {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		return
+	}
+	w.Header().Set("Access-Control-Allow-Origin", origin)
+	w.Header().Add("Vary", "Origin")
 }
 
 func stopCallbackForwarderInstance(port int, forwarder *callbackForwarder) {
@@ -1611,14 +1665,8 @@ func (h *Handler) RequestAnthropicToken(c *gin.Context) {
 	isWebUI := isWebUIRequest(c)
 	var forwarder *callbackForwarder
 	if isWebUI {
-		targetURL, errTarget := h.managementCallbackURL("/anthropic/callback")
-		if errTarget != nil {
-			log.WithError(errTarget).Error("failed to compute anthropic callback target")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "callback server unavailable"})
-			return
-		}
 		var errStart error
-		if forwarder, errStart = startCallbackForwarder(anthropicCallbackPort, "anthropic", targetURL); errStart != nil {
+		if forwarder, errStart = startCallbackForwarder(anthropicCallbackPort, "anthropic", h.cfg.AuthDir); errStart != nil {
 			log.WithError(errStart).Error("failed to start anthropic callback forwarder")
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start callback server"})
 			return
@@ -1747,14 +1795,8 @@ func (h *Handler) RequestGeminiCLIToken(c *gin.Context) {
 	isWebUI := isWebUIRequest(c)
 	var forwarder *callbackForwarder
 	if isWebUI {
-		targetURL, errTarget := h.managementCallbackURL("/google/callback")
-		if errTarget != nil {
-			log.WithError(errTarget).Error("failed to compute gemini callback target")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "callback server unavailable"})
-			return
-		}
 		var errStart error
-		if forwarder, errStart = startCallbackForwarder(geminiCallbackPort, "gemini", targetURL); errStart != nil {
+		if forwarder, errStart = startCallbackForwarder(geminiCallbackPort, "gemini", h.cfg.AuthDir); errStart != nil {
 			log.WithError(errStart).Error("failed to start gemini callback forwarder")
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start callback server"})
 			return
@@ -2015,14 +2057,8 @@ func (h *Handler) RequestCodexToken(c *gin.Context) {
 	isWebUI := isWebUIRequest(c)
 	var forwarder *callbackForwarder
 	if isWebUI {
-		targetURL, errTarget := h.managementCallbackURL("/codex/callback")
-		if errTarget != nil {
-			log.WithError(errTarget).Error("failed to compute codex callback target")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "callback server unavailable"})
-			return
-		}
 		var errStart error
-		if forwarder, errStart = startCallbackForwarder(codexCallbackPort, "codex", targetURL); errStart != nil {
+		if forwarder, errStart = startCallbackForwarder(codexCallbackPort, "codex", h.cfg.AuthDir); errStart != nil {
 			log.WithError(errStart).Error("failed to start codex callback forwarder")
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start callback server"})
 			return
@@ -2146,14 +2182,8 @@ func (h *Handler) RequestAntigravityToken(c *gin.Context) {
 	isWebUI := isWebUIRequest(c)
 	var forwarder *callbackForwarder
 	if isWebUI {
-		targetURL, errTarget := h.managementCallbackURL("/antigravity/callback")
-		if errTarget != nil {
-			log.WithError(errTarget).Error("failed to compute antigravity callback target")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "callback server unavailable"})
-			return
-		}
 		var errStart error
-		if forwarder, errStart = startCallbackForwarder(antigravity.CallbackPort, "antigravity", targetURL); errStart != nil {
+		if forwarder, errStart = startCallbackForwarder(antigravity.CallbackPort, "antigravity", h.cfg.AuthDir); errStart != nil {
 			log.WithError(errStart).Error("failed to start antigravity callback forwarder")
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start callback server"})
 			return
@@ -2342,14 +2372,8 @@ func (h *Handler) RequestXAIToken(c *gin.Context) {
 	isWebUI := isWebUIRequest(c)
 	var forwarder *callbackForwarder
 	if isWebUI {
-		targetURL, errTarget := h.managementCallbackURL("/xai/callback")
-		if errTarget != nil {
-			log.WithError(errTarget).Error("failed to compute xai callback target")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "callback server unavailable"})
-			return
-		}
 		var errStart error
-		if forwarder, errStart = startCallbackForwarder(xaiauth.CallbackPort, "xai", targetURL); errStart != nil {
+		if forwarder, errStart = startCallbackForwarder(xaiauth.CallbackPort, "xai", h.cfg.AuthDir); errStart != nil {
 			log.WithError(errStart).Error("failed to start xai callback forwarder")
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start callback server"})
 			return

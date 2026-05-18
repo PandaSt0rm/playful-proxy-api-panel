@@ -288,6 +288,7 @@ var oauthChannelDisplayNames = map[string]string{
 	"aistudio":    "AI Studio (OAuth)",
 	"kimi":        "Kimi (OAuth)",
 	"antigravity": "Antigravity (OAuth)",
+	"xai":         "xAI (OAuth)",
 }
 
 // isKnownOAuthChannel reports whether the given (normalized) provider key

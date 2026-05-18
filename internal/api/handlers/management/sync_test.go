@@ -816,6 +816,34 @@ func TestBuildOAuthChannels_FromAuthManager(t *testing.T) {
 	}
 }
 
+func TestBuildOAuthChannels_FromXAIAuthManager(t *testing.T) {
+	const authID = "test-xai-auth"
+	reg := registry.GetGlobalRegistry()
+	reg.RegisterClient(authID, "xai", []*registry.ModelInfo{
+		{ID: "grok-4.3", Object: "model", Type: "openai"},
+	})
+	t.Cleanup(func() { reg.UnregisterClient(authID) })
+
+	lister := &stubAuthLister{auths: []*coreauth.Auth{
+		{ID: authID, Provider: "xai"},
+	}}
+
+	channels := buildOAuthChannels(&config.Config{}, lister)
+	if len(channels) != 1 {
+		t.Fatalf("expected 1 channel, got %d", len(channels))
+	}
+	ch := channels[0]
+	if ch.Channel != "xai" {
+		t.Errorf("expected channel 'xai', got %q", ch.Channel)
+	}
+	if ch.DisplayName != "xAI (OAuth)" {
+		t.Errorf("expected display_name 'xAI (OAuth)', got %q", ch.DisplayName)
+	}
+	if len(ch.Models) != 1 || ch.Models[0] != "grok-4.3" {
+		t.Errorf("expected registered xAI models in channel, got %v", ch.Models)
+	}
+}
+
 // TestBuildOAuthChannels_FallbackToStaticCatalog verifies that when the live
 // registry has no entries for an authed account, the static channel catalog is
 // used as a fallback so the UI still shows the channel's supported models.
