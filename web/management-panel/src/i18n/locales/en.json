@@ -1723,6 +1723,10 @@
     "continue_hint": "Append into ~/.continue/config.yaml under models. Use the workspace .env (not your shell env) for secrets — the IDE extension cannot see your shell environment.",
     "aider_title": "Aider",
     "aider_hint": "Save to ~/.aider.conf.yml in your home directory or the repo root. The openai/ prefix on the model name is required so LiteLLM routes through the OpenAI-compatible wire format.",
+    "forgecode_title": "ForgeCode",
+    "forgecode_hint": "Save to ~/.forge/.forge.toml. The provider reads PROXY_API_KEY from your shell, so export it before launching ForgeCode.",
+    "hermes_title": "Hermes",
+    "hermes_hint": "Save to ~/.hermes/config.yaml and place the generated .env beside it. Hermes reads the proxy API key from that dotenv file.",
     "curl_openai_title": "curl — OpenAI-compatible",
     "curl_openai_hint": "Minimal request to /v1/chat/completions. Drop this into an AI agent to teach it the wire shape of your proxy.",
     "curl_anthropic_title": "curl — Anthropic-compatible",
@@ -1764,7 +1768,9 @@
       "codex": "Codex",
       "cursor": "Cursor",
       "continue_dev": "Continue",
-      "aider": "Aider"
+      "aider": "Aider",
+      "forgecode": "ForgeCode",
+      "hermes": "Hermes"
     }
   },
   "sync_profiles": {

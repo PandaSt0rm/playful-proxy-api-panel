@@ -18,14 +18,14 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { useAuthStore, useNotificationStore } from '@/stores';
 import { apiKeysApi } from '@/services/api/apiKeys';
 import { modelsApi } from '@/services/api/models';
+import { toolingTemplatesApi } from '@/services/api/toolingTemplates';
 import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection';
 import { copyToClipboard } from '@/utils/clipboard';
 import {
-  TOOL_TEMPLATES,
-  buildManualConfig,
   type ApiKeyMode,
   type ManualConfigBlock,
-  type TemplateInputs,
+  type RenderedToolTemplate,
+  type ToolTemplateMetadata,
   type ToolTemplateId,
 } from '@/utils/toolingTemplates';
 import { SyncProfilesSection } from '@/components/sync';
@@ -97,6 +97,18 @@ const TAB_CARDS: ReadonlyArray<ToolCardConfig> = [
     titleKey: 'tooling_templates.aider_title',
     hintKey: 'tooling_templates.aider_hint',
     tabLabelKey: 'tooling_templates.tool_tabs.aider',
+  },
+  {
+    id: 'forgecode',
+    titleKey: 'tooling_templates.forgecode_title',
+    hintKey: 'tooling_templates.forgecode_hint',
+    tabLabelKey: 'tooling_templates.tool_tabs.forgecode',
+  },
+  {
+    id: 'hermes',
+    titleKey: 'tooling_templates.hermes_title',
+    hintKey: 'tooling_templates.hermes_hint',
+    tabLabelKey: 'tooling_templates.tool_tabs.hermes',
   },
 ];
 
@@ -411,8 +423,14 @@ export function ToolingTemplatesPage() {
   const [modelsError, setModelsError] = useState<string>('');
   const [keysLoading, setKeysLoading] = useState<boolean>(false);
   const [keysError, setKeysError] = useState<string>('');
+  const [templateMetadata, setTemplateMetadata] = useState<ToolTemplateMetadata[]>([]);
+  const [renderedTemplates, setRenderedTemplates] = useState<RenderedToolTemplate[]>([]);
+  const [manualBlocks, setManualBlocks] = useState<ManualConfigBlock[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState<boolean>(false);
+  const [templatesError, setTemplatesError] = useState<string>('');
 
   const modelsRequestId = useRef(0);
+  const templatesRequestId = useRef(0);
   const hasAutoSelectedRef = useRef(false);
 
   const defaultBaseUrl = useMemo(
@@ -444,6 +462,26 @@ export function ToolingTemplatesPage() {
       .finally(() => {
         if (cancelled) return;
         setKeysLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [t]);
+
+  useEffect(() => {
+    let cancelled = false;
+    toolingTemplatesApi
+      .list()
+      .then((templates) => {
+        if (cancelled) return;
+        setTemplateMetadata(templates);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setTemplateMetadata([]);
+        setTemplatesError(getErrorMessage(error) || t('tooling_templates.templates_error', {
+          defaultValue: 'Could not load tooling templates from the server.',
+        }));
       });
     return () => {
       cancelled = true;
@@ -621,6 +659,68 @@ export function ToolingTemplatesPage() {
     if (override && selectedModels.includes(override)) return override;
     return primaryModel;
   };
+
+  const activeModelOverrides = useMemo(() => {
+    const overrides: Partial<Record<ToolTemplateId | string, string>> = {};
+    TAB_CARDS.forEach((card) => {
+      const override = activeModels[card.id];
+      overrides[card.id] = override && selectedModels.includes(override) ? override : primaryModel;
+    });
+    const curlActive =
+      curlActiveModel && selectedModels.includes(curlActiveModel) ? curlActiveModel : primaryModel;
+    overrides['curl-openai'] = curlActive;
+    overrides['curl-anthropic'] = curlActive;
+    return overrides;
+  }, [activeModels, curlActiveModel, primaryModel, selectedModels]);
+
+  useEffect(() => {
+    const requestId = ++templatesRequestId.current;
+    setTemplatesLoading(true);
+    setTemplatesError('');
+    toolingTemplatesApi
+      .render({
+        base_url: sharedInputsBase.baseUrl,
+        api_key: sharedInputsBase.apiKey,
+        api_key_mode: sharedInputsBase.mode,
+        models: sharedInputsBase.models,
+        active_model: primaryModel,
+        active_models: activeModelOverrides,
+      })
+      .then((response) => {
+        if (templatesRequestId.current !== requestId) return;
+        setRenderedTemplates(response.templates);
+        setManualBlocks(response.manual_config);
+      })
+      .catch((error: unknown) => {
+        if (templatesRequestId.current !== requestId) return;
+        setRenderedTemplates([]);
+        setManualBlocks([]);
+        setTemplatesError(getErrorMessage(error) || t('tooling_templates.templates_error', {
+          defaultValue: 'Could not render tooling templates from the server.',
+        }));
+      })
+      .finally(() => {
+        if (templatesRequestId.current === requestId) {
+          setTemplatesLoading(false);
+        }
+      });
+  }, [activeModelOverrides, primaryModel, sharedInputsBase, t]);
+
+  const renderedById = useMemo(() => {
+    const map = new Map<ToolTemplateId, RenderedToolTemplate>();
+    renderedTemplates.forEach((template) => {
+      map.set(template.id, template);
+    });
+    return map;
+  }, [renderedTemplates]);
+
+  const metadataById = useMemo(() => {
+    const map = new Map<ToolTemplateId, ToolTemplateMetadata>();
+    templateMetadata.forEach((template) => {
+      map.set(template.id, template);
+    });
+    return map;
+  }, [templateMetadata]);
 
   return (
     <div className={styles.container}>
@@ -879,10 +979,6 @@ export function ToolingTemplatesPage() {
         </Card>
 
         {(() => {
-          const manualBlocks: ManualConfigBlock[] = buildManualConfig({
-            ...sharedInputsBase,
-            activeModel: primaryModel,
-          });
           return (
             <Card title={t('tooling_templates.manual_config.title', { defaultValue: 'Manual config' })}>
               <div className={styles.cardContent}>
@@ -892,6 +988,10 @@ export function ToolingTemplatesPage() {
                       'Reference values for any tool not in the snippet tabs below. Copy what you need.',
                   })}
                 </p>
+                {templatesError && <div className={styles.modelError}>{templatesError}</div>}
+                {templatesLoading && !templatesError && (
+                  <div className={styles.modelStatus}>{t('common.loading')}</div>
+                )}
                 {manualBlocks.map((block) => {
                   const isOpen = manualConfigOpen[block.id];
                   return (
@@ -907,12 +1007,12 @@ export function ToolingTemplatesPage() {
                         <span className={styles.manualBlockChevron} aria-hidden="true">
                           {isOpen ? '▾' : '▸'}
                         </span>
-                        <span className={styles.manualBlockTitle}>{t(block.titleKey)}</span>
+                        <span className={styles.manualBlockTitle}>{t(block.title_key)}</span>
                       </button>
                       {isOpen && (
                         <div className={styles.manualBlockBody}>
                           {block.lines.map((line) => {
-                            const label = t(line.labelKey);
+                            const label = t(line.label_key);
                             return (
                               <div key={line.id} className={styles.manualLine}>
                                 <span className={styles.manualLineLabel}>{label}</span>
@@ -989,14 +1089,15 @@ export function ToolingTemplatesPage() {
                     })}
                   </div>
                 )}
+                {templatesError && <div className={styles.modelError}>{templatesError}</div>}
+                {templatesLoading && !templatesError && (
+                  <div className={styles.modelStatus}>{t('common.loading')}</div>
+                )}
                 <div className={styles.curlSnippets}>
                   {CURL_CARDS.map((curlCard) => {
-                    const template = TOOL_TEMPLATES.find((entry) => entry.id === curlCard.id);
+                    const template = renderedById.get(curlCard.id);
                     if (!template) return null;
-                    const snippet = template.render({
-                      ...sharedInputsBase,
-                      activeModel: curlActive,
-                    });
+                    const snippet = template.content;
                     return (
                       <div key={curlCard.id} className={styles.curlSnippetGroup}>
                         <div className={styles.curlSnippetSubtitle}>{t(curlCard.subtitleKey)}</div>
@@ -1025,15 +1126,12 @@ export function ToolingTemplatesPage() {
         {(() => {
           const activeCard =
             TAB_CARDS.find((card) => card.id === activeTab) ?? TAB_CARDS[0];
-          const template = TOOL_TEMPLATES.find((entry) => entry.id === activeCard.id);
+          const renderedTemplate = renderedById.get(activeCard.id);
+          const template = renderedTemplate ?? metadataById.get(activeCard.id);
           if (!template) return null;
           const activeModel = resolveActiveModel(activeCard.id);
-          const inputs: TemplateInputs = {
-            ...sharedInputsBase,
-            activeModel,
-          };
-          const snippet = template.render(inputs);
-          const showActiveModelStrip = !template.multiModel && selectedModels.length > 1;
+          const snippet = renderedTemplate?.content ?? '';
+          const showActiveModelStrip = !template.multi_model && selectedModels.length > 1;
           return (
             <Card
               title={t('tooling_templates.tools_card.title', { defaultValue: 'Tool snippets' })}
@@ -1112,11 +1210,22 @@ export function ToolingTemplatesPage() {
                   <div className={styles.snippetBlock}>
                     <div className={styles.snippetHeader}>
                       <span className={styles.snippetMeta}>{template.language}</span>
-                      <Button variant="ghost" size="sm" onClick={() => handleCopy(snippet)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleCopy(snippet)}
+                        disabled={!snippet}
+                      >
                         {t('tooling_templates.copy', { defaultValue: 'Copy' })}
                       </Button>
                     </div>
-                    <pre className={styles.snippetCode}>{snippet}</pre>
+                    {templatesError ? (
+                      <div className={styles.modelError}>{templatesError}</div>
+                    ) : templatesLoading && !snippet ? (
+                      <div className={styles.modelStatus}>{t('common.loading')}</div>
+                    ) : (
+                      <pre className={styles.snippetCode}>{snippet}</pre>
+                    )}
                   </div>
                 </div>
               </div>

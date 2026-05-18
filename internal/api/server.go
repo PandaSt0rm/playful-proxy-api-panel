@@ -627,6 +627,8 @@ func (s *Server) registerManagementRoutes() {
 		mgmt.DELETE("/sync-profiles", s.mgmt.DeleteSyncProfiles)
 
 		mgmt.GET("/sync/available-configs", s.mgmt.GetSyncAvailableConfigs)
+		mgmt.GET("/tooling-templates", s.mgmt.GetToolingTemplates)
+		mgmt.POST("/tooling-templates/render", s.mgmt.RenderToolingTemplates)
 
 		mgmt.GET("/gemini-api-key", s.mgmt.GetGeminiKeys)
 		mgmt.PUT("/gemini-api-key", s.mgmt.PutGeminiKeys)
