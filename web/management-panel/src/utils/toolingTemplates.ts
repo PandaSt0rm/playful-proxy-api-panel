@@ -31,6 +31,13 @@ export type ToolTemplateId =
 const PLACEHOLDER_BASE = '<your-proxy-base-url>';
 const PLACEHOLDER_KEY = '${PROXY_API_KEY}';
 const PLACEHOLDER_MODEL = '<your-model-id>';
+const FACTORY_DROID_PROVIDER = 'generic-chat-completion-api';
+const FACTORY_DROID_DEFAULT_MAX_OUTPUT_TOKENS = 16384;
+const FACTORY_DROID_MAX_OUTPUT_TOKENS_BY_MODEL: Record<string, number> = {
+  'deepseek-v4-flash': 384000,
+  'deepseek-v4-pro': 384000,
+  'minimax-m2.7': 131072,
+};
 
 const stripTrailingSlash = (value: string): string => value.replace(/\/+$/g, '');
 
@@ -57,18 +64,75 @@ const resolveModelList = (models: string[], mode: ApiKeyMode): string[] => {
   return mode === 'placeholder' ? [PLACEHOLDER_MODEL] : [];
 };
 
+const factoryDroidModelKey = (modelId: string): string => {
+  let key = (modelId || '').trim().toLowerCase();
+  const slashIndex = key.lastIndexOf('/');
+  if (slashIndex >= 0) key = key.slice(slashIndex + 1);
+  const colonIndex = key.indexOf(':');
+  if (colonIndex >= 0) key = key.slice(0, colonIndex);
+  return key;
+};
+
+const factoryDroidMaxOutputTokens = (modelId: string): number =>
+  FACTORY_DROID_MAX_OUTPUT_TOKENS_BY_MODEL[factoryDroidModelKey(modelId)] ??
+  FACTORY_DROID_DEFAULT_MAX_OUTPUT_TOKENS;
+
+const formatFactoryDroidDisplayToken = (token: string): string => {
+  if (!token) return token;
+
+  const lower = token.toLowerCase();
+  const acronyms: Record<string, string> = {
+    api: 'API',
+    gpt: 'GPT',
+    glm: 'GLM',
+    oss: 'OSS',
+  };
+  if (acronyms[lower]) return acronyms[lower];
+  if (/^[a-z]{1,2}\d/i.test(token)) return token.toUpperCase();
+  if (/^\d/.test(token)) return token;
+  if (/\d/.test(token)) return `${lower.slice(0, 1).toUpperCase()}${lower.slice(1)}`;
+  return `${lower.slice(0, 1).toUpperCase()}${lower.slice(1)}`;
+};
+
+const factoryDroidDisplayName = (modelId: string): string => {
+  let name = (modelId || '').trim();
+  const slashIndex = name.lastIndexOf('/');
+  if (slashIndex >= 0) name = name.slice(slashIndex + 1);
+  name = name.replace(/:/g, '-').trim();
+
+  const parts = name.split(/[-_\s]+/g).filter(Boolean);
+  if (parts.length === 0) return modelId;
+  return parts.map(formatFactoryDroidDisplayToken).join(' ');
+};
+
+const factoryDroidCustomModelId = (displayName: string): string => {
+  const idPart = displayName
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^A-Za-z0-9._-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return `custom:${idPart || 'Model'}`;
+};
+
 const renderFactoryDroid = ({ baseUrl, apiKey, models, mode }: TemplateInputs): string => {
   const base = resolveBase(baseUrl, mode);
   const key = resolveKey(apiKey, mode);
   const modelList = resolveModelList(models, mode);
   const config = {
-    customModels: modelList.map((modelId) => ({
-      model: modelId,
-      baseUrl: `${base}/v1`,
-      apiKey: key,
-      provider: 'generic-chat-completion-api',
-      displayName: `PPAP — ${modelId}`,
-    })),
+    customModels: modelList.map((modelId, index) => {
+      const displayName = factoryDroidDisplayName(modelId);
+      return {
+        model: modelId,
+        id: factoryDroidCustomModelId(displayName),
+        index,
+        baseUrl: `${base}/v1`,
+        apiKey: key,
+        displayName,
+        maxOutputTokens: factoryDroidMaxOutputTokens(modelId),
+        noImageSupport: false,
+        provider: FACTORY_DROID_PROVIDER,
+      };
+    }),
   };
   return JSON.stringify(config, null, 2);
 };
