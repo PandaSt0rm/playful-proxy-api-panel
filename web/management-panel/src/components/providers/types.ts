@@ -4,9 +4,11 @@ import type { HeaderEntry } from '@/utils/headers';
 export interface ModelEntry {
   name: string;
   alias: string;
+  image?: boolean;
   regex?: boolean;
   thinking?: ThinkingSupport;
   thinkingLevels?: string[];
+  raw?: Record<string, unknown>;
 }
 
 export interface OpenAIFormState {

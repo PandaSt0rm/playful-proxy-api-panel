@@ -6,7 +6,6 @@ export type PayloadParamValidationErrorCode =
 
 export type VisualConfigFieldPath =
   | 'port'
-  | 'home.port'
   | 'logsMaxTotalSizeMb'
   | 'errorLogsMaxFiles'
   | 'usageStatisticsFlushIntervalSeconds'
@@ -95,10 +94,6 @@ export type VisualConfigValues = {
   tlsEnable: boolean;
   tlsCert: string;
   tlsKey: string;
-  homeEnabled: boolean;
-  homeHost: string;
-  homePort: string;
-  homePassword: string;
   rmAllowRemote: boolean;
   rmSecretKey: string;
   rmDisableControlPanel: boolean;
@@ -159,10 +154,6 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   tlsEnable: false,
   tlsCert: '',
   tlsKey: '',
-  homeEnabled: false,
-  homeHost: '',
-  homePort: '',
-  homePassword: '',
   rmAllowRemote: false,
   rmSecretKey: '',
   rmDisableControlPanel: false,

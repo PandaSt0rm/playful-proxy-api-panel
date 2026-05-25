@@ -387,9 +387,10 @@ export function AiProvidersOpenAIEditPage() {
     showNotification,
   ]);
 
-  const renderModelLevelChips = useCallback(
+  const renderModelOptions = useCallback(
     ({ entry, disabled, updateEntry }: ModelInputListRowExtrasArgs) => {
       const active = new Set(entry.thinkingLevels ?? []);
+      const imageEnabled = Boolean(entry.image);
       const toggleLevel = (level: ReasoningLevel) => {
         const next = new Set(active);
         if (next.has(level)) next.delete(level);
@@ -428,6 +429,21 @@ export function AiProvidersOpenAIEditPage() {
               </button>
             );
           })}
+          <button
+            type="button"
+            className={[
+              styles.modelLevelChip,
+              styles.modelImageChip,
+              imageEnabled ? styles.modelLevelChipActive : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            onClick={() => updateEntry({ image: imageEnabled ? undefined : true })}
+            disabled={disabled}
+            aria-pressed={imageEnabled}
+          >
+            {t('ai_providers.openai_model_image_api')}
+          </button>
         </div>
       );
     },
@@ -726,7 +742,7 @@ export function AiProvidersOpenAIEditPage() {
                 removeButtonClassName={styles.modelRowRemoveButton}
                 removeButtonTitle={t('common.delete')}
                 removeButtonAriaLabel={t('common.delete')}
-                renderRowExtras={renderModelLevelChips}
+                renderRowExtras={renderModelOptions}
               />
               <div className={styles.modelLevelChipsHint}>
                 {t('ai_providers.openai_models_variants_hint')}

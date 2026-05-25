@@ -108,6 +108,11 @@ export const serializeModelAliases = (models?: ModelAlias[]) =>
           }
           setOptionalNumber(payload, 'priority', model.priority);
           setOptionalString(payload, 'test-model', model.testModel);
+          if (model.image) {
+            payload.image = true;
+          } else {
+            delete payload.image;
+          }
           const thinking = serializeThinkingSupport(model);
           if (thinking) {
             payload.thinking = thinking;

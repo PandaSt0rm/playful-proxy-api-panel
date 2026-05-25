@@ -103,6 +103,7 @@ const normalizeModelEntries = (entries: ModelEntry[]) =>
     Array<{
       name: string;
       alias: string;
+      image?: boolean;
       thinking?: ModelEntry['thinking'];
       thinkingLevels?: ModelEntry['thinkingLevels'];
     }>
@@ -116,6 +117,7 @@ const normalizeModelEntries = (entries: ModelEntry[]) =>
     acc.push({
       name,
       alias,
+      image: Boolean(entry.image),
       thinking: entry.thinking,
       thinkingLevels: entry.thinkingLevels,
     });
@@ -452,7 +454,12 @@ export function AiProvidersOpenAIEditLayout({
         prev.modelEntries.forEach((entry) => {
           const name = entry.name.trim();
           if (!name) return;
-          mergedMap.set(name, { name, alias: entry.alias?.trim() || '' });
+          mergedMap.set(name, {
+            ...entry,
+            name,
+            alias: entry.alias?.trim() || '',
+            raw: entry.raw ? { ...entry.raw } : undefined,
+          });
         });
 
         selectedModels.forEach((model) => {

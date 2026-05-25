@@ -1175,6 +1175,10 @@ $openai-toolbar-control-height: 36px;
   }
 }
 
+.modelImageChip {
+  border-style: dashed;
+}
+
 .modelLevelChipsHint {
   margin-top: $spacing-xs;
   font-size: 12px;

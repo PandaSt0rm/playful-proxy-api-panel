@@ -95,6 +95,10 @@ const normalizeModelAliases = (models: unknown): ModelAlias[] => {
       if (testModel) {
         entry.testModel = String(testModel);
       }
+      const image = normalizeBoolean(item.image);
+      if (image) {
+        entry.image = true;
+      }
       const thinking = normalizeThinkingSupport(item.thinking);
       if (thinking) {
         entry.thinking = thinking;

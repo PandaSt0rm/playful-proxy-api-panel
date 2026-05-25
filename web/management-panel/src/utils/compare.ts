@@ -26,6 +26,7 @@ export function areModelEntriesEqual(
   a: readonly {
     name: string;
     alias: string;
+    image?: boolean;
     regex?: boolean;
     thinking?: unknown;
     thinkingLevels?: readonly string[];
@@ -33,6 +34,7 @@ export function areModelEntriesEqual(
   b: readonly {
     name: string;
     alias: string;
+    image?: boolean;
     regex?: boolean;
     thinking?: unknown;
     thinkingLevels?: readonly string[];
@@ -45,6 +47,7 @@ export function areModelEntriesEqual(
     const right = b[i];
     if (!left || !right) return false;
     if (left.name !== right.name || left.alias !== right.alias) return false;
+    if (Boolean(left.image) !== Boolean(right.image)) return false;
     if (Boolean(left.regex) !== Boolean(right.regex)) return false;
     const leftThinkingLevels = left.thinkingLevels ?? [];
     const rightThinkingLevels = right.thinkingLevels ?? [];

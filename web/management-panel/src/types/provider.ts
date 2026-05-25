@@ -14,6 +14,7 @@ export interface ThinkingSupport {
 export interface ModelAlias {
   name: string;
   alias?: string;
+  image?: boolean;
   priority?: number;
   testModel?: string;
   thinking?: ThinkingSupport;

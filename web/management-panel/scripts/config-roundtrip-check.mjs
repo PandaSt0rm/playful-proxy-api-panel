@@ -29,6 +29,11 @@ const server = await createServer({
 const visualFixture = `
 host: 127.0.0.1
 port: 8317
+home:
+  enabled: true
+  host: legacy-home.local
+  port: 6380
+  password: legacy-secret
 remote-management:
   allow-remote: true
   secret-key: local-secret
@@ -114,6 +119,12 @@ function assertVisualRoundTrip(useVisualConfig, resetHookState) {
   const parsed = parseYaml(updatedYaml);
 
   assert.equal(parsed['proxy-url'], 'http://proxy-new.local:7890');
+  assert.deepEqual(parsed.home, {
+    enabled: true,
+    host: 'legacy-home.local',
+    port: 6380,
+    password: 'legacy-secret',
+  });
   assert.equal(parsed['remote-management']['disable-auto-update-panel'], true);
   assert.equal(parsed.pprof.enable, true);
   assert.equal(parsed.pprof.addr, '127.0.0.1:6060');
@@ -188,6 +199,7 @@ function assertProviderRoundTrip(transformers, providers, providerUtils) {
       {
         name: 'o4-mini',
         alias: 'fast',
+        image: true,
         'x-extra': 'preserve-model',
         thinking: {
           min: 0,
@@ -204,6 +216,7 @@ function assertProviderRoundTrip(transformers, providers, providerUtils) {
   assert.equal(Object.hasOwn(serializedOpenAI, 'auth-index'), false);
   assert.equal(Object.hasOwn(serializedOpenAI['api-key-entries'][0], 'auth-index'), false);
   assert.equal(serializedOpenAI['api-key-entries'][0]['x-extra'], 'preserve-entry');
+  assert.equal(serializedOpenAI.models[0].image, true);
   assert.equal(serializedOpenAI.models[0]['x-extra'], 'preserve-model');
   assert.deepEqual(serializedOpenAI.models[0].thinking, {
     min: 0,
