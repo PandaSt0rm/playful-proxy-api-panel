@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/router-for-me/CLIProxyAPI/v7/internal/registry"
 	"github.com/router-for-me/CLIProxyAPI/v7/internal/toolingtemplates"
 )
 
@@ -38,10 +39,56 @@ func (h *Handler) RenderToolingTemplates(c *gin.Context) {
 	}
 	h.mu.Unlock()
 
+	enrichModelProviders(&req.RenderRequest)
+
 	resp, err := toolingtemplates.Render(req.RenderRequest)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, resp)
+}
+
+// enrichModelProviders populates ModelProviders on the render request by
+// inspecting the model registry and the static model catalog. It maps each
+// model to its provider category (openai, anthropic, or generic) so that
+// templates can emit tool-specific provider settings.
+func enrichModelProviders(req *toolingtemplates.RenderRequest) {
+	if req == nil || len(req.Models) == 0 {
+		return
+	}
+	req.ModelProviders = make(map[string]string, len(req.Models))
+	for _, model := range req.Models {
+		req.ModelProviders[model] = providerForModel(model)
+	}
+}
+
+// providerForModel determines the provider category for a model name by
+// consulting the model registry's provider info and the static model catalog.
+func providerForModel(model string) string {
+	// Check the live model registry for provider info.
+	if reg := registry.GetGlobalRegistry(); reg != nil {
+		for _, p := range reg.GetModelProviders(model) {
+			switch p {
+			case "codex":
+				return toolingtemplates.ModelProviderOpenAI
+			case "claude":
+				return toolingtemplates.ModelProviderAnthropic
+			}
+		}
+	}
+
+	// Fallback: check static model definitions for known channels.
+	for _, info := range registry.GetStaticModelDefinitionsByChannel("codex") {
+		if info != nil && info.ID == model {
+			return toolingtemplates.ModelProviderOpenAI
+		}
+	}
+	for _, info := range registry.GetStaticModelDefinitionsByChannel("claude") {
+		if info != nil && info.ID == model {
+			return toolingtemplates.ModelProviderAnthropic
+		}
+	}
+
+	return toolingtemplates.ModelProviderGeneric
 }

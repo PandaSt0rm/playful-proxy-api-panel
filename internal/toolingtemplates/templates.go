@@ -16,14 +16,32 @@ const (
 	placeholderKey   = "${PROXY_API_KEY}"
 	placeholderModel = "<your-model-id>"
 
-	factoryDroidProvider               = "generic-chat-completion-api"
 	factoryDroidDefaultMaxOutputTokens = 16384
+
+	// ModelProviderOpenAI identifies models that use the OpenAI Responses API.
+	ModelProviderOpenAI = "openai"
+	// ModelProviderAnthropic identifies models that use the Anthropic Messages API.
+	ModelProviderAnthropic = "anthropic"
+	// ModelProviderGeneric identifies models that use a generic OpenAI-compatible
+	// Chat Completions API (the default for third-party providers).
+	ModelProviderGeneric = "generic"
 )
 
 var factoryDroidMaxOutputTokensByModel = map[string]int{
 	"deepseek-v4-flash": 384000,
 	"deepseek-v4-pro":   384000,
 	"minimax-m2.7":      131072,
+	"gpt-5.5":           32768,
+	"gpt-5.5-fast":      32768,
+	"gpt-5.5-pro":       32768,
+	"gpt-5.4":           32768,
+	"gpt-5.4-fast":      32768,
+	"gpt-5.4-mini":      32768,
+	"gpt-5.3-codex":     32768,
+	"gpt-5.3-codex-fast": 32768,
+	"gpt-5.3-codex-spark": 32768,
+	"gpt-5.2":           32768,
+	"gpt-5.2-codex":     32768,
 }
 
 type TemplateMetadata struct {
@@ -44,6 +62,10 @@ type RenderRequest struct {
 	ActiveModels map[string]string `json:"active_models,omitempty"`
 	TemplateIDs  []string          `json:"template_ids,omitempty"`
 	SyncToolIDs  []string          `json:"sync_tool_ids,omitempty"`
+	// ModelProviders maps model names to their provider category
+	// (ModelProviderOpenAI, ModelProviderAnthropic, or ModelProviderGeneric).
+	// When unset, all models default to ModelProviderGeneric.
+	ModelProviders map[string]string `json:"model_providers,omitempty"`
 }
 
 type RenderResponse struct {
@@ -219,7 +241,7 @@ func renderFactoryDroid(req RenderRequest) (string, []AuxiliaryFile, error) {
 			DisplayName:     displayName,
 			MaxOutputTokens: factoryDroidMaxOutputTokens(model),
 			NoImageSupport:  false,
-			Provider:        factoryDroidProvider,
+			Provider:        factoryDroidProviderForModel(resolveProviderForModel(req, model)),
 		})
 	}
 	return marshalJSON(config)
@@ -270,6 +292,10 @@ func renderClaudeCodeSettings(req RenderRequest) (string, []AuxiliaryFile, error
 }
 
 func renderCodex(req RenderRequest) string {
+	wireAPI := "chat"
+	if resolveProviderForModel(req, resolveActiveModel("codex", "codex", req)) == ModelProviderOpenAI {
+		wireAPI = "responses"
+	}
 	return strings.Join([]string{
 		fmt.Sprintf("model = %q", resolveActiveModel("codex", "codex", req)),
 		`model_provider = "ppap"`,
@@ -277,7 +303,7 @@ func renderCodex(req RenderRequest) string {
 		`[model_providers.ppap]`,
 		`name = "PPAP"`,
 		fmt.Sprintf("base_url = %q", resolveBase(req)+"/v1"),
-		`wire_api = "chat"`,
+		fmt.Sprintf("wire_api = %q", wireAPI),
 		`env_key = "PROXY_API_KEY"`,
 	}, "\n")
 }
@@ -322,6 +348,10 @@ func renderAider(req RenderRequest) string {
 }
 
 func renderForgeCode(req RenderRequest) string {
+	wireAPI := "openai"
+	if resolveProviderForModel(req, resolveActiveModel("forgecode", "forgecode", req)) == ModelProviderOpenAI {
+		wireAPI = "responses"
+	}
 	return strings.Join([]string{
 		"# ppap-sync: managed",
 		"[session]",
@@ -332,7 +362,7 @@ func renderForgeCode(req RenderRequest) string {
 		"[model_providers.ppap]",
 		`name = "PPAP"`,
 		fmt.Sprintf("base_url = %q", resolveBase(req)+"/v1"),
-		`wire_api = "openai"`,
+		fmt.Sprintf("wire_api = %q", wireAPI),
 		fmt.Sprintf("api_key = %q", resolveKey(req)),
 	}, "\n")
 }
@@ -558,4 +588,40 @@ func factoryDroidCustomModelID(displayName string) string {
 		idPart = "Model"
 	}
 	return "custom:" + idPart
+}
+
+// resolveProviderForModel returns the provider category for a model name.
+// It checks ModelProviders first with the full model name, then falls back
+// to the model name without any provider prefix (e.g. "go/deepseek-v4-pro" -> "deepseek-v4-pro").
+// Returns ModelProviderGeneric when no mapping is found.
+func resolveProviderForModel(req RenderRequest, model string) string {
+	if req.ModelProviders == nil {
+		return ModelProviderGeneric
+	}
+	model = strings.TrimSpace(model)
+	if model == "" {
+		return ModelProviderGeneric
+	}
+	if p, ok := req.ModelProviders[model]; ok && p != "" {
+		return p
+	}
+	if idx := strings.LastIndex(model, "/"); idx >= 0 {
+		if p, ok := req.ModelProviders[model[idx+1:]]; ok && p != "" {
+			return p
+		}
+	}
+	return ModelProviderGeneric
+}
+
+// factoryDroidProviderForModel maps a provider category to the corresponding
+// Factory Droid settings.json "provider" value.
+func factoryDroidProviderForModel(provider string) string {
+	switch provider {
+	case ModelProviderOpenAI:
+		return "openai"
+	case ModelProviderAnthropic:
+		return "anthropic"
+	default:
+		return "generic-chat-completion-api"
+	}
 }
