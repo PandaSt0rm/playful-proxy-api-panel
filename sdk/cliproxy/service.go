@@ -1255,30 +1255,7 @@ func (s *Service) registerModelsForAuth(a *coreauth.Auth) {
 				}
 				if strings.EqualFold(compat.Name, compatName) {
 					isCompatAuth = true
-					// Convert compatibility models to registry models
-					ms := make([]*ModelInfo, 0, len(compat.Models))
-					for j := range compat.Models {
-						m := compat.Models[j]
-						// Use alias as model ID, fallback to name if alias is empty
-						modelID := m.Alias
-						if modelID == "" {
-							modelID = m.Name
-						}
-						modelThinking := m.Thinking
-						if modelThinking == nil {
-							modelThinking = thinking.DefaultThinkingForModel(m.Name)
-						}
-						ms = append(ms, &ModelInfo{
-							ID:          modelID,
-							Object:      "model",
-							Created:     time.Now().Unix(),
-							OwnedBy:     compat.Name,
-							Type:        "openai-compatibility",
-							DisplayName: modelID,
-							UserDefined: false,
-							Thinking:    modelThinking,
-						})
-					}
+					ms := buildOpenAICompatibilityConfigModels(compat)
 					// Register and return
 					if len(ms) > 0 {
 						if providerKey == "" {
@@ -1625,6 +1602,47 @@ func matchWildcard(pattern, value string) bool {
 type modelEntry interface {
 	GetName() string
 	GetAlias() string
+}
+
+func buildOpenAICompatibilityConfigModels(compat *config.OpenAICompatibility) []*ModelInfo {
+	if compat == nil || len(compat.Models) == 0 {
+		return nil
+	}
+	now := time.Now().Unix()
+	models := make([]*ModelInfo, 0, len(compat.Models))
+	for i := range compat.Models {
+		model := compat.Models[i]
+		modelID := strings.TrimSpace(model.Alias)
+		if modelID == "" {
+			modelID = strings.TrimSpace(model.Name)
+		}
+		if modelID == "" {
+			continue
+		}
+		modelType := "openai-compatibility"
+		if model.Image {
+			modelType = registry.OpenAIImageModelType
+		}
+		thinking := model.Thinking
+		if thinking == nil && !model.Image {
+			thinking = thinkingDefaultForOpenAICompatModel(model.Name)
+		}
+		models = append(models, &ModelInfo{
+			ID:          modelID,
+			Object:      "model",
+			Created:     now,
+			OwnedBy:     compat.Name,
+			Type:        modelType,
+			DisplayName: modelID,
+			UserDefined: false,
+			Thinking:    thinking,
+		})
+	}
+	return models
+}
+
+func thinkingDefaultForOpenAICompatModel(name string) *registry.ThinkingSupport {
+	return thinking.DefaultThinkingForModel(name)
 }
 
 func buildConfigModels[T modelEntry](models []T, ownedBy, modelType string) []*ModelInfo {

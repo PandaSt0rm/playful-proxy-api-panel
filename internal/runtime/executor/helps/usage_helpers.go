@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	internallogging "github.com/router-for-me/CLIProxyAPI/v7/internal/logging"
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v7/sdk/cliproxy/auth"
 	"github.com/router-for-me/CLIProxyAPI/v7/sdk/cliproxy/usage"
 	"github.com/tidwall/gjson"
@@ -25,6 +26,7 @@ type UsageReporter struct {
 	authType    string
 	apiKey      string
 	source      string
+	reasoning   string
 	requestedAt time.Time
 	once        sync.Once
 }
@@ -43,6 +45,7 @@ func NewUsageReporter(ctx context.Context, provider, model string, auth *cliprox
 		apiKey:      apiKey,
 		source:      resolveUsageSource(auth, apiKey),
 		authType:    resolveUsageAuthType(auth),
+		reasoning:   usage.ReasoningEffortFromContext(ctx),
 	}
 	if auth != nil {
 		reporter.authID = auth.ID
@@ -60,7 +63,7 @@ func (r *UsageReporter) PublishAdditionalModel(ctx context.Context, model string
 	if !ok {
 		return
 	}
-	usage.PublishRecord(ctx, record)
+	r.publishRecord(ctx, record)
 }
 
 func (r *UsageReporter) buildAdditionalModelRecord(ctx context.Context, model string, detail usage.Detail) (usage.Record, bool) {
@@ -97,7 +100,7 @@ func (r *UsageReporter) publishWithOutcome(ctx context.Context, detail usage.Det
 	}
 	detail = normalizeUsageDetailTotal(detail)
 	r.once.Do(func() {
-		usage.PublishRecord(ctx, r.buildRecord(ctx, detail, failed, fail))
+		r.publishRecord(ctx, r.buildRecord(ctx, detail, failed, fail))
 	})
 }
 
@@ -130,8 +133,13 @@ func (r *UsageReporter) EnsurePublished(ctx context.Context) {
 		return
 	}
 	r.once.Do(func() {
-		usage.PublishRecord(ctx, r.buildRecord(ctx, usage.Detail{}, false, usage.Failure{}))
+		r.publishRecord(ctx, r.buildRecord(ctx, usage.Detail{}, false, usage.Failure{}))
 	})
+}
+
+func (r *UsageReporter) publishRecord(ctx context.Context, record usage.Record) {
+	record.ResponseHeaders = internallogging.GetResponseHeaders(ctx)
+	usage.PublishRecord(ctx, record)
 }
 
 func (r *UsageReporter) buildRecord(ctx context.Context, detail usage.Detail, failed bool, failures ...usage.Failure) usage.Record {
@@ -158,6 +166,7 @@ func (r *UsageReporter) buildRecordForModel(ctx context.Context, model string, d
 		AuthID:           r.authID,
 		AuthIndex:        r.authIndex,
 		AuthType:         r.authType,
+		ReasoningEffort:  r.reasoning,
 		RequestedAt:      r.requestedAt,
 		Latency:          r.latency(),
 		FirstByteLatency: r.firstByteLatency(ctx),
