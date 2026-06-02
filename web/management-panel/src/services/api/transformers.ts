@@ -541,6 +541,12 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
   config.enableGeminiCliEndpoint = normalizeBoolean(
     raw['enable-gemini-cli-endpoint'] ?? raw.enableGeminiCliEndpoint
   );
+  const codexRaw = raw.codex;
+  config.codexIdentityConfuse = normalizeBoolean(
+    isRecord(codexRaw)
+      ? codexRaw['identity-confuse'] ?? codexRaw.identityConfuse
+      : raw.codexIdentityConfuse
+  );
   const proxyUrl = raw['proxy-url'] ?? raw.proxyUrl;
   config.proxyUrl =
     typeof proxyUrl === 'string'

@@ -1218,7 +1218,9 @@
           "force_model_prefix_desc": "Запросы к моделям без префикса используют только учётные данные без префикса",
           "session_affinity": "Маршрутизация с привязкой к сессии",
           "ws_auth": "Аутентификация WebSocket",
-          "ws_auth_desc": "Включить аутентификацию WebSocket (/v1/ws)"
+          "ws_auth_desc": "Включить аутентификацию WebSocket (/v1/ws)",
+          "codex_identity_confuse": "Маскировка идентичности Codex",
+          "codex_identity_confuse_desc": "Подменять prompt_cache_key и идентификатор установки Codex для каждой учётной записи (требуется маршрутизация fill-first или привязка сессии)."
         },
         "quota": {
           "title": "Резерв по квоте",

@@ -870,6 +870,12 @@ function getNextDirtyFields(
       nextValues.enableGeminiCliEndpoint === baselineValues.enableGeminiCliEndpoint
     );
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'codexIdentityConfuse')) {
+    updateDirty(
+      'codexIdentityConfuse',
+      nextValues.codexIdentityConfuse === baselineValues.codexIdentityConfuse
+    );
+  }
   if (Object.prototype.hasOwnProperty.call(patch, 'requestRetry')) {
     updateDirty('requestRetry', nextValues.requestRetry === baselineValues.requestRetry);
   }
@@ -1119,6 +1125,7 @@ export function useVisualConfig() {
       const payload = asRecord(parsed.payload);
       const streaming = asRecord(parsed.streaming);
       const upstreamConcurrency = asRecord(parsed['upstream-concurrency']);
+      const codex = asRecord(parsed.codex);
       const claudeHeaderDefaults = parseHeaderDefaults(parsed['claude-header-defaults']);
       const codexHeaderDefaults = parseHeaderDefaults(parsed['codex-header-defaults']);
 
@@ -1179,6 +1186,7 @@ export function useVisualConfig() {
         passthroughHeaders: Boolean(parsed['passthrough-headers']),
         disableImageGeneration: parseDisableImageGenerationMode(parsed['disable-image-generation']),
         enableGeminiCliEndpoint: Boolean(parsed['enable-gemini-cli-endpoint']),
+        codexIdentityConfuse: Boolean(codex?.['identity-confuse']),
         requestRetry: String(parsed['request-retry'] ?? ''),
         maxRetryCredentials: String(parsed['max-retry-credentials'] ?? ''),
         maxRetryInterval: String(parsed['max-retry-interval'] ?? ''),
@@ -1419,6 +1427,16 @@ export function useVisualConfig() {
           )
         ) {
           setBooleanInDoc(doc, ['enable-gemini-cli-endpoint'], values.enableGeminiCliEndpoint);
+        }
+        if (
+          shouldWriteManagedField(
+            doc,
+            ['codex', 'identity-confuse'],
+            dirtyFields,
+            'codexIdentityConfuse'
+          )
+        ) {
+          setBooleanInDoc(doc, ['codex', 'identity-confuse'], values.codexIdentityConfuse);
         }
         setIntFromStringInDoc(doc, ['request-retry'], values.requestRetry);
         setIntFromStringInDoc(doc, ['max-retry-credentials'], values.maxRetryCredentials);

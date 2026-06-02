@@ -1222,7 +1222,9 @@
           "force_model_prefix_desc": "Unprefixed model requests only use credentials without prefix",
           "session_affinity": "Session Affinity Routing",
           "ws_auth": "WebSocket Authentication",
-          "ws_auth_desc": "Enable WebSocket authentication (/v1/ws)"
+          "ws_auth_desc": "Enable WebSocket authentication (/v1/ws)",
+          "codex_identity_confuse": "Codex Identity Confuse",
+          "codex_identity_confuse_desc": "Remap Codex prompt_cache_key and installation identity per auth (requires fill-first routing or session affinity)."
         },
         "quota": {
           "title": "Quota Fallback",

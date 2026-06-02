@@ -32,6 +32,7 @@ export interface Config {
   passthroughHeaders?: boolean;
   disableImageGeneration?: DisableImageGenerationConfig;
   enableGeminiCliEndpoint?: boolean;
+  codexIdentityConfuse?: boolean;
   requestRetry?: number;
   maxRetryCredentials?: number;
   maxRetryInterval?: number;

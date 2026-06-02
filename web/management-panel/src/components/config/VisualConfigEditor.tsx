@@ -1450,6 +1450,21 @@ export function VisualConfigEditor({
                   disabled={disabled}
                   onChange={(wsAuth) => onChange({ wsAuth })}
                 />
+                <ToggleRow
+                  title={t('config_management.visual.sections.network.codex_identity_confuse', {
+                    defaultValue: 'Codex Identity Confuse',
+                  })}
+                  description={t(
+                    'config_management.visual.sections.network.codex_identity_confuse_desc',
+                    {
+                      defaultValue:
+                        'Remap Codex prompt_cache_key and installation identity per auth (requires fill-first routing or session affinity).',
+                    }
+                  )}
+                  checked={values.codexIdentityConfuse}
+                  disabled={disabled}
+                  onChange={(codexIdentityConfuse) => onChange({ codexIdentityConfuse })}
+                />
               </SectionGrid>
 
               <Divider />

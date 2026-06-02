@@ -125,6 +125,7 @@ export type VisualConfigValues = {
   passthroughHeaders: boolean;
   disableImageGeneration: DisableImageGenerationMode;
   enableGeminiCliEndpoint: boolean;
+  codexIdentityConfuse: boolean;
   requestRetry: string;
   maxRetryCredentials: string;
   maxRetryInterval: string;
@@ -189,6 +190,7 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   passthroughHeaders: false,
   disableImageGeneration: 'false',
   enableGeminiCliEndpoint: false,
+  codexIdentityConfuse: false,
   requestRetry: '',
   maxRetryCredentials: '',
   maxRetryInterval: '',
