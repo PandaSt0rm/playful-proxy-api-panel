@@ -328,6 +328,15 @@ func (s *EventStore) Record(ctx context.Context, record coreusage.Record) error 
 		return nil
 	}
 	event := EventFromRecord(ctx, record)
+	// Usage records are dispatched asynchronously, so the originating request
+	// context is frequently already canceled by the time we persist them. The
+	// success path publishes usage at end-of-stream, immediately before the
+	// HTTP handler cancels the request context, which would otherwise abort
+	// BeginTx with "context canceled" and silently drop every successful
+	// request (leaving only failures, which publish earlier in the lifecycle).
+	// Detach cancellation for the write; EventFromRecord above already captured
+	// the context values it needs, and WithoutCancel preserves them.
+	ctx = context.WithoutCancel(ctx)
 	result, err := s.InsertEvents(ctx, []UsageEvent{event})
 	if err != nil {
 		return err
