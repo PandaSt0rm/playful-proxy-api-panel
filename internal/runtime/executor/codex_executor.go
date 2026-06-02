@@ -32,8 +32,8 @@ import (
 )
 
 const (
-	codexUserAgent             = "codex_cli_rs/0.118.0 (Mac OS 26.3.1; arm64) iTerm.app/3.6.9"
-	codexOriginator            = "codex_cli_rs"
+	codexUserAgent             = "codex-tui/0.135.0 (Mac OS 26.5.0; arm64) iTerm.app/3.6.10 (codex-tui; 0.135.0)"
+	codexOriginator            = "codex-tui"
 	codexDefaultImageToolModel = "gpt-image-2"
 	codexTransportRetryLimit   = 1
 )
@@ -212,6 +212,16 @@ func NewCodexExecutor(cfg *config.Config) *CodexExecutor { return &CodexExecutor
 
 func (e *CodexExecutor) Identifier() string { return "codex" }
 
+func translateCodexRequestPair(from, to sdktranslator.Format, model string, originalPayload, payload []byte, stream bool) ([]byte, []byte) {
+	if bytes.Equal(originalPayload, payload) {
+		body := sdktranslator.TranslateRequest(from, to, model, payload, stream)
+		return body, body
+	}
+	originalTranslated := sdktranslator.TranslateRequest(from, to, model, originalPayload, stream)
+	body := sdktranslator.TranslateRequest(from, to, model, payload, stream)
+	return originalTranslated, body
+}
+
 // PrepareRequest injects Codex credentials into the outgoing HTTP request.
 func (e *CodexExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth) error {
 	if req == nil {
@@ -245,7 +255,7 @@ func (e *CodexExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth
 	return httpClient.Do(httpReq)
 }
 
-func (e *CodexExecutor) doCodexRequestWithTransportRetry(ctx context.Context, auth *cliproxyauth.Auth, logInfo helps.UpstreamRequestLog, newRequest func() (*http.Request, error)) (*http.Response, error) {
+func (e *CodexExecutor) doCodexRequestWithTransportRetry(ctx context.Context, auth *cliproxyauth.Auth, reporter *helps.UsageReporter, logInfo helps.UpstreamRequestLog, newRequest func() (*http.Request, error)) (*http.Response, error) {
 	if newRequest == nil {
 		return nil, fmt.Errorf("codex executor: request factory is nil")
 	}
@@ -260,6 +270,7 @@ func (e *CodexExecutor) doCodexRequestWithTransportRetry(ctx context.Context, au
 		helps.RecordAPIRequest(ctx, e.cfg, attemptLog)
 
 		httpClient := helps.NewProxyAwareHTTPClient(ctx, e.cfg, auth, 0)
+		httpClient = reporter.TrackHTTPClient(httpClient)
 		httpResp, errDo := httpClient.Do(httpReq)
 		if errDo == nil {
 			return httpResp, nil
@@ -357,7 +368,7 @@ func (e *CodexExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, re
 		baseURL = "https://chatgpt.com/backend-api/codex"
 	}
 
-	reporter := helps.NewUsageReporter(ctx, e.Identifier(), baseModel, auth)
+	reporter := helps.NewExecutorUsageReporter(ctx, e, baseModel, auth)
 	defer reporter.TrackFailure(ctx, &err)
 
 	from := opts.SourceFormat
@@ -367,8 +378,7 @@ func (e *CodexExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, re
 		originalPayloadSource = opts.OriginalRequest
 	}
 	originalPayload := originalPayloadSource
-	originalTranslated := sdktranslator.TranslateRequest(from, to, baseModel, originalPayload, false)
-	body := sdktranslator.TranslateRequest(from, to, baseModel, req.Payload, false)
+	originalTranslated, body := translateCodexRequestPair(from, to, baseModel, originalPayload, req.Payload, false)
 
 	body, err = thinking.ApplyThinking(body, req.Model, from.String(), to.String(), e.Identifier())
 	if err != nil {
@@ -388,8 +398,27 @@ func (e *CodexExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, re
 	if e.cfg == nil || e.cfg.DisableImageGeneration == config.DisableImageGenerationOff {
 		body = ensureImageGenerationTool(body, baseModel, auth)
 	}
+	body = sanitizeOpenAIResponsesReasoningEncryptedContent(ctx, "codex executor", body)
+	reporter.SetTranslatedReasoningEffort(body, to.String())
 
 	url := strings.TrimSuffix(baseURL, "/") + "/responses"
+	var identityState codexIdentityConfuseState
+	var upstreamBody []byte
+	buildRequest := func() (*http.Request, error) {
+		httpReq, confusedBody, state, errReq := e.cacheHelper(ctx, from, url, auth, req, originalPayloadSource, body)
+		if errReq != nil {
+			return nil, errReq
+		}
+		applyCodexHeaders(httpReq, auth, apiKey, true, e.cfg)
+		applyCodexIdentityConfuseHeaders(httpReq.Header, &state)
+		identityState = state
+		upstreamBody = confusedBody
+		return httpReq, nil
+	}
+	prebuiltReq, err := buildRequest()
+	if err != nil {
+		return resp, err
+	}
 	var authID, authLabel, authType, authValue string
 	if auth != nil {
 		authID = auth.ID
@@ -399,20 +428,20 @@ func (e *CodexExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, re
 	logInfo := helps.UpstreamRequestLog{
 		URL:       url,
 		Method:    http.MethodPost,
-		Body:      body,
+		Body:      upstreamBody,
 		Provider:  e.Identifier(),
 		AuthID:    authID,
 		AuthLabel: authLabel,
 		AuthType:  authType,
 		AuthValue: authValue,
 	}
-	httpResp, err := e.doCodexRequestWithTransportRetry(ctx, auth, logInfo, func() (*http.Request, error) {
-		httpReq, errReq := e.cacheHelper(ctx, from, url, req, body)
-		if errReq != nil {
-			return nil, errReq
+	httpResp, err := e.doCodexRequestWithTransportRetry(ctx, auth, reporter, logInfo, func() (*http.Request, error) {
+		if prebuiltReq != nil {
+			r := prebuiltReq
+			prebuiltReq = nil
+			return r, nil
 		}
-		applyCodexHeaders(httpReq, auth, apiKey, true, e.cfg)
-		return httpReq, nil
+		return buildRequest()
 	})
 	if err != nil {
 		return resp, err
@@ -425,6 +454,7 @@ func (e *CodexExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, re
 	helps.RecordAPIResponseMetadata(ctx, e.cfg, httpResp.StatusCode, httpResp.Header.Clone())
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
 		b, _ := io.ReadAll(httpResp.Body)
+		b = applyCodexIdentityConfuseResponsePayload(b, identityState)
 		helps.AppendAPIResponseChunk(ctx, e.cfg, b)
 		helps.LogWithRequestID(ctx).Debugf("request error, error status: %d, error message: %s", httpResp.StatusCode, helps.SummarizeErrorBody(httpResp.Header.Get("Content-Type"), b))
 		err = newCodexStatusErr(httpResp.StatusCode, b)
@@ -435,9 +465,10 @@ func (e *CodexExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, re
 		helps.RecordAPIResponseError(ctx, e.cfg, err)
 		return resp, err
 	}
-	helps.AppendAPIResponseChunk(ctx, e.cfg, data)
+	upstreamData := applyCodexIdentityConfuseResponsePayload(data, identityState)
+	helps.AppendAPIResponseChunk(ctx, e.cfg, upstreamData)
 
-	lines := bytes.Split(data, []byte("\n"))
+	lines := bytes.Split(upstreamData, []byte("\n"))
 	outputItemsByIndex := make(map[int64][]byte)
 	var outputItemsFallback [][]byte
 	for _, line := range lines {
@@ -500,7 +531,8 @@ func (e *CodexExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, re
 		}
 
 		var param any
-		out := sdktranslator.TranslateNonStream(ctx, to, from, req.Model, originalPayload, body, completedData, &param)
+		clientCompletedData := applyCodexIdentityExposeResponsePayload(completedData, identityState)
+		out := sdktranslator.TranslateNonStream(ctx, to, from, req.Model, originalPayload, body, clientCompletedData, &param)
 		resp = cliproxyexecutor.Response{Payload: out, Headers: httpResp.Header.Clone()}
 		return resp, nil
 	}
@@ -516,7 +548,7 @@ func (e *CodexExecutor) executeCompact(ctx context.Context, auth *cliproxyauth.A
 		baseURL = "https://chatgpt.com/backend-api/codex"
 	}
 
-	reporter := helps.NewUsageReporter(ctx, e.Identifier(), baseModel, auth)
+	reporter := helps.NewExecutorUsageReporter(ctx, e, baseModel, auth)
 	defer reporter.TrackFailure(ctx, &err)
 
 	from := opts.SourceFormat
@@ -526,8 +558,7 @@ func (e *CodexExecutor) executeCompact(ctx context.Context, auth *cliproxyauth.A
 		originalPayloadSource = opts.OriginalRequest
 	}
 	originalPayload := originalPayloadSource
-	originalTranslated := sdktranslator.TranslateRequest(from, to, baseModel, originalPayload, false)
-	body := sdktranslator.TranslateRequest(from, to, baseModel, req.Payload, false)
+	originalTranslated, body := translateCodexRequestPair(from, to, baseModel, originalPayload, req.Payload, false)
 
 	body, err = thinking.ApplyThinking(body, req.Model, from.String(), to.String(), e.Identifier())
 	if err != nil {
@@ -543,8 +574,27 @@ func (e *CodexExecutor) executeCompact(ctx context.Context, auth *cliproxyauth.A
 	if e.cfg == nil || e.cfg.DisableImageGeneration == config.DisableImageGenerationOff {
 		body = ensureImageGenerationTool(body, baseModel, auth)
 	}
+	body = sanitizeOpenAIResponsesReasoningEncryptedContent(ctx, "codex executor", body)
+	reporter.SetTranslatedReasoningEffort(body, to.String())
 
 	url := strings.TrimSuffix(baseURL, "/") + "/responses/compact"
+	var identityState codexIdentityConfuseState
+	var upstreamBody []byte
+	buildRequest := func() (*http.Request, error) {
+		httpReq, confusedBody, state, errReq := e.cacheHelper(ctx, from, url, auth, req, originalPayloadSource, body)
+		if errReq != nil {
+			return nil, errReq
+		}
+		applyCodexHeaders(httpReq, auth, apiKey, false, e.cfg)
+		applyCodexIdentityConfuseHeaders(httpReq.Header, &state)
+		identityState = state
+		upstreamBody = confusedBody
+		return httpReq, nil
+	}
+	prebuiltReq, err := buildRequest()
+	if err != nil {
+		return resp, err
+	}
 	var authID, authLabel, authType, authValue string
 	if auth != nil {
 		authID = auth.ID
@@ -554,20 +604,20 @@ func (e *CodexExecutor) executeCompact(ctx context.Context, auth *cliproxyauth.A
 	logInfo := helps.UpstreamRequestLog{
 		URL:       url,
 		Method:    http.MethodPost,
-		Body:      body,
+		Body:      upstreamBody,
 		Provider:  e.Identifier(),
 		AuthID:    authID,
 		AuthLabel: authLabel,
 		AuthType:  authType,
 		AuthValue: authValue,
 	}
-	httpResp, err := e.doCodexRequestWithTransportRetry(ctx, auth, logInfo, func() (*http.Request, error) {
-		httpReq, errReq := e.cacheHelper(ctx, from, url, req, body)
-		if errReq != nil {
-			return nil, errReq
+	httpResp, err := e.doCodexRequestWithTransportRetry(ctx, auth, reporter, logInfo, func() (*http.Request, error) {
+		if prebuiltReq != nil {
+			r := prebuiltReq
+			prebuiltReq = nil
+			return r, nil
 		}
-		applyCodexHeaders(httpReq, auth, apiKey, false, e.cfg)
-		return httpReq, nil
+		return buildRequest()
 	})
 	if err != nil {
 		return resp, err
@@ -580,6 +630,7 @@ func (e *CodexExecutor) executeCompact(ctx context.Context, auth *cliproxyauth.A
 	helps.RecordAPIResponseMetadata(ctx, e.cfg, httpResp.StatusCode, httpResp.Header.Clone())
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
 		b, _ := io.ReadAll(httpResp.Body)
+		b = applyCodexIdentityConfuseResponsePayload(b, identityState)
 		helps.AppendAPIResponseChunk(ctx, e.cfg, b)
 		helps.LogWithRequestID(ctx).Debugf("request error, error status: %d, error message: %s", httpResp.StatusCode, helps.SummarizeErrorBody(httpResp.Header.Get("Content-Type"), b))
 		err = newCodexStatusErr(httpResp.StatusCode, b)
@@ -590,11 +641,13 @@ func (e *CodexExecutor) executeCompact(ctx context.Context, auth *cliproxyauth.A
 		helps.RecordAPIResponseError(ctx, e.cfg, err)
 		return resp, err
 	}
-	helps.AppendAPIResponseChunk(ctx, e.cfg, data)
-	reporter.Publish(ctx, helps.ParseOpenAIUsage(data))
+	upstreamData := applyCodexIdentityConfuseResponsePayload(data, identityState)
+	helps.AppendAPIResponseChunk(ctx, e.cfg, upstreamData)
+	reporter.Publish(ctx, helps.ParseOpenAIUsage(upstreamData))
 	reporter.EnsurePublished(ctx)
 	var param any
-	out := sdktranslator.TranslateNonStream(ctx, to, from, req.Model, originalPayload, body, data, &param)
+	clientData := applyCodexIdentityExposeResponsePayload(upstreamData, identityState)
+	out := sdktranslator.TranslateNonStream(ctx, to, from, req.Model, originalPayload, body, clientData, &param)
 	resp = cliproxyexecutor.Response{Payload: out, Headers: httpResp.Header.Clone()}
 	return resp, nil
 }
@@ -613,7 +666,7 @@ func (e *CodexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Au
 		baseURL = "https://chatgpt.com/backend-api/codex"
 	}
 
-	reporter := helps.NewUsageReporter(ctx, e.Identifier(), baseModel, auth)
+	reporter := helps.NewExecutorUsageReporter(ctx, e, baseModel, auth)
 	defer reporter.TrackFailure(ctx, &err)
 
 	from := opts.SourceFormat
@@ -623,8 +676,7 @@ func (e *CodexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Au
 		originalPayloadSource = opts.OriginalRequest
 	}
 	originalPayload := originalPayloadSource
-	originalTranslated := sdktranslator.TranslateRequest(from, to, baseModel, originalPayload, true)
-	body := sdktranslator.TranslateRequest(from, to, baseModel, req.Payload, true)
+	originalTranslated, body := translateCodexRequestPair(from, to, baseModel, originalPayload, req.Payload, true)
 
 	body, err = thinking.ApplyThinking(body, req.Model, from.String(), to.String(), e.Identifier())
 	if err != nil {
@@ -643,8 +695,27 @@ func (e *CodexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Au
 	if e.cfg == nil || e.cfg.DisableImageGeneration == config.DisableImageGenerationOff {
 		body = ensureImageGenerationTool(body, baseModel, auth)
 	}
+	body = sanitizeOpenAIResponsesReasoningEncryptedContent(ctx, "codex executor", body)
+	reporter.SetTranslatedReasoningEffort(body, to.String())
 
 	url := strings.TrimSuffix(baseURL, "/") + "/responses"
+	var identityState codexIdentityConfuseState
+	var upstreamBody []byte
+	buildRequest := func() (*http.Request, error) {
+		httpReq, confusedBody, state, errReq := e.cacheHelper(ctx, from, url, auth, req, originalPayloadSource, body)
+		if errReq != nil {
+			return nil, errReq
+		}
+		applyCodexHeaders(httpReq, auth, apiKey, true, e.cfg)
+		applyCodexIdentityConfuseHeaders(httpReq.Header, &state)
+		identityState = state
+		upstreamBody = confusedBody
+		return httpReq, nil
+	}
+	prebuiltReq, err := buildRequest()
+	if err != nil {
+		return nil, err
+	}
 	var authID, authLabel, authType, authValue string
 	if auth != nil {
 		authID = auth.ID
@@ -654,20 +725,20 @@ func (e *CodexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Au
 	logInfo := helps.UpstreamRequestLog{
 		URL:       url,
 		Method:    http.MethodPost,
-		Body:      body,
+		Body:      upstreamBody,
 		Provider:  e.Identifier(),
 		AuthID:    authID,
 		AuthLabel: authLabel,
 		AuthType:  authType,
 		AuthValue: authValue,
 	}
-	httpResp, err := e.doCodexRequestWithTransportRetry(ctx, auth, logInfo, func() (*http.Request, error) {
-		httpReq, errReq := e.cacheHelper(ctx, from, url, req, body)
-		if errReq != nil {
-			return nil, errReq
+	httpResp, err := e.doCodexRequestWithTransportRetry(ctx, auth, reporter, logInfo, func() (*http.Request, error) {
+		if prebuiltReq != nil {
+			r := prebuiltReq
+			prebuiltReq = nil
+			return r, nil
 		}
-		applyCodexHeaders(httpReq, auth, apiKey, true, e.cfg)
-		return httpReq, nil
+		return buildRequest()
 	})
 	if err != nil {
 		return nil, err
@@ -682,6 +753,7 @@ func (e *CodexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Au
 			helps.RecordAPIResponseError(ctx, e.cfg, readErr)
 			return nil, readErr
 		}
+		data = applyCodexIdentityConfuseResponsePayload(data, identityState)
 		helps.AppendAPIResponseChunk(ctx, e.cfg, data)
 		helps.LogWithRequestID(ctx).Debugf("request error, error status: %d, error message: %s", httpResp.StatusCode, helps.SummarizeErrorBody(httpResp.Header.Get("Content-Type"), data))
 		err = newCodexStatusErr(httpResp.StatusCode, data)
@@ -701,7 +773,7 @@ func (e *CodexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Au
 		outputItemsByIndex := make(map[int64][]byte)
 		var outputItemsFallback [][]byte
 		for scanner.Scan() {
-			line := scanner.Bytes()
+			line := applyCodexIdentityConfuseResponsePayload(scanner.Bytes(), identityState)
 			helps.AppendAPIResponseChunk(ctx, e.cfg, line)
 			translatedLine := bytes.Clone(line)
 
@@ -729,6 +801,7 @@ func (e *CodexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Au
 				}
 			}
 
+			translatedLine = applyCodexIdentityExposeResponsePayload(translatedLine, identityState)
 			chunks := sdktranslator.TranslateStream(ctx, to, from, req.Model, originalPayload, body, translatedLine, &param)
 			for i := range chunks {
 				select {
@@ -949,7 +1022,20 @@ func (e *CodexExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*
 	return auth, nil
 }
 
-func (e *CodexExecutor) cacheHelper(ctx context.Context, from sdktranslator.Format, url string, req cliproxyexecutor.Request, rawJSON []byte) (*http.Request, error) {
+type codexIdentityConfuseState struct {
+	enabled                bool
+	authID                 string
+	originalPromptCacheKey string
+	promptCacheKey         string
+	turnIDs                []codexIdentityReplacement
+}
+
+type codexIdentityReplacement struct {
+	original string
+	confused string
+}
+
+func (e *CodexExecutor) cacheHelper(ctx context.Context, from sdktranslator.Format, url string, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, userPayload []byte, rawJSON []byte) (*http.Request, []byte, codexIdentityConfuseState, error) {
 	var cache helps.CodexCache
 	if from == "claude" {
 		userIDResult := gjson.GetBytes(req.Payload, "metadata.user_id")
@@ -978,14 +1064,144 @@ func (e *CodexExecutor) cacheHelper(ctx context.Context, from sdktranslator.Form
 	if cache.ID != "" {
 		rawJSON, _ = sjson.SetBytes(rawJSON, "prompt_cache_key", cache.ID)
 	}
+	var identityState codexIdentityConfuseState
+	rawJSON, identityState = applyCodexIdentityConfuseBody(e.cfg, auth, userPayload, rawJSON)
+	if identityState.promptCacheKey != "" {
+		cache.ID = identityState.promptCacheKey
+	}
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(rawJSON))
 	if err != nil {
-		return nil, err
+		return nil, nil, codexIdentityConfuseState{}, err
 	}
 	if cache.ID != "" {
 		httpReq.Header.Set("Session_id", cache.ID)
 	}
-	return httpReq, nil
+	return httpReq, rawJSON, identityState, nil
+}
+
+func applyCodexIdentityConfuseBody(cfg *config.Config, auth *cliproxyauth.Auth, userPayload []byte, rawJSON []byte) ([]byte, codexIdentityConfuseState) {
+	if !codexIdentityConfuseEnabled(cfg) || auth == nil || strings.TrimSpace(auth.ID) == "" || len(rawJSON) == 0 {
+		return rawJSON, codexIdentityConfuseState{}
+	}
+
+	state := codexIdentityConfuseState{enabled: true, authID: strings.TrimSpace(auth.ID)}
+	if promptCacheKey := strings.TrimSpace(gjson.GetBytes(userPayload, "prompt_cache_key").String()); promptCacheKey != "" {
+		state.originalPromptCacheKey = promptCacheKey
+		state.promptCacheKey = codexIdentityConfuseUUID(auth.ID, "prompt-cache", promptCacheKey)
+		rawJSON, _ = sjson.SetBytes(rawJSON, "prompt_cache_key", state.promptCacheKey)
+	}
+	if installationID := strings.TrimSpace(gjson.GetBytes(userPayload, "client_metadata.x-codex-installation-id").String()); installationID != "" {
+		rawJSON, _ = sjson.SetBytes(rawJSON, "client_metadata.x-codex-installation-id", codexIdentityConfuseUUID(auth.ID, "installation", installationID))
+	}
+	if turnMetadata := strings.TrimSpace(gjson.GetBytes(rawJSON, "client_metadata.x-codex-turn-metadata").String()); turnMetadata != "" {
+		rawJSON, _ = sjson.SetBytes(rawJSON, "client_metadata.x-codex-turn-metadata", applyCodexTurnMetadataIdentityConfuse(turnMetadata, &state))
+	}
+	if state.promptCacheKey != "" {
+		if windowID := strings.TrimSpace(gjson.GetBytes(rawJSON, "client_metadata.x-codex-window-id").String()); windowID != "" {
+			rawJSON, _ = sjson.SetBytes(rawJSON, "client_metadata.x-codex-window-id", state.promptCacheKey+":0")
+		}
+	}
+
+	return rawJSON, state
+}
+
+func applyCodexIdentityConfuseHeaders(headers http.Header, state *codexIdentityConfuseState) {
+	if headers == nil {
+		return
+	}
+	if state == nil || !state.enabled {
+		return
+	}
+
+	if rawTurnMetadata := strings.TrimSpace(headers.Get("X-Codex-Turn-Metadata")); rawTurnMetadata != "" {
+		headers.Set("X-Codex-Turn-Metadata", applyCodexTurnMetadataIdentityConfuse(rawTurnMetadata, state))
+	}
+	if state.promptCacheKey == "" {
+		return
+	}
+
+	setHeaderCasePreserved(headers, "Session-Id", state.promptCacheKey)
+	if headerValueCaseInsensitive(headers, "session_id") != "" {
+		setHeaderCasePreserved(headers, "session_id", state.promptCacheKey)
+	}
+	if headerValueCaseInsensitive(headers, "Conversation_id") != "" {
+		setHeaderCasePreserved(headers, "Conversation_id", state.promptCacheKey)
+	}
+	headers.Set("X-Client-Request-Id", state.promptCacheKey)
+	headers.Set("Thread-Id", state.promptCacheKey)
+	headers.Set("X-Codex-Window-Id", state.promptCacheKey+":0")
+}
+
+func applyCodexTurnMetadataIdentityConfuse(rawTurnMetadata string, state *codexIdentityConfuseState) string {
+	updatedTurnMetadata := rawTurnMetadata
+	if state == nil || !state.enabled {
+		return updatedTurnMetadata
+	}
+	if state.promptCacheKey != "" && gjson.Get(rawTurnMetadata, "prompt_cache_key").Exists() {
+		updatedTurnMetadata, _ = sjson.Set(updatedTurnMetadata, "prompt_cache_key", state.promptCacheKey)
+	} else if state.promptCacheKey != "" && state.originalPromptCacheKey != "" {
+		updatedTurnMetadata = strings.ReplaceAll(updatedTurnMetadata, state.originalPromptCacheKey, state.promptCacheKey)
+	}
+	if turnID := strings.TrimSpace(gjson.Get(rawTurnMetadata, "turn_id").String()); turnID != "" {
+		updatedTurnMetadata, _ = sjson.Set(updatedTurnMetadata, "turn_id", state.confuseTurnID(turnID))
+	}
+	if state.promptCacheKey != "" && gjson.Get(rawTurnMetadata, "window_id").Exists() {
+		updatedTurnMetadata, _ = sjson.Set(updatedTurnMetadata, "window_id", state.promptCacheKey+":0")
+	}
+	return updatedTurnMetadata
+}
+
+func applyCodexIdentityConfuseResponsePayload(payload []byte, state codexIdentityConfuseState) []byte {
+	payload = replaceCodexIdentityResponsePayload(payload, state.originalPromptCacheKey, state.promptCacheKey)
+	for _, turnID := range state.turnIDs {
+		payload = replaceCodexIdentityResponsePayload(payload, turnID.original, turnID.confused)
+	}
+	return payload
+}
+
+func applyCodexIdentityExposeResponsePayload(payload []byte, state codexIdentityConfuseState) []byte {
+	payload = replaceCodexIdentityResponsePayload(payload, state.promptCacheKey, state.originalPromptCacheKey)
+	for _, turnID := range state.turnIDs {
+		payload = replaceCodexIdentityResponsePayload(payload, turnID.confused, turnID.original)
+	}
+	return payload
+}
+
+func (state *codexIdentityConfuseState) confuseTurnID(turnID string) string {
+	turnID = strings.TrimSpace(turnID)
+	if state == nil || !state.enabled || strings.TrimSpace(state.authID) == "" || turnID == "" {
+		return turnID
+	}
+	for _, replacement := range state.turnIDs {
+		if replacement.original == turnID || replacement.confused == turnID {
+			return replacement.confused
+		}
+	}
+	confusedTurnID := codexIdentityConfuseUUID(state.authID, "turn", turnID)
+	state.turnIDs = append(state.turnIDs, codexIdentityReplacement{original: turnID, confused: confusedTurnID})
+	return confusedTurnID
+}
+
+func replaceCodexIdentityResponsePayload(payload []byte, from string, to string) []byte {
+	from = strings.TrimSpace(from)
+	to = strings.TrimSpace(to)
+	if len(payload) == 0 || from == "" || to == "" || from == to || !bytes.Contains(payload, []byte(from)) {
+		return payload
+	}
+	return bytes.ReplaceAll(payload, []byte(from), []byte(to))
+}
+
+func codexIdentityConfuseEnabled(cfg *config.Config) bool {
+	if cfg == nil || !cfg.Codex.IdentityConfuse {
+		return false
+	}
+	strategy := strings.ToLower(strings.TrimSpace(cfg.Routing.Strategy))
+	return cfg.Routing.SessionAffinity || strategy == "fill-first" || strategy == "fillfirst" || strategy == "ff"
+}
+
+func codexIdentityConfuseUUID(authID string, kind string, value string) string {
+	name := strings.Join([]string{"cli-proxy-api", "codex", "identity-confuse", kind, strings.TrimSpace(authID), strings.TrimSpace(value)}, ":")
+	return uuid.NewSHA1(uuid.NameSpaceOID, []byte(name)).String()
 }
 
 func applyCodexHeaders(r *http.Request, auth *cliproxyauth.Auth, token string, stream bool, cfg *config.Config) {
