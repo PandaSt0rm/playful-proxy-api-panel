@@ -18,6 +18,9 @@ style.md
 node_modules
 dist
 dist-ssr
+coverage
+test-results
+playwright-report
 bun.lock
 *.local
 skills
