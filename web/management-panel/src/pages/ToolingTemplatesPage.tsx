@@ -427,7 +427,8 @@ export function ToolingTemplatesPage() {
   const [renderedTemplates, setRenderedTemplates] = useState<RenderedToolTemplate[]>([]);
   const [manualBlocks, setManualBlocks] = useState<ManualConfigBlock[]>([]);
   const [templatesLoading, setTemplatesLoading] = useState<boolean>(false);
-  const [templatesError, setTemplatesError] = useState<string>('');
+  const [templateMetadataError, setTemplateMetadataError] = useState<string>('');
+  const [templatesRenderError, setTemplatesRenderError] = useState<string>('');
 
   const modelsRequestId = useRef(0);
   const templatesRequestId = useRef(0);
@@ -479,7 +480,7 @@ export function ToolingTemplatesPage() {
       .catch((error: unknown) => {
         if (cancelled) return;
         setTemplateMetadata([]);
-        setTemplatesError(getErrorMessage(error) || t('tooling_templates.templates_error', {
+        setTemplateMetadataError(getErrorMessage(error) || t('tooling_templates.templates_error', {
           defaultValue: 'Could not load tooling templates from the server.',
         }));
       });
@@ -676,7 +677,7 @@ export function ToolingTemplatesPage() {
   useEffect(() => {
     const requestId = ++templatesRequestId.current;
     setTemplatesLoading(true);
-    setTemplatesError('');
+    setTemplatesRenderError('');
     toolingTemplatesApi
       .render({
         base_url: sharedInputsBase.baseUrl,
@@ -695,7 +696,7 @@ export function ToolingTemplatesPage() {
         if (templatesRequestId.current !== requestId) return;
         setRenderedTemplates([]);
         setManualBlocks([]);
-        setTemplatesError(getErrorMessage(error) || t('tooling_templates.templates_error', {
+        setTemplatesRenderError(getErrorMessage(error) || t('tooling_templates.templates_error', {
           defaultValue: 'Could not render tooling templates from the server.',
         }));
       })
@@ -721,6 +722,8 @@ export function ToolingTemplatesPage() {
     });
     return map;
   }, [templateMetadata]);
+
+  const templatesError = templatesRenderError || templateMetadataError;
 
   return (
     <div className={styles.container}>
@@ -994,21 +997,36 @@ export function ToolingTemplatesPage() {
                 )}
                 {manualBlocks.map((block) => {
                   const isOpen = manualConfigOpen[block.id];
+                  const blockTitle = t(block.title_key);
                   return (
                     <div key={block.id} className={styles.manualBlock}>
-                      <button
-                        type="button"
-                        className={styles.manualBlockHeader}
-                        onClick={() =>
-                          setManualConfigOpen((prev) => ({ ...prev, [block.id]: !prev[block.id] }))
-                        }
-                        aria-expanded={isOpen}
-                      >
-                        <span className={styles.manualBlockChevron} aria-hidden="true">
-                          {isOpen ? '▾' : '▸'}
-                        </span>
-                        <span className={styles.manualBlockTitle}>{t(block.title_key)}</span>
-                      </button>
+                      <div className={styles.manualBlockHeader}>
+                        <button
+                          type="button"
+                          className={styles.manualBlockToggle}
+                          onClick={() =>
+                            setManualConfigOpen((prev) => ({ ...prev, [block.id]: !prev[block.id] }))
+                          }
+                          aria-expanded={isOpen}
+                        >
+                          <span className={styles.manualBlockChevron} aria-hidden="true">
+                            {isOpen ? '▾' : '▸'}
+                          </span>
+                          <span className={styles.manualBlockTitle}>{blockTitle}</span>
+                        </button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopy(block.markdown)}
+                          disabled={!block.markdown}
+                          aria-label={t('tooling_templates.copy_template_aria', {
+                            defaultValue: 'Copy {{title}} markdown template',
+                            title: blockTitle,
+                          })}
+                        >
+                          {t('tooling_templates.copy_template', { defaultValue: 'Copy template' })}
+                        </Button>
+                      </div>
                       {isOpen && (
                         <div className={styles.manualBlockBody}>
                           {block.lines.map((line) => {

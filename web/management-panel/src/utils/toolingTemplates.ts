@@ -51,6 +51,7 @@ export interface ManualConfigLine {
 export interface ManualConfigBlock {
   id: 'openai' | 'anthropic';
   title_key: string;
+  markdown: string;
   lines: ManualConfigLine[];
 }
 

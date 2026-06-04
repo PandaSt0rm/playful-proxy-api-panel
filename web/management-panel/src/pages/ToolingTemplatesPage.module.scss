@@ -480,9 +480,19 @@
   align-items: center;
   gap: $spacing-sm;
   width: 100%;
+  padding-right: 8px;
+  background: var(--bg-secondary);
+}
+
+.manualBlockToggle {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex: 1;
+  min-width: 0;
   padding: 10px 12px;
   border: none;
-  background: var(--bg-secondary);
+  background: transparent;
   color: var(--text-primary);
   font-size: 13px;
   font-weight: 600;

@@ -1709,6 +1709,8 @@
     "refresh_models": "Refresh",
     "copy": "Copy",
     "copy_success": "Snippet copied to clipboard",
+    "copy_template": "Copy template",
+    "copy_template_aria": "Copy {{title}} markdown template",
     "factory_droid_title": "Factory Droid",
     "factory_droid_hint": "Save to ~/.factory/settings.json. Use the LAN IP if Droid runs on a different machine; some installs filter localhost. Per Factory's docs, models below ~30B parameters tend to underperform.",
     "opencode_title": "OpenCode",

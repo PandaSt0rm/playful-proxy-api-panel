@@ -103,10 +103,10 @@ func TestRenderRejectsInvalidMode(t *testing.T) {
 
 func TestRenderFactoryDroidOpenAIProvider(t *testing.T) {
 	req := RenderRequest{
-		BaseURL:    "http://localhost:8317",
-		APIKey:     "sk-test",
-		APIKeyMode: ModeEmbed,
-		Models:     []string{"gpt-5.5", "kimi-k2.6"},
+		BaseURL:     "http://localhost:8317",
+		APIKey:      "sk-test",
+		APIKeyMode:  ModeEmbed,
+		Models:      []string{"gpt-5.5", "kimi-k2.6"},
 		TemplateIDs: []string{"factory-droid"},
 		ModelProviders: map[string]string{
 			"gpt-5.5":   ModelProviderOpenAI,
@@ -151,10 +151,10 @@ func TestRenderFactoryDroidOpenAIProvider(t *testing.T) {
 
 func TestRenderFactoryDroidAnthropicProvider(t *testing.T) {
 	req := RenderRequest{
-		BaseURL:    "http://localhost:8317",
-		APIKey:     "sk-test",
-		APIKeyMode: ModeEmbed,
-		Models:     []string{"claude-sonnet-4-6"},
+		BaseURL:     "http://localhost:8317",
+		APIKey:      "sk-test",
+		APIKeyMode:  ModeEmbed,
+		Models:      []string{"claude-sonnet-4-6"},
 		TemplateIDs: []string{"factory-droid"},
 		ModelProviders: map[string]string{
 			"claude-sonnet-4-6": ModelProviderAnthropic,
@@ -179,10 +179,10 @@ func TestRenderFactoryDroidAnthropicProvider(t *testing.T) {
 
 func TestRenderFactoryDroidDefaultProviderWhenNoProviders(t *testing.T) {
 	req := RenderRequest{
-		BaseURL:    "http://localhost:8317",
-		APIKey:     "sk-test",
-		APIKeyMode: ModeEmbed,
-		Models:     []string{"some-model"},
+		BaseURL:     "http://localhost:8317",
+		APIKey:      "sk-test",
+		APIKeyMode:  ModeEmbed,
+		Models:      []string{"some-model"},
 		TemplateIDs: []string{"factory-droid"},
 	}
 
@@ -204,10 +204,10 @@ func TestRenderFactoryDroidDefaultProviderWhenNoProviders(t *testing.T) {
 
 func TestRenderCodexOpenAIUsesResponsesWireAPI(t *testing.T) {
 	req := RenderRequest{
-		BaseURL:    "http://localhost:8317",
-		APIKey:     "sk-test",
-		APIKeyMode: ModeEmbed,
-		Models:     []string{"gpt-5.5"},
+		BaseURL:     "http://localhost:8317",
+		APIKey:      "sk-test",
+		APIKeyMode:  ModeEmbed,
+		Models:      []string{"gpt-5.5"},
 		TemplateIDs: []string{"codex"},
 		ModelProviders: map[string]string{
 			"gpt-5.5": ModelProviderOpenAI,
@@ -226,10 +226,10 @@ func TestRenderCodexOpenAIUsesResponsesWireAPI(t *testing.T) {
 
 func TestRenderCodexGenericUsesChatWireAPI(t *testing.T) {
 	req := RenderRequest{
-		BaseURL:    "http://localhost:8317",
-		APIKey:     "sk-test",
-		APIKeyMode: ModeEmbed,
-		Models:     []string{"kimi-k2.6"},
+		BaseURL:     "http://localhost:8317",
+		APIKey:      "sk-test",
+		APIKeyMode:  ModeEmbed,
+		Models:      []string{"kimi-k2.6"},
 		TemplateIDs: []string{"codex"},
 		ModelProviders: map[string]string{
 			"kimi-k2.6": ModelProviderGeneric,
@@ -248,10 +248,10 @@ func TestRenderCodexGenericUsesChatWireAPI(t *testing.T) {
 
 func TestRenderForgeCodeOpenAIUsesResponsesWireAPI(t *testing.T) {
 	req := RenderRequest{
-		BaseURL:    "http://localhost:8317",
-		APIKey:     "sk-test",
-		APIKeyMode: ModeEmbed,
-		Models:     []string{"gpt-5.5"},
+		BaseURL:     "http://localhost:8317",
+		APIKey:      "sk-test",
+		APIKeyMode:  ModeEmbed,
+		Models:      []string{"gpt-5.5"},
 		TemplateIDs: []string{"forgecode"},
 		ModelProviders: map[string]string{
 			"gpt-5.5": ModelProviderOpenAI,
@@ -270,10 +270,10 @@ func TestRenderForgeCodeOpenAIUsesResponsesWireAPI(t *testing.T) {
 
 func TestRenderForgeCodeGenericUsesOpenAIWireAPI(t *testing.T) {
 	req := RenderRequest{
-		BaseURL:    "http://localhost:8317",
-		APIKey:     "sk-test",
-		APIKeyMode: ModeEmbed,
-		Models:     []string{"kimi-k2.6"},
+		BaseURL:     "http://localhost:8317",
+		APIKey:      "sk-test",
+		APIKeyMode:  ModeEmbed,
+		Models:      []string{"kimi-k2.6"},
 		TemplateIDs: []string{"forgecode"},
 	}
 
@@ -296,6 +296,105 @@ func TestResolveProviderForModelPrefixStrip(t *testing.T) {
 	if p := resolveProviderForModel(req, "go/deepseek-v4-pro"); p != ModelProviderGeneric {
 		t.Fatalf("expected generic after prefix strip, got %q", p)
 	}
+}
+
+func TestRenderManualConfigOpenAIMarkdownIncludesEndpointsAndModels(t *testing.T) {
+	req := RenderRequest{
+		BaseURL:    "http://localhost:8317",
+		APIKey:     "sk-test",
+		APIKeyMode: ModeEmbed,
+		Models:     []string{"gpt-5.5", "kimi-k2.6"},
+	}
+
+	resp, err := Render(req)
+	if err != nil {
+		t.Fatalf("Render returned error: %v", err)
+	}
+
+	markdown := manualBlockMarkdown(t, resp, "openai")
+	for _, want := range []string{
+		"# OpenAI-Compatible Endpoint",
+		"`http://localhost:8317/v1/chat/completions`",
+		"`http://localhost:8317/v1/models`",
+		"Authorization: Bearer sk-test",
+		"- `gpt-5.5`",
+		"- `kimi-k2.6`",
+	} {
+		if !containsString(markdown, want) {
+			t.Fatalf("openai markdown missing %q, got:\n%s", want, markdown)
+		}
+	}
+}
+
+func TestRenderManualConfigAnthropicMarkdownIncludesEndpointsAndModels(t *testing.T) {
+	req := RenderRequest{
+		BaseURL:    "http://localhost:8317",
+		APIKey:     "sk-test",
+		APIKeyMode: ModeEmbed,
+		Models:     []string{"claude-haiku-4-5"},
+	}
+
+	resp, err := Render(req)
+	if err != nil {
+		t.Fatalf("Render returned error: %v", err)
+	}
+
+	markdown := manualBlockMarkdown(t, resp, "anthropic")
+	for _, want := range []string{
+		"# Anthropic-Compatible Endpoint",
+		"`http://localhost:8317/v1/messages`",
+		"x-api-key: sk-test",
+		"anthropic-version: 2023-06-01",
+		"- `claude-haiku-4-5`",
+	} {
+		if !containsString(markdown, want) {
+			t.Fatalf("anthropic markdown missing %q, got:\n%s", want, markdown)
+		}
+	}
+}
+
+func TestRenderManualConfigPlaceholderModeUsesPlaceholders(t *testing.T) {
+	resp, err := Render(RenderRequest{APIKeyMode: ModePlaceholder})
+	if err != nil {
+		t.Fatalf("Render returned error: %v", err)
+	}
+
+	markdown := manualBlockMarkdown(t, resp, "openai")
+	for _, want := range []string{
+		"`<your-proxy-base-url>/v1`",
+		"Authorization: Bearer ${PROXY_API_KEY}",
+		"- `<your-model-id>`",
+	} {
+		if !containsString(markdown, want) {
+			t.Fatalf("placeholder markdown missing %q, got:\n%s", want, markdown)
+		}
+	}
+}
+
+func TestRenderManualConfigEmbedModeWithoutModelsNotesNoneSelected(t *testing.T) {
+	resp, err := Render(RenderRequest{APIKeyMode: ModeEmbed, APIKey: "sk-test", BaseURL: "http://localhost:8317"})
+	if err != nil {
+		t.Fatalf("Render returned error: %v", err)
+	}
+
+	markdown := manualBlockMarkdown(t, resp, "openai")
+	if !containsString(markdown, "_No models selected._") {
+		t.Fatalf("expected no-models note, got:\n%s", markdown)
+	}
+}
+
+func manualBlockMarkdown(t *testing.T, resp *RenderResponse, id string) string {
+	t.Helper()
+	for _, block := range resp.ManualConfig {
+		if block.ID == id {
+			if block.Markdown == "" {
+				t.Fatalf("manual config block %q has empty markdown", id)
+			}
+			return block.Markdown
+		}
+	}
+	t.Fatalf("manual config block %q not found", id)
+	return ""
 }
 
 func containsWireAPI(content, value string) bool {

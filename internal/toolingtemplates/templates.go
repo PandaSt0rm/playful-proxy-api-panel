@@ -28,20 +28,20 @@ const (
 )
 
 var factoryDroidMaxOutputTokensByModel = map[string]int{
-	"deepseek-v4-flash": 384000,
-	"deepseek-v4-pro":   384000,
-	"minimax-m2.7":      131072,
-	"gpt-5.5":           32768,
-	"gpt-5.5-fast":      32768,
-	"gpt-5.5-pro":       32768,
-	"gpt-5.4":           32768,
-	"gpt-5.4-fast":      32768,
-	"gpt-5.4-mini":      32768,
-	"gpt-5.3-codex":     32768,
-	"gpt-5.3-codex-fast": 32768,
+	"deepseek-v4-flash":   384000,
+	"deepseek-v4-pro":     384000,
+	"minimax-m2.7":        131072,
+	"gpt-5.5":             32768,
+	"gpt-5.5-fast":        32768,
+	"gpt-5.5-pro":         32768,
+	"gpt-5.4":             32768,
+	"gpt-5.4-fast":        32768,
+	"gpt-5.4-mini":        32768,
+	"gpt-5.3-codex":       32768,
+	"gpt-5.3-codex-fast":  32768,
 	"gpt-5.3-codex-spark": 32768,
-	"gpt-5.2":           32768,
-	"gpt-5.2-codex":     32768,
+	"gpt-5.2":             32768,
+	"gpt-5.2-codex":       32768,
 }
 
 type TemplateMetadata struct {
@@ -87,6 +87,7 @@ type AuxiliaryFile struct {
 type ManualConfigBlock struct {
 	ID       string             `json:"id"`
 	TitleKey string             `json:"title_key"`
+	Markdown string             `json:"markdown"`
 	Lines    []ManualConfigLine `json:"lines"`
 }
 
@@ -414,10 +415,12 @@ func renderCurlAnthropic(req RenderRequest) string {
 func buildManualConfig(req RenderRequest) []ManualConfigBlock {
 	base := resolveBase(req)
 	key := resolveKey(req)
+	models := resolveModelList(req)
 	return []ManualConfigBlock{
 		{
 			ID:       "openai",
 			TitleKey: "tooling_templates.manual_config.openai.title",
+			Markdown: buildOpenAIManualMarkdown(base, key, models),
 			Lines: []ManualConfigLine{
 				{ID: "openai-base", LabelKey: "tooling_templates.manual_config.openai.base_url", Value: base + "/v1"},
 				{ID: "openai-chat", LabelKey: "tooling_templates.manual_config.openai.chat_url", Value: base + "/v1/chat/completions"},
@@ -428,6 +431,7 @@ func buildManualConfig(req RenderRequest) []ManualConfigBlock {
 		{
 			ID:       "anthropic",
 			TitleKey: "tooling_templates.manual_config.anthropic.title",
+			Markdown: buildAnthropicManualMarkdown(base, key, models),
 			Lines: []ManualConfigLine{
 				{ID: "anthropic-base", LabelKey: "tooling_templates.manual_config.anthropic.base_url", Value: base},
 				{ID: "anthropic-messages", LabelKey: "tooling_templates.manual_config.anthropic.messages_url", Value: base + "/v1/messages"},
@@ -436,6 +440,61 @@ func buildManualConfig(req RenderRequest) []ManualConfigBlock {
 			},
 		},
 	}
+}
+
+// buildOpenAIManualMarkdown renders a self-contained markdown brief describing
+// the proxy as an OpenAI-compatible (Chat Completions) provider, including the
+// supplied model list. It is intended for pasting into an agent builder.
+func buildOpenAIManualMarkdown(base, key string, models []string) string {
+	lines := []string{
+		"# OpenAI-Compatible Endpoint",
+		"",
+		"Use this as an OpenAI-compatible (Chat Completions) provider. Send requests to the Chat Completions URL with the auth header below; it is wire-compatible with the OpenAI `/v1/chat/completions` schema.",
+		"",
+		"- **Base URL:** `" + base + "/v1`",
+		"- **Chat Completions:** `" + base + "/v1/chat/completions`",
+		"- **Models:** `" + base + "/v1/models`",
+		"- **Auth header:** `Authorization: Bearer " + key + "`",
+		"",
+		"## Models",
+		"",
+	}
+	return strings.Join(append(lines, manualMarkdownModelLines(models)...), "\n") + "\n"
+}
+
+// buildAnthropicManualMarkdown renders a self-contained markdown brief describing
+// the proxy as an Anthropic-compatible (Messages API) provider, including the
+// supplied model list. It is intended for pasting into an agent builder.
+func buildAnthropicManualMarkdown(base, key string, models []string) string {
+	lines := []string{
+		"# Anthropic-Compatible Endpoint",
+		"",
+		"Use this as an Anthropic-compatible (Messages API) provider. Send requests to the Messages URL with the auth and version headers below; it is wire-compatible with the Anthropic `/v1/messages` schema.",
+		"",
+		"- **Base URL:** `" + base + "`",
+		"- **Messages:** `" + base + "/v1/messages`",
+		"- **Auth header:** `x-api-key: " + key + "`",
+		"- **Version header:** `anthropic-version: 2023-06-01`",
+		"",
+		"## Models",
+		"",
+	}
+	return strings.Join(append(lines, manualMarkdownModelLines(models)...), "\n") + "\n"
+}
+
+// manualMarkdownModelLines renders the model list as markdown bullets, or a
+// single italic note when no models are available (embed mode with an empty
+// selection). resolveModelList already substitutes a placeholder id in
+// placeholder mode, so an empty slice here means the user selected none.
+func manualMarkdownModelLines(models []string) []string {
+	if len(models) == 0 {
+		return []string{"_No models selected._"}
+	}
+	lines := make([]string, 0, len(models))
+	for _, model := range models {
+		lines = append(lines, "- `"+model+"`")
+	}
+	return lines
 }
 
 func resolveBase(req RenderRequest) string {
