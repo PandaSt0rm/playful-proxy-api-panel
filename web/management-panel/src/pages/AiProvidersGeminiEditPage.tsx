@@ -279,28 +279,30 @@ export function AiProvidersGeminiEditPage() {
     (selectedModels: ModelInfo[]) => {
       if (!selectedModels.length) return;
 
-      let addedCount = 0;
-      setForm((prev) => {
-        const mergedMap = new Map<string, { name: string; alias: string }>();
-        prev.modelEntries.forEach((entry) => {
-          const name = stripGeminiModelResourceName(entry.name);
-          if (!name) return;
-          mergedMap.set(name, { name, alias: entry.alias?.trim() || '' });
-        });
-
-        selectedModels.forEach((model) => {
-          const name = stripGeminiModelResourceName(model.name);
-          if (!name || mergedMap.has(name)) return;
-          mergedMap.set(name, { name, alias: model.alias ?? '' });
-          addedCount += 1;
-        });
-
-        const mergedEntries = Array.from(mergedMap.values());
-        return {
-          ...prev,
-          modelEntries: mergedEntries.length ? mergedEntries : [{ name: '', alias: '' }],
-        };
+      // Compute the merge (and the added count) before scheduling the state
+      // update. The setForm updater runs asynchronously, so reading a counter
+      // mutated inside it would observe 0 here and the notification below would
+      // never fire.
+      const mergedMap = new Map<string, { name: string; alias: string }>();
+      form.modelEntries.forEach((entry) => {
+        const name = stripGeminiModelResourceName(entry.name);
+        if (!name) return;
+        mergedMap.set(name, { name, alias: entry.alias?.trim() || '' });
       });
+
+      let addedCount = 0;
+      selectedModels.forEach((model) => {
+        const name = stripGeminiModelResourceName(model.name);
+        if (!name || mergedMap.has(name)) return;
+        mergedMap.set(name, { name, alias: model.alias ?? '' });
+        addedCount += 1;
+      });
+
+      const mergedEntries = Array.from(mergedMap.values());
+      setForm((prev) => ({
+        ...prev,
+        modelEntries: mergedEntries.length ? mergedEntries : [{ name: '', alias: '' }],
+      }));
 
       if (addedCount > 0) {
         showNotification(
@@ -309,7 +311,7 @@ export function AiProvidersGeminiEditPage() {
         );
       }
     },
-    [setForm, showNotification, t]
+    [form.modelEntries, setForm, showNotification, t]
   );
 
   const fetchGeminiModelDiscovery = useCallback(async () => {

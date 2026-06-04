@@ -152,7 +152,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
                 checked={selected}
                 onChange={() => onToggleSelect(file.name)}
                 className={styles.cardSelection}
-                aria-label={
+                ariaLabel={
                   selected ? t('auth_files.batch_deselect') : t('auth_files.batch_select_all')
                 }
                 title={selected ? t('auth_files.batch_deselect') : t('auth_files.batch_select_all')}

@@ -29,7 +29,9 @@ const normalizeBoolean = (value: unknown): boolean | undefined => {
     if (['true', '1', 'yes', 'y', 'on'].includes(trimmed)) return true;
     if (['false', '0', 'no', 'n', 'off'].includes(trimmed)) return false;
   }
-  return Boolean(value);
+  // Unrecognized types (objects, arrays, unparseable strings) are treated as
+  // "unset" rather than coerced — Boolean({}) === true would corrupt the field.
+  return undefined;
 };
 
 const normalizeNumber = (value: unknown): number | undefined => {
@@ -77,7 +79,10 @@ const normalizeModelAliases = (models: unknown): ModelAlias[] => {
       }
       if (!isRecord(item)) return null;
 
-      const name = item.name || item.id || item.model;
+      const name =
+        (typeof item.name === 'string' && item.name.trim()) ||
+        (typeof item.id === 'string' && item.id.trim()) ||
+        (typeof item.model === 'string' && item.model.trim());
       if (!name) return null;
       const alias = item.alias || item.display_name || item.displayName;
       const priority = item.priority ?? item['priority'];
@@ -99,7 +104,7 @@ const normalizeModelAliases = (models: unknown): ModelAlias[] => {
       if (thinking) {
         entry.thinking = thinking;
         if (Array.isArray(thinking.levels) && thinking.levels.length) {
-          entry.thinkingLevels = thinking.levels;
+          entry.thinkingLevels = [...thinking.levels];
         }
       }
       return entry;
@@ -355,8 +360,12 @@ const normalizeGeminiKeyConfig = (item: unknown): GeminiKeyConfig | null => {
 
 const normalizeOpenAIProvider = (provider: unknown): OpenAIProviderConfig | null => {
   if (!isRecord(provider)) return null;
-  const name = provider.name || provider.id;
-  const baseUrl = provider['base-url'] ?? provider.baseUrl;
+  const name =
+    (typeof provider.name === 'string' ? provider.name.trim() : '') ||
+    (typeof provider.id === 'string' ? provider.id.trim() : '');
+  const baseUrl =
+    (typeof provider['base-url'] === 'string' ? provider['base-url'].trim() : '') ||
+    (typeof provider.baseUrl === 'string' ? provider.baseUrl.trim() : '');
   if (!name || !baseUrl) return null;
 
   let apiKeyEntries: ApiKeyEntry[] = [];
@@ -388,7 +397,10 @@ const normalizeOpenAIProvider = (provider: unknown): OpenAIProviderConfig | null
   if (prefix) result.prefix = prefix;
   if (headers) result.headers = headers;
   if (models.length) result.models = models;
-  if (priority !== undefined) result.priority = Number(priority);
+  if (priority !== undefined && priority !== null && String(priority).trim() !== '') {
+    const parsed = Number(priority);
+    if (Number.isFinite(parsed)) result.priority = parsed;
+  }
   if (testModel) result.testModel = String(testModel);
   const disableCooling = normalizeBoolean(
     provider['disable-cooling'] ?? provider.disableCooling ?? provider.disable_cooling

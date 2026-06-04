@@ -55,14 +55,14 @@ export function useAuthFilesModels(): UseAuthFilesModelsResult {
         modelsCacheRef.current.set(item.name, models);
         setModelsList(models);
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : '';
-        if (
-          errorMessage.includes('404') ||
-          errorMessage.includes('not found') ||
-          errorMessage.includes('Not Found')
-        ) {
+        const status =
+          typeof err === 'object' && err !== null && 'status' in err
+            ? (err as { status?: unknown }).status
+            : undefined;
+        if (status === 404) {
           setModelsError('unsupported');
         } else {
+          const errorMessage = err instanceof Error ? err.message : '';
           showNotification(`${t('notification.load_failed')}: ${errorMessage}`, 'error');
         }
       } finally {

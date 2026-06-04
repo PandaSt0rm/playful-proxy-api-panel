@@ -39,13 +39,18 @@ export function NotificationContainer() {
       return updated;
     });
 
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     if (removedIds.size > 0) {
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         setAnimatedNotifications((prev) => prev.filter((n) => !removedIds.has(n.id)));
       }, ANIMATION_DURATION);
     }
 
     prevNotificationsRef.current = notifications;
+
+    return () => {
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
+    };
   }, [notifications]);
 
   const handleClose = (id: string) => {

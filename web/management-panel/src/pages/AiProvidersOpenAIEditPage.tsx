@@ -370,6 +370,11 @@ export function AiProvidersOpenAIEditPage() {
         setTestMessage(message);
         showNotification(message, 'warning');
       }
+    } catch (err: unknown) {
+      const message = getErrorMessage(err) || t('ai_providers.openai_test_all_failed', { count: validKeyIndexes.length });
+      setTestStatus('error');
+      setTestMessage(message);
+      showNotification(message, 'error');
     } finally {
       setIsTestingKeys(false);
     }

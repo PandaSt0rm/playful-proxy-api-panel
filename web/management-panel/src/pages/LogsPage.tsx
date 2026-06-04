@@ -189,7 +189,7 @@ export function LogsPage() {
       const data = await logsApi.fetchLogs(params);
 
       // Keep the latest timestamp for incremental polling.
-      if (data['latest-timestamp']) {
+      if (typeof data['latest-timestamp'] === 'number' && data['latest-timestamp'] > 0) {
         latestTimestampRef.current = data['latest-timestamp'];
       }
 

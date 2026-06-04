@@ -307,7 +307,8 @@ export function AiProvidersCodexEditPage() {
     !loading &&
     !invalidIndexParam &&
     !invalidIndex &&
-    !concurrencyLimitError;
+    !concurrencyLimitError &&
+    Boolean((form.baseUrl ?? '').trim());
 
   const discoveredModelsFiltered = useMemo(() => {
     const filter = modelDiscoverySearch.trim().toLowerCase();
@@ -334,30 +335,32 @@ export function AiProvidersCodexEditPage() {
     (selectedModels: ModelInfo[]) => {
       if (!selectedModels.length) return;
 
-      let addedCount = 0;
-      setForm((prev) => {
-        const mergedMap = new Map<string, { name: string; alias: string }>();
-        prev.modelEntries.forEach((entry) => {
-          const name = entry.name.trim();
-          if (!name) return;
-          mergedMap.set(name.toLowerCase(), { name, alias: entry.alias?.trim() || '' });
-        });
-
-        selectedModels.forEach((model) => {
-          const name = String(model.name ?? '').trim();
-          if (!name) return;
-          const key = name.toLowerCase();
-          if (mergedMap.has(key)) return;
-          mergedMap.set(key, { name, alias: model.alias ?? '' });
-          addedCount += 1;
-        });
-
-        const mergedEntries = Array.from(mergedMap.values());
-        return {
-          ...prev,
-          modelEntries: mergedEntries.length ? mergedEntries : [{ name: '', alias: '' }],
-        };
+      // Compute the merge (and the added count) before scheduling the state
+      // update. The setForm updater runs asynchronously, so reading a counter
+      // mutated inside it would observe 0 here and the notification below would
+      // never fire.
+      const mergedMap = new Map<string, { name: string; alias: string }>();
+      form.modelEntries.forEach((entry) => {
+        const name = entry.name.trim();
+        if (!name) return;
+        mergedMap.set(name.toLowerCase(), { name, alias: entry.alias?.trim() || '' });
       });
+
+      let addedCount = 0;
+      selectedModels.forEach((model) => {
+        const name = String(model.name ?? '').trim();
+        if (!name) return;
+        const key = name.toLowerCase();
+        if (mergedMap.has(key)) return;
+        mergedMap.set(key, { name, alias: model.alias ?? '' });
+        addedCount += 1;
+      });
+
+      const mergedEntries = Array.from(mergedMap.values());
+      setForm((prev) => ({
+        ...prev,
+        modelEntries: mergedEntries.length ? mergedEntries : [{ name: '', alias: '' }],
+      }));
 
       if (addedCount > 0) {
         showNotification(
@@ -366,7 +369,7 @@ export function AiProvidersCodexEditPage() {
         );
       }
     },
-    [setForm, showNotification, t]
+    [form.modelEntries, setForm, showNotification, t]
   );
 
   const fetchCodexModelDiscovery = useCallback(async () => {

@@ -442,6 +442,9 @@ function zaiDurationHint(ms: number): string | undefined {
 }
 
 function zaiResetHint(data: Record<string, unknown>): string | undefined {
+  // Capture a single reference point so every delta below is measured against
+  // the same instant (avoids sub-tick drift between targetMs and the subtraction).
+  const now = Date.now();
   const absoluteKeys = [
     'nextResetTime',
     'next_reset_time',
@@ -453,8 +456,8 @@ function zaiResetHint(data: Record<string, unknown>): string | undefined {
   for (const key of absoluteKeys) {
     const value = normalizeNumberValue(data[key]);
     if (value !== null && value > 0) {
-      const targetMs = value > 1e12 ? value : value > 1e9 ? value * 1000 : Date.now() + value * 1000;
-      const hint = zaiDurationHint(targetMs - Date.now());
+      const targetMs = value > 1e12 ? value : value > 1e9 ? value * 1000 : now + value * 1000;
+      const hint = zaiDurationHint(targetMs - now);
       if (hint) return hint;
     }
 
@@ -463,15 +466,15 @@ function zaiResetHint(data: Record<string, unknown>): string | undefined {
     const asNumber = normalizeNumberValue(raw);
     if (asNumber !== null && asNumber > 0) {
       const targetMs =
-        asNumber > 1e12 ? asNumber : asNumber > 1e9 ? asNumber * 1000 : Date.now() + asNumber * 1000;
-      const hint = zaiDurationHint(targetMs - Date.now());
+        asNumber > 1e12 ? asNumber : asNumber > 1e9 ? asNumber * 1000 : now + asNumber * 1000;
+      const hint = zaiDurationHint(targetMs - now);
       if (hint) return hint;
       continue;
     }
 
     const parsed = new Date(raw).getTime();
     if (!Number.isNaN(parsed)) {
-      const hint = zaiDurationHint(parsed - Date.now());
+      const hint = zaiDurationHint(parsed - now);
       if (hint) return hint;
     }
   }
@@ -527,7 +530,10 @@ function toZaiQuotaRow(item: ZaiQuotaLimit, index: number): ZaiQuotaRow | null {
   return {
     id: type.toLowerCase().replace(/[^a-z0-9]+/g, '-') || `limit-${index}`,
     ...zaiFallbackLabel(type, index),
-    usedPercent: normalizedUsedPercent,
+    usedPercent:
+      normalizedUsedPercent === null
+        ? null
+        : Math.max(0, Math.min(100, normalizedUsedPercent)),
     remainingPercent,
     currentValue,
     limit,

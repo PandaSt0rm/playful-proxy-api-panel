@@ -11,7 +11,7 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
-import { useNotificationStore } from '@/stores';
+import { useConfigStore, useNotificationStore } from '@/stores';
 import { buildHeaderObject } from '@/utils/headers';
 import { buildClaudeMessagesEndpoint, parseTextList } from '@/components/providers/utils';
 import { ProviderConcurrencyInput } from '@/components/providers';
@@ -46,6 +46,7 @@ export function AiProvidersClaudeEditPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { showNotification } = useNotificationStore();
+  const config = useConfigStore((state) => state.config);
   const {
     hasIndexParam,
     invalidIndexParam,
@@ -358,6 +359,7 @@ export function AiProvidersClaudeEditPage() {
             <ProviderConcurrencyInput
               providerKey="claude"
               value={concurrencyLimit}
+              config={config?.upstreamConcurrency}
               disabled={saving || disableControls || isTesting}
               error={concurrencyLimitError}
               onChange={setConcurrencyLimit}

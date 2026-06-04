@@ -319,6 +319,9 @@ export interface ZaiQuotaLimit {
   remaining?: number | string;
   total?: number | string;
   limit?: number | string;
+  /** Intentional: mirrors an upstream Z.AI response field that is misspelled
+   *  "totol". Kept as a read fallback (see builders.ts toZaiQuotaRow); do not
+   *  "correct" the spelling or the fallback silently stops matching the API. */
   totol?: number | string;
   nextResetTime?: number | string;
   next_reset_time?: number | string;

@@ -121,6 +121,12 @@ export function VertexSection({
                   <span className={styles.fieldLabel}>{t('common.api_key')}:</span>
                   <span className={styles.fieldValue}>{maskApiKey(item.apiKey)}</span>
                 </div>
+                {item.priority !== undefined && (
+                  <div className={styles.fieldRow}>
+                    <span className={styles.fieldLabel}>{t('common.priority')}:</span>
+                    <span className={styles.fieldValue}>{item.priority}</span>
+                  </div>
+                )}
                 {item.prefix && (
                   <div className={styles.fieldRow}>
                     <span className={styles.fieldLabel}>{t('common.prefix')}:</span>
@@ -160,9 +166,9 @@ export function VertexSection({
                       {t('ai_providers.vertex_models_count')}: {item.models.length}
                     </span>
                     {item.models.map((model) => (
-                      <span key={`${model.name}-${model.alias || 'default'}`} className={styles.modelTag}>
+                      <span key={model.name} className={styles.modelTag}>
                         <span className={styles.modelName}>{model.name}</span>
-                        {model.alias && (
+                        {model.alias && model.alias !== model.name && (
                           <span className={styles.modelAlias}>{model.alias}</span>
                         )}
                       </span>

@@ -92,6 +92,7 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const splashContentRef = useRef<HTMLDivElement>(null);
   const splashTitleRef = useRef<HTMLHeadingElement>(null);
+  const navigateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const detectedBase = useMemo(() => detectApiBaseFromLocation(), []);
   const splashTitle = t('splash.title');
@@ -121,7 +122,7 @@ export function LoginPage() {
         if (autoLoggedIn) {
           setAutoLoginSuccess(true);
           // Delay navigation long enough to show the success animation.
-          setTimeout(() => {
+          navigateTimeoutRef.current = setTimeout(() => {
             const redirect = (location.state as RedirectState | null)?.from?.pathname || '/';
             navigate(redirect, { replace: true });
           }, 1500);
@@ -138,6 +139,12 @@ export function LoginPage() {
     };
 
     init();
+
+    return () => {
+      if (navigateTimeoutRef.current) {
+        clearTimeout(navigateTimeoutRef.current);
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

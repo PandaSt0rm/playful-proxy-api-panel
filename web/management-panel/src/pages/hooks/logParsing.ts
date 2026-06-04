@@ -35,7 +35,10 @@ const detectHttpStatusCode = (text: string): number | undefined => {
 
 const extractIp = (text: string): string | undefined => {
   const ipv4Match = text.match(LOG_IPV4_REGEX);
-  if (ipv4Match) return ipv4Match[0];
+  if (ipv4Match) {
+    const octets = ipv4Match[0].split('.').map((octet) => Number.parseInt(octet, 10));
+    if (octets.every((octet) => octet >= 0 && octet <= 255)) return ipv4Match[0];
+  }
 
   const ipv6Match = text.match(LOG_IPV6_REGEX);
   if (!ipv6Match) return undefined;

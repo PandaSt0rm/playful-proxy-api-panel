@@ -285,9 +285,9 @@ export function AiProvidersVertexEditPage() {
         models: form.modelEntries
           .map((entry) => {
             const name = entry.name.trim();
+            if (!name) return null;
             const alias = entry.alias.trim();
-            if (!name || !alias) return null;
-            return { name, alias };
+            return { name, alias: alias || name };
           })
           .filter(Boolean) as ProviderKeyConfig['models'],
         excludedModels: parseExcludedModels(form.excludedText),

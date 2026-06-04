@@ -4,6 +4,12 @@ type SwipeBackOptions = {
   enabled?: boolean;
   edgeSize?: number;
   threshold?: number;
+  /**
+   * Invoked when a back-swipe gesture completes. Must be referentially stable
+   * (wrap in `useCallback`): it is an effect dependency, so an inline function
+   * tears down and reinstalls the pointer listeners on every render, which can
+   * drop in-progress gestures.
+   */
   onBack: () => void;
 };
 

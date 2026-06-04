@@ -230,7 +230,7 @@ const fetchAntigravityQuota = async (
     }
   }
 
-  if (hadSuccess) {
+  if (hadSuccess && !lastError) {
     return [];
   }
 

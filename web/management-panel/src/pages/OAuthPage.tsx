@@ -365,7 +365,8 @@ export function OAuthPage() {
       <div className={styles.content}>
         {PROVIDERS.map((provider) => {
           const state = states[provider.id] || {};
-          const canSubmitCallback = CALLBACK_SUPPORTED.includes(provider.id) && Boolean(state.url);
+          const canSubmitCallback =
+            CALLBACK_SUPPORTED.includes(provider.id) && Boolean(state.url) && state.state !== undefined;
           const loginButtonLabel =
             state.status === 'success'
               ? t('auth_login.login_another_account')

@@ -21,6 +21,23 @@ export interface ApiCallResult<T = unknown> {
   body: T | null;
 }
 
+// The upstream `/api-call` proxy returns headers as Go's http.Header shape
+// (Record<string, string[]>), but tolerate a flat Record<string, string> too.
+// Normalizing here removes an unchecked `as` cast that would silently lie about
+// the value shape to downstream consumers.
+const normalizeHeaderMap = (input: unknown): Record<string, string[]> => {
+  if (input === null || typeof input !== 'object') return {};
+  const result: Record<string, string[]> = {};
+  for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
+    if (Array.isArray(value)) {
+      result[key] = value.map((item) => String(item));
+    } else if (value !== undefined && value !== null) {
+      result[key] = [String(value)];
+    }
+  }
+  return result;
+};
+
 const normalizeBody = (input: unknown): { bodyText: string; body: unknown | null } => {
   if (input === undefined || input === null) {
     return { bodyText: '', body: null };
@@ -84,8 +101,12 @@ export const apiCallApi = {
     config?: AxiosRequestConfig
   ): Promise<ApiCallResult> => {
     const response = await apiClient.post<Record<string, unknown>>('/api-call', payload, config);
-    const statusCode = Number(response?.status_code ?? response?.statusCode ?? 0);
-    const header = (response?.header ?? response?.headers ?? {}) as Record<string, string[]>;
+    const parsedStatus = Number(response?.status_code ?? response?.statusCode);
+    // Callers gate on `statusCode < 200 || statusCode >= 300`; a non-numeric or
+    // absent status must fall back to 0 (an error per those guards) rather than
+    // NaN, which would slip through both comparisons as a false success.
+    const statusCode = Number.isFinite(parsedStatus) ? parsedStatus : 0;
+    const header = normalizeHeaderMap(response?.header ?? response?.headers);
     const { bodyText, body } = normalizeBody(response?.body);
 
     return {

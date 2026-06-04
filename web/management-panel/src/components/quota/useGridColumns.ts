@@ -21,7 +21,7 @@ export function useGridColumns(
         const updateColumns = () => {
             const containerWidth = element.clientWidth;
             const effectiveItemWidth = itemMinWidth + gap;
-            const count = Math.floor((containerWidth + gap) / effectiveItemWidth);
+            const count = Math.floor((containerWidth + gap) / Math.max(1, effectiveItemWidth));
             setColumns(Math.max(1, count));
         };
 

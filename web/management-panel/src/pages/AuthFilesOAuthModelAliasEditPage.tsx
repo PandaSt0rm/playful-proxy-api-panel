@@ -13,6 +13,7 @@ import { useAuthStore, useNotificationStore } from '@/stores';
 import { authFilesApi } from '@/services/api';
 import type { AuthFileItem, OAuthModelAliasEntry } from '@/types';
 import { generateId } from '@/utils/helpers';
+import { normalizeProviderKey } from '@/features/authFiles/constants';
 import styles from './AuthFilesOAuthModelAliasEditPage.module.scss';
 
 type AuthFileModelItem = { id: string; display_name?: string; type?: string; owned_by?: string };
@@ -34,8 +35,6 @@ const OAUTH_PROVIDER_PRESETS = [
 ];
 
 const OAUTH_PROVIDER_EXCLUDES = new Set(['all', 'unknown', 'empty']);
-
-const normalizeProviderKey = (value: string) => value.trim().toLowerCase();
 
 const buildEmptyMappingEntry = (): OAuthModelMappingFormEntry => ({
   id: generateId(),
@@ -196,6 +195,9 @@ export function AuthFilesOAuthModelAliasEditPage() {
           setModelAliasUnsupported(true);
           return;
         }
+
+        const errorMessage = err instanceof Error ? err.message : '';
+        showNotification(`${t('notification.load_failed')}: ${errorMessage}`, 'error');
       } finally {
         if (!cancelled) {
           setInitialLoading(false);
@@ -212,7 +214,7 @@ export function AuthFilesOAuthModelAliasEditPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [showNotification, t]);
 
   useEffect(() => {
     if (!resolvedProviderKey) {

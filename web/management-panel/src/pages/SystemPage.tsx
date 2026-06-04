@@ -15,6 +15,7 @@ import {
 import { configApi, versionApi } from '@/services/api';
 import { apiKeysApi } from '@/services/api/apiKeys';
 import { classifyModels } from '@/utils/models';
+import { normalizeApiKeyList } from '@/utils/apiKeys';
 import { STORAGE_KEY_AUTH } from '@/utils/constants';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import iconGemini from '@/assets/icons/gemini.svg';
@@ -117,31 +118,6 @@ export function SystemPage() {
     if (!iconEntry) return null;
     if (typeof iconEntry === 'string') return iconEntry;
     return resolvedTheme === 'dark' ? iconEntry.dark : iconEntry.light;
-  };
-
-  const normalizeApiKeyList = (input: unknown): string[] => {
-    if (!Array.isArray(input)) return [];
-    const seen = new Set<string>();
-    const keys: string[] = [];
-
-    input.forEach((item) => {
-      const record =
-        item !== null && typeof item === 'object' && !Array.isArray(item)
-          ? (item as Record<string, unknown>)
-          : null;
-      const value =
-        typeof item === 'string'
-          ? item
-          : record
-            ? (record['api-key'] ?? record['apiKey'] ?? record.key ?? record.Key)
-            : '';
-      const trimmed = String(value ?? '').trim();
-      if (!trimmed || seen.has(trimmed)) return;
-      seen.add(trimmed);
-      keys.push(trimmed);
-    });
-
-    return keys;
   };
 
   const resolveApiKeysForModels = useCallback(async () => {

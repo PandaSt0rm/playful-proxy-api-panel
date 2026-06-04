@@ -197,9 +197,22 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
 
   function generateSecureApiKey(): string {
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    const array = new Uint8Array(17);
-    crypto.getRandomValues(array);
-    return 'sk-' + Array.from(array, (b) => charset[b % charset.length]).join('');
+    // Reject bytes in the biased tail so each charset index is equally likely
+    // (256 is not a multiple of 62, so a plain modulo over-weights the first
+    // few characters). The largest usable byte is the highest multiple of
+    // charset.length that fits in a byte, minus one.
+    const limit = Math.floor(256 / charset.length) * charset.length;
+    const chars: string[] = [];
+    while (chars.length < 17) {
+      const array = new Uint8Array(17 - chars.length);
+      crypto.getRandomValues(array);
+      for (const b of array) {
+        if (b >= limit) continue;
+        chars.push(charset[b % charset.length]);
+        if (chars.length === 17) break;
+      }
+    }
+    return 'sk-' + chars.join('');
   }
 
   const openAddModal = () => {

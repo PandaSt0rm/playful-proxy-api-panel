@@ -696,7 +696,9 @@ export function UsagePage() {
   const totalCachedTokens = filteredRecords.length
     ? filteredRecords.reduce((total, record) => total + safeNumber(record.detail.tokens?.cached_tokens), 0)
     : safeNumber(usage.total_cached_tokens);
-  const totalOutputTokens = filteredRecords.reduce((total, record) => total + safeNumber(record.detail.tokens?.output_tokens), 0);
+  const totalOutputTokens = filteredRecords.length
+    ? filteredRecords.reduce((total, record) => total + safeNumber(record.detail.tokens?.output_tokens), 0)
+    : Math.max(safeNumber(usage.total_tokens) - safeNumber(usage.total_input_tokens), 0);
   const estimatedTotalCost = useMemo(() => {
     const priced = filteredRecords.filter((record) => record.cost !== null);
     if (!priced.length) return null;

@@ -80,6 +80,10 @@ export function AutocompleteInput({
       );
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
+      if (!isOpen) {
+          setIsOpen(true);
+          return;
+      }
       setHighlightedIndex(prev => prev > 0 ? prev - 1 : 0);
     } else if (e.key === 'Enter') {
       if (isOpen && highlightedIndex >= 0 && highlightedIndex < filteredOptions.length) {
@@ -146,7 +150,7 @@ export function AutocompleteInput({
             }}>
                 {filteredOptions.map((opt, index) => (
                     <div
-                        key={`${opt.value}-${index}`}
+                        key={opt.value}
                         onClick={() => handleSelect(opt.value)}
                         style={{
                             padding: '8px 12px',

@@ -12,6 +12,7 @@ import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { useAuthStore, useNotificationStore } from '@/stores';
 import { authFilesApi } from '@/services/api';
+import { normalizeProviderKey } from '@/features/authFiles/constants';
 import type { AuthFileItem, OAuthModelAliasEntry } from '@/types';
 import styles from './AuthFilesOAuthExcludedEditPage.module.scss';
 
@@ -32,8 +33,6 @@ const OAUTH_PROVIDER_PRESETS = [
 ];
 
 const OAUTH_PROVIDER_EXCLUDES = new Set(['all', 'unknown', 'empty']);
-
-const normalizeProviderKey = (value: string) => value.trim().toLowerCase();
 
 export function AuthFilesOAuthExcludedEditPage() {
   const { t } = useTranslation();

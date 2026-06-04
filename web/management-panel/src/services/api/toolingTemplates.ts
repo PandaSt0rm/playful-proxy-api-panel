@@ -23,15 +23,28 @@ interface ToolingTemplatesRenderRequest {
 }
 
 const asTemplateList = (data: unknown): ToolTemplateMetadata[] => {
-  const value = data as Partial<ToolingTemplatesListResponse>;
-  return Array.isArray(value.templates) ? value.templates : [];
+  const value = data as Partial<ToolingTemplatesListResponse> | null | undefined;
+  return Array.isArray(value?.templates) ? value.templates : [];
+};
+
+// Validate the fields the UI actually consumes (id/content/language are read
+// when rendering each snippet) rather than blind-casting, so a malformed
+// element from the server is dropped instead of rendered as `undefined`.
+const isRenderedTemplate = (value: unknown): value is RenderedToolTemplate => {
+  if (!value || typeof value !== 'object') return false;
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.id === 'string' &&
+    typeof record.content === 'string' &&
+    typeof record.language === 'string'
+  );
 };
 
 const asRenderResponse = (data: unknown): ToolingTemplatesRenderResponse => {
-  const value = data as Partial<ToolingTemplatesRenderResponse>;
+  const value = data as Partial<ToolingTemplatesRenderResponse> | null | undefined;
   return {
-    templates: Array.isArray(value.templates) ? (value.templates as RenderedToolTemplate[]) : [],
-    manual_config: Array.isArray(value.manual_config) ? value.manual_config : [],
+    templates: Array.isArray(value?.templates) ? value.templates.filter(isRenderedTemplate) : [],
+    manual_config: Array.isArray(value?.manual_config) ? value.manual_config : [],
   };
 };
 

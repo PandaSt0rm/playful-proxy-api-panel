@@ -229,6 +229,7 @@ export function MainLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const languageMenuRef = useRef<HTMLDivElement | null>(null);
   const themeMenuRef = useRef<HTMLDivElement | null>(null);
@@ -461,23 +462,31 @@ export function MainLayout() {
   }, []);
 
   const handleRefreshAll = async () => {
-    clearCache();
-    const results = await Promise.allSettled([
-      fetchConfig(undefined, true),
-      triggerHeaderRefresh(),
-    ]);
-    const rejected = results.find((result) => result.status === 'rejected');
-    if (rejected && rejected.status === 'rejected') {
-      const reason = rejected.reason;
-      const message =
-        typeof reason === 'string' ? reason : reason instanceof Error ? reason.message : '';
-      showNotification(
-        `${t('notification.refresh_failed')}${message ? `: ${message}` : ''}`,
-        'error'
-      );
+    if (isRefreshing) {
       return;
     }
-    showNotification(t('notification.data_refreshed'), 'success');
+    setIsRefreshing(true);
+    try {
+      clearCache();
+      const results = await Promise.allSettled([
+        fetchConfig(undefined, true),
+        triggerHeaderRefresh(),
+      ]);
+      const rejected = results.find((result) => result.status === 'rejected');
+      if (rejected && rejected.status === 'rejected') {
+        const reason = rejected.reason;
+        const message =
+          typeof reason === 'string' ? reason : reason instanceof Error ? reason.message : '';
+        showNotification(
+          `${t('notification.refresh_failed')}${message ? `: ${message}` : ''}`,
+          'error'
+        );
+        return;
+      }
+      showNotification(t('notification.data_refreshed'), 'success');
+    } finally {
+      setIsRefreshing(false);
+    }
   };
   const mobileSidebarToggleLabel = sidebarOpen
     ? t('sidebar.toggle_collapse', { defaultValue: 'Close navigation' })
@@ -524,6 +533,7 @@ export function MainLayout() {
             variant="ghost"
             size="sm"
             onClick={handleRefreshAll}
+            disabled={isRefreshing}
             title={t('header.refresh_all')}
           >
             {headerIcons.refresh}

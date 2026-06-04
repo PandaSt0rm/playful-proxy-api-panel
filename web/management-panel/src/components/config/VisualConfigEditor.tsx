@@ -523,9 +523,6 @@ export function VisualConfigEditor({
     /* ---- Cache content scroller – resolved once ---- */
     const contentScroller = document.querySelector('.content') as HTMLElement | null;
 
-    /* ---- Cache floating height from previous frame ---- */
-    let cachedFloatingHeight = floatingElement.getBoundingClientRect().height || 200;
-
     let frameId = 0;
 
     const updateFloatingPosition = () => {
@@ -533,9 +530,10 @@ export function VisualConfigEditor({
 
       const anchorRect = anchorElement.getBoundingClientRect();
       const workspaceRect = workspaceElement.getBoundingClientRect();
+      const floatingHeight = floatingElement.getBoundingClientRect().height || 200;
       const stickyTop = headerHeight + 20;
       const viewportPadding = 16;
-      const maxTop = workspaceRect.bottom - cachedFloatingHeight;
+      const maxTop = workspaceRect.bottom - floatingHeight;
       const unclampedTop = Math.min(Math.max(anchorRect.top, stickyTop), maxTop);
       const top = Math.max(unclampedTop, viewportPadding);
       const left = Math.max(anchorRect.left, viewportPadding);
@@ -561,7 +559,6 @@ export function VisualConfigEditor({
 
     const handleResize = () => {
       headerHeight = computeHeaderHeight();
-      cachedFloatingHeight = floatingElement.getBoundingClientRect().height || cachedFloatingHeight;
       requestPositionUpdate();
     };
 

@@ -208,6 +208,12 @@ export const useAuthStore = create<AuthStoreState>()(
           obfuscatedStorage.removeItem(name);
         }
       })),
+      // Security note: when the user opts into "remember password", the
+      // management key is persisted to localStorage under reversible obfuscation
+      // (see secureStorage / encryption — explicitly NOT a security boundary).
+      // It is therefore readable by any script with access to this origin (XSS).
+      // This matches the upstream panel's behavior; a hardened deployment should
+      // move to an HttpOnly server-side session instead of a client-held key.
       partialize: (state) => ({
         apiBase: state.apiBase,
         ...(state.rememberPassword ? { managementKey: state.managementKey } : {}),
