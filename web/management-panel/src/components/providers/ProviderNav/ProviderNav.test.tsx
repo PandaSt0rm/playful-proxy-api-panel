@@ -72,6 +72,9 @@ describe('ProviderNav', () => {
     mountProviderAnchors();
 
     renderWithRouter(<ProviderNav />, { route: '/ai-providers' });
+    // Flush the mount-time requestAnimationFrame recompute first; otherwise it
+    // can land after the click and overwrite the clicked provider state.
+    await new Promise((resolve) => requestAnimationFrame(resolve));
     await user.click(screen.getByRole('button', { name: 'Codex' }));
 
     expect(screen.getByRole('button', { name: 'Codex' })).toHaveAttribute('aria-pressed', 'true');
