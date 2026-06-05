@@ -775,6 +775,10 @@ func (s *Service) Run(ctx context.Context) error {
 	if homeEnabled {
 		forceHomeRuntimeConfig(s.cfg)
 		redisqueue.SetUsageStatisticsEnabled(true)
+		// The redisqueue usage plugin gates on the internal usage toggle,
+		// which was seeded from the raw config before home mode forced
+		// usage statistics on; re-enable it so forwarding actually runs.
+		internalusage.SetStatisticsEnabled(true)
 	}
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
