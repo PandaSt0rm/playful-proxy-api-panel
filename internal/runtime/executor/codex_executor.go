@@ -278,7 +278,10 @@ func codexReasoningReplayScopeFromRequest(ctx context.Context, from sdktranslato
 		return codexReasoningReplayScope{}
 	}
 	return codexReasoningReplayScope{
-		modelName:  thinking.ParseSuffix(req.Model).ModelName,
+		// Use provider-aware suffix parsing so hyphen thinking aliases
+		// (e.g. "<base>-high") collapse to the same base model as the
+		// parenthesized form and share one replay cache entry.
+		modelName:  thinking.ParseSuffixForModel(req.Model, "codex").ModelName,
 		sessionKey: codexReasoningReplaySessionKey(ctx, from, req, opts, body),
 	}
 }
