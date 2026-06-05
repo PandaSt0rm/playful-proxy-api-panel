@@ -1200,9 +1200,11 @@
           "debug": "Debug Mode",
           "debug_desc": "Enable verbose debug logging",
           "commercial_mode": "Commercial Mode",
-          "commercial_mode_desc": "Disable high-overhead middleware to support high concurrency",
+          "commercial_mode_desc": "Disable high-overhead middleware and request logging to support high concurrency",
           "logging_to_file": "Log to File",
           "logging_to_file_desc": "Save logs to files",
+          "request_log": "Request Log",
+          "request_log_desc": "Enable detailed request logging endpoints and storage. Ignored while Commercial Mode is on.",
           "logs_max_size": "Log File Size Limit (MB)"
         },
         "network": {

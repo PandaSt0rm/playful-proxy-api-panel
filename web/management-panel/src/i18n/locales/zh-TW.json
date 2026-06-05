@@ -1225,9 +1225,11 @@
           "debug": "除錯模式",
           "debug_desc": "啟用詳細的除錯記錄",
           "commercial_mode": "商業模式",
-          "commercial_mode_desc": "停用高開銷中介軟體以支援高並行",
+          "commercial_mode_desc": "停用高開銷中介軟體與請求日誌以支援高並行",
           "logging_to_file": "寫入記錄檔",
           "logging_to_file_desc": "將記錄儲存到檔案",
+          "request_log": "請求日誌",
+          "request_log_desc": "啟用詳細的請求日誌端點與儲存。商業模式開啟時此設定將被忽略。",
           "logs_max_size": "記錄檔大小限制（MB）"
         },
         "network": {

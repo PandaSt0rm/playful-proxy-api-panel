@@ -960,12 +960,8 @@ export function VisualConfigEditor({
                   onChange={(loggingToFile) => onChange({ loggingToFile })}
                 />
                 <ToggleRow
-                  title={t('config_management.visual.sections.system.request_log', {
-                    defaultValue: 'Request Log',
-                  })}
-                  description={t('config_management.visual.sections.system.request_log_desc', {
-                    defaultValue: 'Enable detailed request logging endpoints and storage.',
-                  })}
+                  title={t('config_management.visual.sections.system.request_log')}
+                  description={t('config_management.visual.sections.system.request_log_desc')}
                   checked={values.requestLog}
                   disabled={disabled}
                   onChange={(requestLog) => onChange({ requestLog })}

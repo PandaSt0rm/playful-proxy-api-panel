@@ -1199,9 +1199,11 @@
           "debug": "调试模式",
           "debug_desc": "启用详细的调试日志",
           "commercial_mode": "商业模式",
-          "commercial_mode_desc": "禁用高开销中间件以支持高并发",
+          "commercial_mode_desc": "禁用高开销中间件和请求日志以支持高并发",
           "logging_to_file": "写入日志文件",
           "logging_to_file_desc": "将日志保存到文件",
+          "request_log": "请求日志",
+          "request_log_desc": "启用详细的请求日志端点和存储。商业模式开启时此设置将被忽略。",
           "logs_max_size": "日志文件大小限制 (MB)"
         },
         "network": {
