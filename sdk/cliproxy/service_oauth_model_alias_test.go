@@ -61,6 +61,49 @@ func TestApplyAutomaticThinkingAliases(t *testing.T) {
 	}
 }
 
+func TestApplyAutomaticThinkingAliases_FollowsDeclaredLevels(t *testing.T) {
+	models := []*ModelInfo{
+		{
+			ID:       "claude-fable-5",
+			Thinking: &registry.ThinkingSupport{Levels: []string{"low", "medium", "high", "xhigh", "max"}},
+		},
+		{
+			ID:       "gemini-3-flash-preview",
+			Thinking: &registry.ThinkingSupport{Levels: []string{"minimal", "low", "medium", "high"}},
+		},
+	}
+
+	out := applyAutomaticThinkingAliases(models, nil)
+	ids := make(map[string]*ModelInfo, len(out))
+	for _, model := range out {
+		ids[model.ID] = model
+	}
+	for _, id := range []string{
+		"claude-fable-5-low",
+		"claude-fable-5-medium",
+		"claude-fable-5-high",
+		"claude-fable-5-xhigh",
+		"claude-fable-5-max",
+		"gemini-3-flash-preview-minimal",
+		"gemini-3-flash-preview-low",
+		"gemini-3-flash-preview-medium",
+		"gemini-3-flash-preview-high",
+	} {
+		if ids[id] == nil {
+			t.Fatalf("missing model alias %q", id)
+		}
+	}
+	for _, id := range []string{
+		"claude-fable-5-minimal",
+		"gemini-3-flash-preview-xhigh",
+		"gemini-3-flash-preview-max",
+	} {
+		if ids[id] != nil {
+			t.Fatalf("unexpected model alias %q for unsupported level", id)
+		}
+	}
+}
+
 func TestApplyAutomaticThinkingAliases_ExplicitAliasWins(t *testing.T) {
 	models := []*ModelInfo{
 		{ID: "base", Thinking: &registry.ThinkingSupport{Levels: []string{"high"}}},

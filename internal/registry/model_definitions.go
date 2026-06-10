@@ -271,8 +271,51 @@ func LookupStaticModelInfo(modelID string) *ModelInfo {
 		return nil
 	}
 
+	for _, models := range staticModelLists() {
+		for _, m := range models {
+			if m != nil && m.ID == modelID {
+				return cloneModelInfo(m)
+			}
+		}
+	}
+
+	return nil
+}
+
+// LookupStaticModelInfoByPrefix returns the static model whose ID best matches
+// name. An exact, case-insensitive ID match wins; otherwise the model with the
+// longest ID such that name starts with the ID followed by "-" is returned, so
+// dated or regional variants like "o1-2024-12-17" resolve to their base model
+// without "o1" matching unrelated names like "o10". Returns nil when nothing
+// matches.
+func LookupStaticModelInfoByPrefix(name string) *ModelInfo {
+	name = strings.ToLower(strings.TrimSpace(name))
+	if name == "" {
+		return nil
+	}
+
+	var best *ModelInfo
+	bestLen := -1
+	for _, models := range staticModelLists() {
+		for _, m := range models {
+			if m == nil || m.ID == "" {
+				continue
+			}
+			id := strings.ToLower(m.ID)
+			if id == name {
+				return cloneModelInfo(m)
+			}
+			if len(id) > bestLen && strings.HasPrefix(name, id+"-") {
+				best, bestLen = m, len(id)
+			}
+		}
+	}
+	return cloneModelInfo(best)
+}
+
+func staticModelLists() [][]*ModelInfo {
 	data := getModels()
-	allModels := [][]*ModelInfo{
+	return [][]*ModelInfo{
 		data.Claude,
 		data.Gemini,
 		data.Vertex,
@@ -283,13 +326,4 @@ func LookupStaticModelInfo(modelID string) *ModelInfo {
 		data.Antigravity,
 		data.XAI,
 	}
-	for _, models := range allModels {
-		for _, m := range models {
-			if m != nil && m.ID == modelID {
-				return cloneModelInfo(m)
-			}
-		}
-	}
-
-	return nil
 }

@@ -2542,10 +2542,7 @@ func applyAutomaticThinkingAliases(models []*ModelInfo, excluded []string) []*Mo
 			continue
 		}
 		baseID := strings.TrimSpace(model.ID)
-		for _, level := range []thinking.ThinkingLevel{thinking.LevelLow, thinking.LevelMedium, thinking.LevelHigh, thinking.LevelXHigh} {
-			if !thinkingLevelSupported(model.Thinking, string(level)) {
-				continue
-			}
+		for _, level := range thinking.AliasLevels(model.Thinking) {
 			aliasID := baseID + "-" + string(level)
 			if modelExcluded(aliasID, excluded) {
 				continue

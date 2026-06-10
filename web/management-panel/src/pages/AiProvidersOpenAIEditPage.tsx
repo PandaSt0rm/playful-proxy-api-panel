@@ -23,7 +23,7 @@ import layoutStyles from './AiProvidersEditLayout.module.scss';
 
 const OPENAI_TEST_TIMEOUT_MS = 30_000;
 
-const REASONING_LEVELS = ['low', 'medium', 'high', 'xhigh'] as const;
+const REASONING_LEVELS = ['minimal', 'low', 'medium', 'high', 'xhigh', 'max'] as const;
 type ReasoningLevel = (typeof REASONING_LEVELS)[number];
 
 const getErrorMessage = (err: unknown) => {

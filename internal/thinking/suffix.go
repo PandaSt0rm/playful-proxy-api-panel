@@ -45,12 +45,16 @@ func ParseSuffix(model string) SuffixResult {
 	}
 }
 
-var hyphenLevelSuffixes = map[string]ThinkingLevel{
-	"low":    LevelLow,
-	"medium": LevelMedium,
-	"high":   LevelHigh,
-	"xhigh":  LevelXHigh,
-}
+// hyphenLevelSuffixes accepts every level the automatic alias generator can
+// emit (see AliasLevels). It is derived from the canonical level order so the
+// parser and the generator cannot drift apart.
+var hyphenLevelSuffixes = func() map[string]ThinkingLevel {
+	out := make(map[string]ThinkingLevel, len(standardLevelOrder))
+	for _, level := range standardLevelOrder {
+		out[string(level)] = level
+	}
+	return out
+}()
 
 // ParseSuffixAllowHyphen extracts model(level) and model-level suffixes.
 //
@@ -64,7 +68,8 @@ func ParseSuffixAllowHyphen(model string) SuffixResult {
 	return ParseHyphenLevelSuffix(model)
 }
 
-// ParseHyphenLevelSuffix extracts a model-low/model-medium/model-high/model-xhigh suffix.
+// ParseHyphenLevelSuffix extracts a hyphenated level suffix such as
+// model-low, model-high, or model-max (any level in the canonical order).
 // It does not validate that the base model supports the level.
 func ParseHyphenLevelSuffix(model string) SuffixResult {
 	model = strings.TrimSpace(model)

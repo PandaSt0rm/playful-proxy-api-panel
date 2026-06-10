@@ -16,34 +16,17 @@ type reasoningCatalogEntry struct {
 	levels  []string
 }
 
-// reasoningCatalog lists the upstream model-name patterns that PPAP knows
-// support level-based reasoning routing. The catalog is the default for
-// OpenAI-compatibility models whose YAML config does not set `thinking:`
-// explicitly. Models outside the catalog get no automatic `-low` / `-medium`
-// / `-high` / `-xhigh` variants.
-//
-// Entries seeded from `internal/registry/models/models.json`, which is the
-// authoritative source for OAuth-backed providers. Patterns are listed
-// more-specific-first so that prefix matching resolves `gpt-5.4-mini-...`
-// to the mini entry rather than the broader `gpt-5.4` entry. Add a pattern
-// only when the upstream provider actually accepts level-based effort for
-// that model.
-var reasoningCatalog = []reasoningCatalogEntry{
-	// Claude (Anthropic) reasoning models. Note: `max` is declared for
-	// fidelity with the registry but does not produce an alias variant
-	// today (the alias generator only iterates low/medium/high/xhigh).
-	{pattern: "claude-opus-4-7", levels: []string{"low", "medium", "high", "xhigh", "max"}},
-	{pattern: "claude-opus-4-6", levels: []string{"low", "medium", "high", "max"}},
-	{pattern: "claude-sonnet-4-6", levels: []string{"low", "medium", "high"}},
-
-	// GPT / Codex reasoning models. More-specific patterns first.
-	{pattern: "gpt-5.5", levels: []string{"low", "medium", "high", "xhigh"}},
-	{pattern: "gpt-5.4-mini", levels: []string{"low", "medium", "high", "xhigh"}},
-	{pattern: "gpt-5.4", levels: []string{"low", "medium", "high", "xhigh"}},
-	{pattern: "gpt-5.3-codex-spark", levels: []string{"low", "medium", "high", "xhigh"}},
+// legacyReasoningCatalog lists upstream model-name patterns that accept
+// level-based reasoning effort but are absent from the registry's static
+// model data (internal/registry/models/models.json). The registry is always
+// consulted first via DefaultThinkingForModel, so keep this list restricted
+// to models the registry does not carry — remove an entry once the model
+// appears in models.json.
+var legacyReasoningCatalog = []reasoningCatalogEntry{
+	// GPT / Codex reasoning models predating the registry's codex catalog.
+	// The registry carries gpt-5.3-codex-spark but not the base gpt-5.3-codex.
 	{pattern: "gpt-5.3-codex", levels: []string{"low", "medium", "high", "xhigh"}},
 	{pattern: "gpt-5.2", levels: []string{"low", "medium", "high", "xhigh"}},
-	{pattern: "codex-auto-review", levels: []string{"low", "medium", "high", "xhigh"}},
 
 	// OpenAI o-series reasoning. `o3` covers `o3-mini` and dated variants;
 	// `o1` covers `o1-preview`, `o1-mini`, and dated variants.
@@ -53,9 +36,21 @@ var reasoningCatalog = []reasoningCatalogEntry{
 }
 
 // DefaultThinkingForModel returns a default ThinkingSupport for known
-// reasoning-capable model names, or nil when the model is not in the
-// catalog. The lookup is case-insensitive against the upstream model name
-// (i.e. `OpenAICompatibilityModel.Name`), not the locally-configured alias.
+// reasoning-capable model names, or nil when the model is not known to
+// support level-based reasoning. The lookup is case-insensitive against the
+// upstream model name (i.e. `OpenAICompatibilityModel.Name`), not the
+// locally-configured alias.
+//
+// Resolution order:
+//  1. The registry's static model data (kept current by the remote models
+//     updater), matched by exact ID first and then by the longest dash-prefix
+//     so dated variants like "claude-opus-4-8-20260115" resolve to their base
+//     model.
+//  2. legacyReasoningCatalog for models the registry does not carry.
+//
+// The result is levels-only even when the registry declares budget ranges:
+// these defaults drive reasoning-effort routing for OpenAI-compatibility
+// upstreams, where numeric thinking budgets are not expressible.
 //
 // A nil return signals callers not to auto-generate reasoning-effort
 // variants for that model.
@@ -64,11 +59,12 @@ func DefaultThinkingForModel(name string) *registry.ThinkingSupport {
 	if normalized == "" {
 		return nil
 	}
-	for _, entry := range reasoningCatalog {
+	if info := registry.LookupStaticModelInfoByPrefix(normalized); info != nil && info.Thinking != nil && len(info.Thinking.Levels) > 0 {
+		return &registry.ThinkingSupport{Levels: append([]string(nil), info.Thinking.Levels...)}
+	}
+	for _, entry := range legacyReasoningCatalog {
 		if matchesReasoningPattern(normalized, entry.pattern) {
-			levels := make([]string, len(entry.levels))
-			copy(levels, entry.levels)
-			return &registry.ThinkingSupport{Levels: levels}
+			return &registry.ThinkingSupport{Levels: append([]string(nil), entry.levels...)}
 		}
 	}
 	return nil

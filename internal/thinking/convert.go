@@ -96,6 +96,26 @@ func ConvertBudgetToLevel(budget int) (string, bool) {
 	}
 }
 
+// AliasLevels returns the model's supported discrete levels in canonical
+// order (minimal → max), restricted to levels that can be expressed as
+// hyphen model aliases such as "model-high". Special values like none/auto
+// are never included. Returns nil when the model declares no levels.
+//
+// This is the single source of truth for which level variants the automatic
+// alias generator emits; ParseHyphenLevelSuffix accepts the same set.
+func AliasLevels(support *registry.ThinkingSupport) []ThinkingLevel {
+	if support == nil || len(support.Levels) == 0 {
+		return nil
+	}
+	out := make([]ThinkingLevel, 0, len(standardLevelOrder))
+	for _, level := range standardLevelOrder {
+		if HasLevel(support.Levels, string(level)) {
+			out = append(out, level)
+		}
+	}
+	return out
+}
+
 // HasLevel reports whether the given target level exists in the levels slice.
 // Matching is case-insensitive with leading/trailing whitespace trimmed.
 func HasLevel(levels []string, target string) bool {

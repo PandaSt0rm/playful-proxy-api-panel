@@ -139,6 +139,39 @@ func assertGPT55ModelInfo(t *testing.T, source string, model *ModelInfo) {
 	}
 }
 
+func TestLookupStaticModelInfoByPrefix(t *testing.T) {
+	tests := []struct {
+		name   string
+		lookup string
+		wantID string
+	}{
+		{name: "exact match", lookup: "gpt-5.5", wantID: "gpt-5.5"},
+		{name: "exact match case-insensitive", lookup: "GPT-5.5", wantID: "gpt-5.5"},
+		{name: "dated variant", lookup: "claude-opus-4-8-20260115", wantID: "claude-opus-4-8"},
+		{name: "longest prefix wins", lookup: "gpt-5.4-mini-2026-01-01", wantID: "gpt-5.4-mini"},
+		{name: "no match", lookup: "totally-unknown-model", wantID: ""},
+		{name: "prefix requires dash boundary", lookup: "gpt-5.55", wantID: ""},
+		{name: "empty", lookup: "", wantID: ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := LookupStaticModelInfoByPrefix(tt.lookup)
+			if tt.wantID == "" {
+				if got != nil {
+					t.Fatalf("LookupStaticModelInfoByPrefix(%q) = %q, want nil", tt.lookup, got.ID)
+				}
+				return
+			}
+			if got == nil {
+				t.Fatalf("LookupStaticModelInfoByPrefix(%q) = nil, want %q", tt.lookup, tt.wantID)
+			}
+			if got.ID != tt.wantID {
+				t.Fatalf("LookupStaticModelInfoByPrefix(%q) = %q, want %q", tt.lookup, got.ID, tt.wantID)
+			}
+		})
+	}
+}
+
 func TestWithXAIBuiltinsIncludesVideoPreviewModel(t *testing.T) {
 	models := WithXAIBuiltins(nil)
 
