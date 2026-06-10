@@ -21,6 +21,7 @@ import {
   IconSidebarProviders,
   IconSidebarQuota,
   IconSidebarSystem,
+  IconSidebarPlugins,
   IconSidebarToolingTemplates,
   IconSidebarUsage,
 } from '@/components/ui/icons';
@@ -43,6 +44,7 @@ const sidebarIcons: Record<string, ReactNode> = {
   authFiles: <IconSidebarAuthFiles size={18} />,
   oauth: <IconSidebarOauth size={18} />,
   toolingTemplates: <IconSidebarToolingTemplates size={18} />,
+  plugins: <IconSidebarPlugins size={18} />,
   quota: <IconSidebarQuota size={18} />,
   usage: <IconSidebarUsage size={18} />,
   config: <IconSidebarConfig size={18} />,
@@ -398,6 +400,11 @@ export function MainLayout() {
       path: '/tooling-templates',
       label: t('nav.tooling_templates', { defaultValue: 'Tooling Templates' }),
       icon: sidebarIcons.toolingTemplates,
+    },
+    {
+      path: '/plugins',
+      label: t('nav.plugins', { defaultValue: 'Plugins' }),
+      icon: sidebarIcons.plugins,
     },
     { path: '/quota', label: t('nav.quota_management'), icon: sidebarIcons.quota },
     { path: '/usage', label: t('nav.usage_statistics'), icon: sidebarIcons.usage },

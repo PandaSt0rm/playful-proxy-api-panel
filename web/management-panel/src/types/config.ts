@@ -26,6 +26,11 @@ export interface PprofConfig {
 
 export type DisableImageGenerationConfig = false | true | 'chat';
 
+export interface PluginsConfig {
+  enabled?: boolean;
+  dir?: string;
+}
+
 export interface Config {
   debug?: boolean;
   proxyUrl?: string;
@@ -33,6 +38,7 @@ export interface Config {
   disableImageGeneration?: DisableImageGenerationConfig;
   enableGeminiCliEndpoint?: boolean;
   codexIdentityConfuse?: boolean;
+  plugins?: PluginsConfig;
   requestRetry?: number;
   maxRetryCredentials?: number;
   maxRetryInterval?: number;

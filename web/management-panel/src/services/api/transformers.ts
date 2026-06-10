@@ -559,6 +559,20 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
       ? codexRaw['identity-confuse'] ?? codexRaw.identityConfuse
       : raw.codexIdentityConfuse
   );
+  const pluginsRaw = raw.plugins;
+  if (isRecord(pluginsRaw)) {
+    const plugins: NonNullable<Config['plugins']> = {};
+    const pluginsEnabled = normalizeBoolean(pluginsRaw.enabled);
+    if (pluginsEnabled !== undefined) {
+      plugins.enabled = pluginsEnabled;
+    }
+    if (typeof pluginsRaw.dir === 'string' && pluginsRaw.dir.trim() !== '') {
+      plugins.dir = pluginsRaw.dir;
+    }
+    if (Object.keys(plugins).length > 0) {
+      config.plugins = plugins;
+    }
+  }
   const proxyUrl = raw['proxy-url'] ?? raw.proxyUrl;
   config.proxyUrl =
     typeof proxyUrl === 'string'

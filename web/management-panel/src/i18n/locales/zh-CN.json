@@ -122,6 +122,35 @@
     "logs": "日志查看",
     "system_info": "中心信息"
   },
+  "plugins": {
+    "title": "插件",
+    "description": "管理插件目录中发现的动态库插件。插件是受信任的进程内代码。",
+    "load_failed": "加载插件失败。",
+    "global_state": "插件系统",
+    "global_hint": "全局开关和目录（{{dir}}）在配置编辑器中管理。",
+    "empty_title": "未找到插件",
+    "empty_desc": "将插件库放入插件目录并重启。",
+    "state_enabled": "已启用",
+    "state_disabled": "已禁用",
+    "toggle_aria": "切换插件 {{id}}",
+    "toggle_success": "插件“{{id}}”{{state}}。",
+    "toggle_failed": "更新插件状态失败。",
+    "badge_registered": "已注册",
+    "badge_unregistered": "未注册",
+    "badge_active": "生效中",
+    "badge_inactive": "未生效",
+    "badge_oauth": "OAuth 提供方",
+    "badge_configured": "已配置",
+    "edit_config": "编辑配置",
+    "edit_config_title": "配置插件“{{id}}”",
+    "field_priority": "优先级",
+    "field_priority_hint": "优先级更高的插件在路由和参数冲突时优先。",
+    "field_json_hint": "JSON 值",
+    "no_fields": "该插件未声明配置字段。请在配置源码编辑器中编辑高级设置。",
+    "invalid_field": "“{{field}}”的值无效。",
+    "config_saved": "插件配置已保存。",
+    "config_save_failed": "保存插件配置失败。"
+  },
   "dashboard": {
     "title": "仪表盘",
     "subtitle": "欢迎使用 Playful Proxy API Panel",
@@ -1225,7 +1254,10 @@
           "ws_auth": "WebSocket 认证",
           "ws_auth_desc": "启用 WebSocket 连接认证 (/v1/ws)",
           "codex_identity_confuse": "Codex 身份混淆",
-          "codex_identity_confuse_desc": "按账号重映射 Codex 的 prompt_cache_key 和安装身份（需启用 fill-first 路由或会话粘性）。"
+          "codex_identity_confuse_desc": "按账号重映射 Codex 的 prompt_cache_key 和安装身份（需启用 fill-first 路由或会话粘性）。",
+          "plugins_enabled": "启用插件",
+          "plugins_enabled_desc": "启动时从插件目录加载受信任的动态库插件。",
+          "plugins_dir": "插件目录"
         },
         "quota": {
           "title": "配额回退",

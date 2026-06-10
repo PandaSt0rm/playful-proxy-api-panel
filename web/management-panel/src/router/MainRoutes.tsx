@@ -21,6 +21,7 @@ import { ConfigPage } from '@/pages/ConfigPage';
 import { LogsPage } from '@/pages/LogsPage';
 import { SystemPage } from '@/pages/SystemPage';
 import { ToolingTemplatesPage } from '@/pages/ToolingTemplatesPage';
+import { PluginsPage } from '@/pages/PluginsPage';
 
 const mainRoutes = [
   { path: '/', element: <DashboardPage /> },
@@ -89,6 +90,7 @@ const mainRoutes = [
   { path: '/auth-files/oauth-model-alias', element: <AuthFilesOAuthModelAliasEditPage /> },
   { path: '/oauth', element: <OAuthPage /> },
   { path: '/tooling-templates', element: <ToolingTemplatesPage /> },
+  { path: '/plugins', element: <PluginsPage /> },
   { path: '/quota', element: <QuotaPage /> },
   { path: '/usage', element: <UsagePage /> },
   { path: '/config', element: <ConfigPage /> },

@@ -81,10 +81,10 @@ describe('MainLayout sidebar/nav render', () => {
     );
   });
 
-  it('renders all ten navigation links', () => {
+  it('renders all eleven navigation links', () => {
     renderWithRouter(<MainLayout />);
 
-    expect(screen.getAllByRole('link')).toHaveLength(10);
+    expect(screen.getAllByRole('link')).toHaveLength(11);
   });
 
   it('renders the routed page content via the page transition', () => {

@@ -122,6 +122,35 @@
     "logs": "記錄檢視",
     "system_info": "中心資訊"
   },
+  "plugins": {
+    "title": "外掛",
+    "description": "管理外掛目錄中發現的動態庫外掛。外掛是受信任的行程內程式碼。",
+    "load_failed": "載入外掛失敗。",
+    "global_state": "外掛系統",
+    "global_hint": "全域開關和目錄（{{dir}}）在設定編輯器中管理。",
+    "empty_title": "未找到外掛",
+    "empty_desc": "將外掛庫放入外掛目錄並重新啟動。",
+    "state_enabled": "已啟用",
+    "state_disabled": "已停用",
+    "toggle_aria": "切換外掛 {{id}}",
+    "toggle_success": "外掛「{{id}}」{{state}}。",
+    "toggle_failed": "更新外掛狀態失敗。",
+    "badge_registered": "已註冊",
+    "badge_unregistered": "未註冊",
+    "badge_active": "生效中",
+    "badge_inactive": "未生效",
+    "badge_oauth": "OAuth 提供方",
+    "badge_configured": "已設定",
+    "edit_config": "編輯設定",
+    "edit_config_title": "設定外掛「{{id}}」",
+    "field_priority": "優先級",
+    "field_priority_hint": "優先級較高的外掛在路由和參數衝突時優先。",
+    "field_json_hint": "JSON 值",
+    "no_fields": "該外掛未宣告設定欄位。請在設定原始碼編輯器中編輯進階設定。",
+    "invalid_field": "「{{field}}」的值無效。",
+    "config_saved": "外掛設定已儲存。",
+    "config_save_failed": "儲存外掛設定失敗。"
+  },
   "dashboard": {
     "title": "儀表板",
     "subtitle": "歡迎使用 Playful Proxy API Panel",
@@ -1251,7 +1280,10 @@
           "ws_auth": "WebSocket 驗證",
           "ws_auth_desc": "啟用 WebSocket 連線驗證（/v1/ws）",
           "codex_identity_confuse": "Codex 身分混淆",
-          "codex_identity_confuse_desc": "依帳號重新映射 Codex 的 prompt_cache_key 與安裝身分（需啟用 fill-first 路由或工作階段黏性）。"
+          "codex_identity_confuse_desc": "依帳號重新映射 Codex 的 prompt_cache_key 與安裝身分（需啟用 fill-first 路由或工作階段黏性）。",
+          "plugins_enabled": "啟用外掛",
+          "plugins_enabled_desc": "啟動時從外掛目錄載入受信任的動態庫外掛。",
+          "plugins_dir": "外掛目錄"
         },
         "quota": {
           "title": "配額回退",

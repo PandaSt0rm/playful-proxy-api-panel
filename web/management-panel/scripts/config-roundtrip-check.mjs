@@ -50,6 +50,9 @@ auth-auto-refresh-workers: 3
 passthrough-headers: true
 disable-image-generation: chat
 enable-gemini-cli-endpoint: true
+plugins:
+  enabled: true
+  dir: custom-plugins
 upstream-concurrency:
   default: 8
   providers:
@@ -90,6 +93,8 @@ function assertVisualRoundTrip(useVisualConfig, resetHookState) {
   assert.equal(loadedHook.visualValues.passthroughHeaders, true);
   assert.equal(loadedHook.visualValues.disableImageGeneration, 'chat');
   assert.equal(loadedHook.visualValues.enableGeminiCliEndpoint, true);
+  assert.equal(loadedHook.visualValues.pluginsEnabled, true);
+  assert.equal(loadedHook.visualValues.pluginsDir, 'custom-plugins');
   assert.equal(loadedHook.visualValues.upstreamConcurrency.defaultLimit, '8');
   assert.deepEqual(
     loadedHook.visualValues.upstreamConcurrency.providerLimits.map((entry) => ({
@@ -128,6 +133,8 @@ function assertVisualRoundTrip(useVisualConfig, resetHookState) {
   assert.equal(parsed['passthrough-headers'], true);
   assert.equal(parsed['disable-image-generation'], 'chat');
   assert.equal(parsed['enable-gemini-cli-endpoint'], true);
+  assert.equal(parsed.plugins.enabled, true);
+  assert.equal(parsed.plugins.dir, 'custom-plugins');
   assert.equal(parsed['upstream-concurrency'].default, 8);
   assert.deepEqual(parsed['upstream-concurrency'].providers, { codex: 2, claude: 4 });
   assert.equal(parsed['upstream-concurrency']['queue-timeout-seconds'], 30);

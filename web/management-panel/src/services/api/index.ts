@@ -13,6 +13,7 @@ export * from './oauth';
 export * from './logs';
 export * from './version';
 export * from './models';
+export * from './plugins';
 export * from './toolingTemplates';
 export * from './transformers';
 export * from './vertex';

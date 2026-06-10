@@ -126,6 +126,8 @@ export type VisualConfigValues = {
   disableImageGeneration: DisableImageGenerationMode;
   enableGeminiCliEndpoint: boolean;
   codexIdentityConfuse: boolean;
+  pluginsEnabled: boolean;
+  pluginsDir: string;
   requestRetry: string;
   maxRetryCredentials: string;
   maxRetryInterval: string;
@@ -191,6 +193,8 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   disableImageGeneration: 'false',
   enableGeminiCliEndpoint: false,
   codexIdentityConfuse: false,
+  pluginsEnabled: false,
+  pluginsDir: '',
   requestRetry: '',
   maxRetryCredentials: '',
   maxRetryInterval: '',

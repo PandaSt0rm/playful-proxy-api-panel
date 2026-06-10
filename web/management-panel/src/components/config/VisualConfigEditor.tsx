@@ -1458,6 +1458,27 @@ export function VisualConfigEditor({
                   disabled={disabled}
                   onChange={(codexIdentityConfuse) => onChange({ codexIdentityConfuse })}
                 />
+                <ToggleRow
+                  title={t('config_management.visual.sections.network.plugins_enabled', {
+                    defaultValue: 'Enable Plugins',
+                  })}
+                  description={t('config_management.visual.sections.network.plugins_enabled_desc', {
+                    defaultValue:
+                      'Load trusted dynamic library plugins from the plugins directory at startup.',
+                  })}
+                  checked={values.pluginsEnabled}
+                  disabled={disabled}
+                  onChange={(pluginsEnabled) => onChange({ pluginsEnabled })}
+                />
+                <Input
+                  label={t('config_management.visual.sections.network.plugins_dir', {
+                    defaultValue: 'Plugins Directory',
+                  })}
+                  placeholder="plugins"
+                  value={values.pluginsDir}
+                  onChange={(e) => onChange({ pluginsDir: e.target.value })}
+                  disabled={disabled}
+                />
               </SectionGrid>
 
               <Divider />

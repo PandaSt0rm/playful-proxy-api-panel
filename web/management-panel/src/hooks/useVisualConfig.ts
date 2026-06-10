@@ -876,6 +876,12 @@ function getNextDirtyFields(
       nextValues.codexIdentityConfuse === baselineValues.codexIdentityConfuse
     );
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'pluginsEnabled')) {
+    updateDirty('pluginsEnabled', nextValues.pluginsEnabled === baselineValues.pluginsEnabled);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'pluginsDir')) {
+    updateDirty('pluginsDir', nextValues.pluginsDir === baselineValues.pluginsDir);
+  }
   if (Object.prototype.hasOwnProperty.call(patch, 'requestRetry')) {
     updateDirty('requestRetry', nextValues.requestRetry === baselineValues.requestRetry);
   }
@@ -1126,6 +1132,7 @@ export function useVisualConfig() {
       const streaming = asRecord(parsed.streaming);
       const upstreamConcurrency = asRecord(parsed['upstream-concurrency']);
       const codex = asRecord(parsed.codex);
+      const plugins = asRecord(parsed.plugins);
       const claudeHeaderDefaults = parseHeaderDefaults(parsed['claude-header-defaults']);
       const codexHeaderDefaults = parseHeaderDefaults(parsed['codex-header-defaults']);
 
@@ -1187,6 +1194,8 @@ export function useVisualConfig() {
         disableImageGeneration: parseDisableImageGenerationMode(parsed['disable-image-generation']),
         enableGeminiCliEndpoint: Boolean(parsed['enable-gemini-cli-endpoint']),
         codexIdentityConfuse: Boolean(codex?.['identity-confuse']),
+        pluginsEnabled: Boolean(plugins?.enabled),
+        pluginsDir: typeof plugins?.dir === 'string' ? plugins.dir : '',
         requestRetry: String(parsed['request-retry'] ?? ''),
         maxRetryCredentials: String(parsed['max-retry-credentials'] ?? ''),
         maxRetryInterval: String(parsed['max-retry-interval'] ?? ''),
@@ -1437,6 +1446,16 @@ export function useVisualConfig() {
           )
         ) {
           setBooleanInDoc(doc, ['codex', 'identity-confuse'], values.codexIdentityConfuse);
+        }
+        if (shouldWriteManagedField(doc, ['plugins', 'enabled'], dirtyFields, 'pluginsEnabled')) {
+          ensureMapInDoc(doc, ['plugins']);
+          setBooleanInDoc(doc, ['plugins', 'enabled'], values.pluginsEnabled);
+          deleteIfMapEmpty(doc, ['plugins']);
+        }
+        if (shouldWriteManagedField(doc, ['plugins', 'dir'], dirtyFields, 'pluginsDir')) {
+          ensureMapInDoc(doc, ['plugins']);
+          setStringInDoc(doc, ['plugins', 'dir'], values.pluginsDir);
+          deleteIfMapEmpty(doc, ['plugins']);
         }
         setIntFromStringInDoc(doc, ['request-retry'], values.requestRetry);
         setIntFromStringInDoc(doc, ['max-retry-credentials'], values.maxRetryCredentials);

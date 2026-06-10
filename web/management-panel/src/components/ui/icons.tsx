@@ -439,6 +439,14 @@ export function IconSidebarQuota({ size = 20, ...props }: IconProps) {
   );
 }
 
+export function IconSidebarPlugins({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...sidebarSvgProps} width={size} height={size} {...props}>
+      <path d="M9 4v3H6a2 2 0 0 0-2 2v3h3a2 2 0 1 1 0 4H4v3a2 2 0 0 0 2 2h3v-3a2 2 0 1 1 4 0v3h3a2 2 0 0 0 2-2v-3h3v-4h-3V9a2 2 0 0 0-2-2h-3V4a2 2 0 1 0-4 0Z" fill="currentColor" fillOpacity="0.12" />
+    </svg>
+  );
+}
+
 export function IconSidebarUsage({ size = 20, ...props }: IconProps) {
   return (
     <svg {...sidebarSvgProps} width={size} height={size} {...props}>
