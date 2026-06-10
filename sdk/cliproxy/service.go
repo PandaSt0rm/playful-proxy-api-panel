@@ -1877,7 +1877,8 @@ func (s *Service) registerModelsForAuth(ctx context.Context, a *coreauth.Auth) {
 						// Ensure stale registrations are cleared when model list becomes empty.
 						ms = s.appendPluginModels(providerKey, nil)
 						if len(ms) > 0 {
-							s.registerResolvedModelsForAuth(a, providerKey, applyModelPrefixes(ms, a.Prefix, s.cfg.ForceModelPrefix))
+							modelsWithPrefixes := applyModelPrefixes(ms, a.Prefix, s.cfg.ForceModelPrefix)
+							s.registerResolvedModelsForAuth(a, providerKey, applyAutomaticThinkingAliases(modelsWithPrefixes, nil))
 						} else {
 							GlobalModelRegistry().UnregisterClient(a.ID)
 						}
@@ -1888,7 +1889,8 @@ func (s *Service) registerModelsForAuth(ctx context.Context, a *coreauth.Auth) {
 			if isCompatAuth {
 				models = s.appendPluginModels(providerKey, nil)
 				if len(models) > 0 {
-					s.registerResolvedModelsForAuth(a, providerKey, applyModelPrefixes(models, a.Prefix, s.cfg != nil && s.cfg.ForceModelPrefix))
+					modelsWithPrefixes := applyModelPrefixes(models, a.Prefix, s.cfg != nil && s.cfg.ForceModelPrefix)
+					s.registerResolvedModelsForAuth(a, providerKey, applyAutomaticThinkingAliases(modelsWithPrefixes, nil))
 				} else {
 					// No matching provider found or models removed entirely; drop any prior registration.
 					GlobalModelRegistry().UnregisterClient(a.ID)
