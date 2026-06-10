@@ -1,4 +1,4 @@
-import type { ModelAlias, ThinkingSupport } from '@/types';
+import type { ModelAlias, ThinkingPayloadMap, ThinkingSupport } from '@/types';
 
 export interface ModelEntry {
   name: string;
@@ -6,7 +6,17 @@ export interface ModelEntry {
   regex?: boolean;
   thinking?: ThinkingSupport;
   thinkingLevels?: string[];
+  thinkingPayloads?: ThinkingPayloadMap;
 }
+
+const cloneThinkingPayloads = (payloads?: ThinkingPayloadMap): ThinkingPayloadMap | undefined => {
+  if (!payloads) return undefined;
+  const entries = Object.entries(payloads).filter(
+    ([, value]) => value && typeof value === 'object' && Object.keys(value).length
+  );
+  if (!entries.length) return undefined;
+  return Object.fromEntries(entries.map(([key, value]) => [key, { ...value }]));
+};
 
 const hasThinkingConfig = (thinking?: ThinkingSupport): thinking is ThinkingSupport =>
   Boolean(
@@ -35,6 +45,10 @@ export const modelsToEntries = (models?: ModelAlias[]): ModelEntry[] => {
     } else if (Array.isArray(model.thinking?.levels) && model.thinking.levels.length) {
       entry.thinkingLevels = [...model.thinking.levels];
     }
+    const payloads = cloneThinkingPayloads(model.thinkingPayloads);
+    if (payloads) {
+      entry.thinkingPayloads = payloads;
+    }
     return entry;
   });
 };
@@ -55,6 +69,10 @@ export const entriesToModels = (entries: ModelEntry[]): ModelAlias[] => {
         model.thinkingLevels = levels;
       } else if (hasThinkingConfig(thinking)) {
         model.thinking = thinking;
+      }
+      const payloads = cloneThinkingPayloads(entry.thinkingPayloads);
+      if (payloads) {
+        model.thinkingPayloads = payloads;
       }
       return model;
     });

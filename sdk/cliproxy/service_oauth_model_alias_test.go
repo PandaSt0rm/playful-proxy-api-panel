@@ -61,6 +61,74 @@ func TestApplyAutomaticThinkingAliases(t *testing.T) {
 	}
 }
 
+func TestBuildOpenAICompatibilityConfigModels_ThinkingPayloads(t *testing.T) {
+	compat := &config.OpenAICompatibility{
+		Name: "zhipu",
+		Models: []config.OpenAICompatibilityModel{
+			{
+				Name:  "glm-4.6",
+				Alias: "glm-4.6",
+				ThinkingPayloads: map[string]map[string]any{
+					"NONE": {"thinking": map[string]any{"type": "disabled"}},
+					"High": {"thinking": map[string]any{"type": "enabled"}},
+					"":     {"dropped": true},
+				},
+			},
+		},
+	}
+
+	models := buildOpenAICompatibilityConfigModels(compat)
+	if len(models) != 1 {
+		t.Fatalf("expected 1 model, got %d", len(models))
+	}
+	model := models[0]
+	if model.Thinking == nil || len(model.Thinking.Levels) != 1 || model.Thinking.Levels[0] != "high" {
+		t.Fatalf("payload level keys should declare thinking levels, got %#v", model.Thinking)
+	}
+	if len(model.ThinkingPayloads) != 2 {
+		t.Fatalf("normalized payloads = %#v, want none+high", model.ThinkingPayloads)
+	}
+
+	// The synthesized level feeds the automatic alias generator.
+	out := applyAutomaticThinkingAliases(models, nil)
+	found := false
+	for _, m := range out {
+		if m.ID == "glm-4.6-high" {
+			found = true
+			if m.ThinkingAliasBase != "glm-4.6" {
+				t.Fatalf("ThinkingAliasBase = %q", m.ThinkingAliasBase)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("missing glm-4.6-high alias in %#v", out)
+	}
+}
+
+func TestBuildOpenAICompatibilityConfigModels_ExplicitLevelsKeepPriority(t *testing.T) {
+	compat := &config.OpenAICompatibility{
+		Name: "zhipu",
+		Models: []config.OpenAICompatibilityModel{
+			{
+				Name:     "glm-4.6",
+				Alias:    "glm-4.6",
+				Thinking: &registry.ThinkingSupport{Levels: []string{"low", "medium", "high"}},
+				ThinkingPayloads: map[string]map[string]any{
+					"high": {"thinking": map[string]any{"type": "enabled"}},
+				},
+			},
+		},
+	}
+
+	models := buildOpenAICompatibilityConfigModels(compat)
+	if len(models) != 1 {
+		t.Fatalf("expected 1 model, got %d", len(models))
+	}
+	if got := models[0].Thinking.Levels; len(got) != 3 {
+		t.Fatalf("explicit levels should win, got %v", got)
+	}
+}
+
 func TestApplyAutomaticThinkingAliases_FollowsDeclaredLevels(t *testing.T) {
 	models := []*ModelInfo{
 		{

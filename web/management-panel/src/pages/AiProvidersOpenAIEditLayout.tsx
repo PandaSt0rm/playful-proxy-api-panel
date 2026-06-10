@@ -105,6 +105,7 @@ const normalizeModelEntries = (entries: ModelEntry[]) =>
       alias: string;
       thinking?: ModelEntry['thinking'];
       thinkingLevels?: ModelEntry['thinkingLevels'];
+      thinkingPayloads?: ModelEntry['thinkingPayloads'];
     }>
   >((acc, entry) => {
     const name = String(entry?.name ?? '').trim();
@@ -118,6 +119,7 @@ const normalizeModelEntries = (entries: ModelEntry[]) =>
       alias,
       thinking: entry.thinking,
       thinkingLevels: entry.thinkingLevels,
+      thinkingPayloads: entry.thinkingPayloads,
     });
     return acc;
   }, []);

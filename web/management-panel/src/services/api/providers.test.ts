@@ -99,6 +99,39 @@ describe('serializeModelAliases', () => {
     expect(result).toEqual([{ name: 'm' }]);
   });
 
+  it('serializes thinking payloads under thinking-payloads', () => {
+    const result = serializeModelAliases([
+      {
+        name: 'glm-4.6',
+        thinkingPayloads: {
+          none: { thinking: { type: 'disabled' } },
+          high: { thinking: { type: 'enabled' } },
+        },
+      },
+    ]);
+
+    expect(result).toEqual([
+      {
+        name: 'glm-4.6',
+        'thinking-payloads': {
+          none: { thinking: { type: 'disabled' } },
+          high: { thinking: { type: 'enabled' } },
+        },
+      },
+    ]);
+  });
+
+  it('removes a stale thinking-payloads key when payloads are cleared', () => {
+    const result = serializeModelAliases([
+      {
+        name: 'glm-4.6',
+        raw: { name: 'glm-4.6', 'thinking-payloads': { high: { x: 1 } } },
+      },
+    ]);
+
+    expect(result).toEqual([{ name: 'glm-4.6' }]);
+  });
+
   it('strips a stale thinking entry carried in raw when no thinking config is provided', () => {
     const result = serializeModelAliases([{ name: 'm', raw: { thinking: { min: 1 } } }]);
 

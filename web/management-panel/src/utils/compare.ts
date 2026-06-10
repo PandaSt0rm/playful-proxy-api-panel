@@ -29,6 +29,7 @@ export function areModelEntriesEqual(
     regex?: boolean;
     thinking?: unknown;
     thinkingLevels?: readonly string[];
+    thinkingPayloads?: unknown;
   }[],
   b: readonly {
     name: string;
@@ -36,6 +37,7 @@ export function areModelEntriesEqual(
     regex?: boolean;
     thinking?: unknown;
     thinkingLevels?: readonly string[];
+    thinkingPayloads?: unknown;
   }[]
 ): boolean {
   if (a === b) return true;
@@ -50,6 +52,12 @@ export function areModelEntriesEqual(
     const rightThinkingLevels = right.thinkingLevels ?? [];
     if (!areStringArraysEqual(leftThinkingLevels, rightThinkingLevels)) return false;
     if (JSON.stringify(left.thinking ?? null) !== JSON.stringify(right.thinking ?? null)) {
+      return false;
+    }
+    if (
+      JSON.stringify(left.thinkingPayloads ?? null) !==
+      JSON.stringify(right.thinkingPayloads ?? null)
+    ) {
       return false;
     }
   }

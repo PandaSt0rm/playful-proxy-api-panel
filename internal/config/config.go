@@ -785,6 +785,17 @@ type OpenAICompatibilityModel struct {
 	// levels and therefore no automatic level variants (-low, -high, -max, ...).
 	// Set this field explicitly to override the defaults for a specific model.
 	Thinking *registry.ThinkingSupport `yaml:"thinking,omitempty" json:"thinking,omitempty"`
+
+	// ThinkingPayloads maps a canonical reasoning label (minimal, low, medium,
+	// high, xhigh, max, none, auto) to a JSON object merged into the upstream
+	// request body when that label is requested, for upstreams that do not
+	// accept the standard reasoning_effort field (e.g. GLM's thinking.type or
+	// Qwen-style enable_thinking). When a payload applies, reasoning_effort is
+	// removed from the request unless the payload sets it again; a null value
+	// deletes that field from the request. Level-named keys implicitly declare
+	// thinking.levels when Thinking is not set, so level aliases and suffix
+	// routing work without extra configuration.
+	ThinkingPayloads map[string]map[string]any `yaml:"thinking-payloads,omitempty" json:"thinking-payloads,omitempty"`
 }
 
 func (m OpenAICompatibilityModel) GetName() string  { return m.Name }

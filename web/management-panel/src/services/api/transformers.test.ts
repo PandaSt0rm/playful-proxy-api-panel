@@ -255,6 +255,37 @@ describe('normalizeModelAliases', () => {
 
     expect(result[0].thinking).toBeUndefined();
   });
+
+  it('normalizes thinking-payloads keys to lowercase and drops empty patches', () => {
+    const result = normalizeModelAliases([
+      {
+        name: 'glm-4.6',
+        'thinking-payloads': {
+          HIGH: { thinking: { type: 'enabled' } },
+          none: { thinking: { type: 'disabled' } },
+          medium: {},
+          '  ': { dropped: true },
+        },
+      },
+    ]);
+
+    expect(result[0].thinkingPayloads).toEqual({
+      high: { thinking: { type: 'enabled' } },
+      none: { thinking: { type: 'disabled' } },
+    });
+  });
+
+  it('omits thinkingPayloads when the payload map is empty or invalid', () => {
+    const result = normalizeModelAliases([
+      { name: 'a', 'thinking-payloads': {} },
+      { name: 'b', 'thinking-payloads': 'nope' },
+      { name: 'c' },
+    ]);
+
+    expect(result[0].thinkingPayloads).toBeUndefined();
+    expect(result[1].thinkingPayloads).toBeUndefined();
+    expect(result[2].thinkingPayloads).toBeUndefined();
+  });
 });
 
 // ---------------------------------------------------------------------------

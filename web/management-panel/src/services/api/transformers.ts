@@ -68,6 +68,21 @@ const normalizeThinkingSupport = (thinking: unknown): ThinkingSupport | undefine
   return Object.keys(support).length ? support : undefined;
 };
 
+const normalizeThinkingPayloads = (
+  payloads: unknown
+): Record<string, Record<string, unknown>> | undefined => {
+  if (!isRecord(payloads)) return undefined;
+  const out: Record<string, Record<string, unknown>> = {};
+  Object.entries(payloads).forEach(([key, value]) => {
+    const label = String(key ?? '')
+      .trim()
+      .toLowerCase();
+    if (!label || !isRecord(value) || !Object.keys(value).length) return;
+    out[label] = { ...value };
+  });
+  return Object.keys(out).length ? out : undefined;
+};
+
 const normalizeModelAliases = (models: unknown): ModelAlias[] => {
   if (!Array.isArray(models)) return [];
   return models
@@ -106,6 +121,12 @@ const normalizeModelAliases = (models: unknown): ModelAlias[] => {
         if (Array.isArray(thinking.levels) && thinking.levels.length) {
           entry.thinkingLevels = [...thinking.levels];
         }
+      }
+      const thinkingPayloads = normalizeThinkingPayloads(
+        item['thinking-payloads'] ?? item.thinking_payloads ?? item.thinkingPayloads
+      );
+      if (thinkingPayloads) {
+        entry.thinkingPayloads = thinkingPayloads;
       }
       return entry;
     })

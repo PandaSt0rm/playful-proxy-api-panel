@@ -11,6 +11,13 @@ export interface ThinkingSupport {
   levels?: string[];
 }
 
+/**
+ * Maps a canonical reasoning label (minimal/low/medium/high/xhigh/max/none/auto)
+ * to a JSON object merged into the upstream request body when that label is
+ * requested. Serialized as `thinking-payloads` in config.
+ */
+export type ThinkingPayloadMap = Record<string, Record<string, unknown>>;
+
 export interface ModelAlias {
   name: string;
   alias?: string;
@@ -18,6 +25,7 @@ export interface ModelAlias {
   testModel?: string;
   thinking?: ThinkingSupport;
   thinkingLevels?: string[];
+  thinkingPayloads?: ThinkingPayloadMap;
   raw?: Record<string, unknown>;
 }
 

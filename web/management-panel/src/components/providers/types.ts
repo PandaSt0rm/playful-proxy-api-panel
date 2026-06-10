@@ -1,4 +1,10 @@
-import type { ApiKeyEntry, GeminiKeyConfig, ProviderKeyConfig, ThinkingSupport } from '@/types';
+import type {
+  ApiKeyEntry,
+  GeminiKeyConfig,
+  ProviderKeyConfig,
+  ThinkingPayloadMap,
+  ThinkingSupport,
+} from '@/types';
 import type { HeaderEntry } from '@/utils/headers';
 
 export interface ModelEntry {
@@ -7,6 +13,7 @@ export interface ModelEntry {
   regex?: boolean;
   thinking?: ThinkingSupport;
   thinkingLevels?: string[];
+  thinkingPayloads?: ThinkingPayloadMap;
 }
 
 export interface OpenAIFormState {

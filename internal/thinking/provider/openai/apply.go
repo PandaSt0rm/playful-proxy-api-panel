@@ -39,6 +39,11 @@ func init() {
 //	  "reasoning_effort": "high"
 //	}
 func (a *Applier) Apply(body []byte, config thinking.ThinkingConfig, modelInfo *registry.ModelInfo) ([]byte, error) {
+	// Per-model payload overrides translate the canonical label into custom
+	// body fields for upstreams that do not accept reasoning_effort.
+	if patch, ok := payloadOverrideFor(modelInfo, config); ok {
+		return thinking.MergeThinkingPayload(body, patch), nil
+	}
 	if thinking.IsUserDefinedModel(modelInfo) {
 		return applyCompatibleOpenAI(body, config)
 	}
@@ -79,6 +84,21 @@ func (a *Applier) Apply(body []byte, config thinking.ThinkingConfig, modelInfo *
 
 	result, _ := sjson.SetBytes(body, "reasoning_effort", effort)
 	return result, nil
+}
+
+func payloadOverrideFor(modelInfo *registry.ModelInfo, config thinking.ThinkingConfig) (map[string]any, bool) {
+	if modelInfo == nil || len(modelInfo.ThinkingPayloads) == 0 {
+		return nil, false
+	}
+	label := thinking.CanonicalEffortLabel(config)
+	if label == "" {
+		return nil, false
+	}
+	patch, ok := modelInfo.ThinkingPayloads[label]
+	if !ok || len(patch) == 0 {
+		return nil, false
+	}
+	return patch, true
 }
 
 func applyCompatibleOpenAI(body []byte, config thinking.ThinkingConfig) ([]byte, error) {

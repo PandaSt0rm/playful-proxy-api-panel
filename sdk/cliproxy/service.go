@@ -2247,19 +2247,28 @@ func buildOpenAICompatibilityConfigModels(compat *config.OpenAICompatibility) []
 		if model.Image {
 			modelType = registry.OpenAIImageModelType
 		}
+		payloads := normalizeCompatThinkingPayloads(model.ThinkingPayloads)
 		thinking := model.Thinking
 		if thinking == nil && !model.Image {
 			thinking = thinkingDefaultForOpenAICompatModel(model.Name)
 		}
+		// Payload level keys implicitly declare the model's thinking levels so
+		// level aliases and suffix routing work without extra configuration.
+		if thinking == nil && len(payloads) > 0 {
+			if levels := compatPayloadLevelKeys(payloads); len(levels) > 0 {
+				thinking = &registry.ThinkingSupport{Levels: levels}
+			}
+		}
 		models = append(models, &ModelInfo{
-			ID:          modelID,
-			Object:      "model",
-			Created:     now,
-			OwnedBy:     compat.Name,
-			Type:        modelType,
-			DisplayName: modelID,
-			UserDefined: false,
-			Thinking:    thinking,
+			ID:               modelID,
+			Object:           "model",
+			Created:          now,
+			OwnedBy:          compat.Name,
+			Type:             modelType,
+			DisplayName:      modelID,
+			UserDefined:      false,
+			Thinking:         thinking,
+			ThinkingPayloads: payloads,
 		})
 	}
 	return models
@@ -2267,6 +2276,14 @@ func buildOpenAICompatibilityConfigModels(compat *config.OpenAICompatibility) []
 
 func thinkingDefaultForOpenAICompatModel(name string) *registry.ThinkingSupport {
 	return thinking.DefaultThinkingForModel(name)
+}
+
+func normalizeCompatThinkingPayloads(payloads map[string]map[string]any) map[string]map[string]any {
+	return thinking.NormalizeThinkingPayloads(payloads)
+}
+
+func compatPayloadLevelKeys(payloads map[string]map[string]any) []string {
+	return thinking.PayloadLevelKeys(payloads)
 }
 
 func buildConfigModels[T modelEntry](models []T, ownedBy, modelType string) []*ModelInfo {

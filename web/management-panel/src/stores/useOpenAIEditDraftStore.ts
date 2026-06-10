@@ -36,6 +36,7 @@ export type OpenAIEditBaseline = {
     alias: string;
     thinking?: OpenAIFormState['modelEntries'][number]['thinking'];
     thinkingLevels?: OpenAIFormState['modelEntries'][number]['thinkingLevels'];
+    thinkingPayloads?: OpenAIFormState['modelEntries'][number]['thinkingPayloads'];
   }>;
   testModel: string;
   disableCooling: boolean | null;

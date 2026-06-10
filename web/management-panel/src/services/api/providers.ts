@@ -114,6 +114,11 @@ export const serializeModelAliases = (models?: ModelAlias[]) =>
           } else {
             delete payload.thinking;
           }
+          if (model.thinkingPayloads && Object.keys(model.thinkingPayloads).length) {
+            payload['thinking-payloads'] = { ...model.thinkingPayloads };
+          } else {
+            delete payload['thinking-payloads'];
+          }
           return payload;
         })
         .filter(Boolean)

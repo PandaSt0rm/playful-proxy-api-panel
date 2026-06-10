@@ -368,4 +368,85 @@ describe('AiProvidersOpenAIEditPage', () => {
 
     expect(keyRowDelete).toBeDisabled();
   });
+
+  it('opens the effort payloads editor and applies the GLM preset to the model entry', async () => {
+    const user = userEvent.setup();
+    const setForm = vi.fn();
+    const context = buildContext({
+      form: buildForm({ modelEntries: [{ name: 'glm-4.6', alias: '' }] }),
+      setForm,
+    });
+    renderPage(context);
+
+    await user.click(screen.getByRole('button', { name: 'effort payloads' }));
+    await user.click(screen.getByRole('button', { name: 'GLM thinking.type' }));
+
+    const updater = setForm.mock.calls.at(-1)?.[0] as (prev: OpenAIFormState) => OpenAIFormState;
+    expect(typeof updater).toBe('function');
+    const next = updater(context.form);
+    expect(next.modelEntries[0].thinkingPayloads).toEqual({
+      none: { thinking: { type: 'disabled' } },
+      high: { thinking: { type: 'enabled' } },
+    });
+  });
+
+  it('shows the payload count on the toggle and seeds the textarea from the entry', async () => {
+    const user = userEvent.setup();
+    const context = buildContext({
+      form: buildForm({
+        modelEntries: [
+          {
+            name: 'glm-4.6',
+            alias: '',
+            thinkingPayloads: { high: { thinking: { type: 'enabled' } } },
+          },
+        ],
+      }),
+    });
+    renderPage(context);
+
+    const toggle = screen.getByRole('button', { name: 'effort payloads (1)' });
+    await user.click(toggle);
+
+    const textarea = screen.getByRole('textbox', { name: 'effort payloads' });
+    expect(textarea).toHaveValue(JSON.stringify({ high: { thinking: { type: 'enabled' } } }, null, 2));
+  });
+
+  it('flags invalid payload JSON without updating the entry', async () => {
+    const user = userEvent.setup();
+    const setForm = vi.fn();
+    renderPage(
+      buildContext({
+        form: buildForm({ modelEntries: [{ name: 'glm-4.6', alias: '' }] }),
+        setForm,
+      })
+    );
+
+    await user.click(screen.getByRole('button', { name: 'effort payloads' }));
+    const textarea = screen.getByRole('textbox', { name: 'effort payloads' });
+    await user.type(textarea, '{{not json');
+
+    expect(textarea).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText(/Invalid payloads/)).toBeInTheDocument();
+    expect(setForm).not.toHaveBeenCalled();
+  });
+
+  it('rejects payload maps with unknown level keys', async () => {
+    const user = userEvent.setup();
+    const setForm = vi.fn();
+    renderPage(
+      buildContext({
+        form: buildForm({ modelEntries: [{ name: 'glm-4.6', alias: '' }] }),
+        setForm,
+      })
+    );
+
+    await user.click(screen.getByRole('button', { name: 'effort payloads' }));
+    const textarea = screen.getByRole('textbox', { name: 'effort payloads' });
+    await user.click(textarea);
+    await user.paste('{"turbo": {"x": 1}}');
+
+    expect(textarea).toHaveAttribute('aria-invalid', 'true');
+    expect(setForm).not.toHaveBeenCalled();
+  });
 });

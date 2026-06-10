@@ -211,4 +211,22 @@ describe('areModelEntriesEqual', () => {
       )
     ).toBe(false);
   });
+
+  it('returns true for matching thinkingPayloads', () => {
+    expect(
+      areModelEntriesEqual(
+        [{ name: 'm', alias: 'a', thinkingPayloads: { high: { thinking: { type: 'enabled' } } } }],
+        [{ name: 'm', alias: 'a', thinkingPayloads: { high: { thinking: { type: 'enabled' } } } }]
+      )
+    ).toBe(true);
+  });
+
+  it('returns false when thinkingPayloads differ', () => {
+    expect(
+      areModelEntriesEqual(
+        [{ name: 'm', alias: 'a', thinkingPayloads: { high: { thinking: { type: 'enabled' } } } }],
+        [{ name: 'm', alias: 'a' }]
+      )
+    ).toBe(false);
+  });
 });

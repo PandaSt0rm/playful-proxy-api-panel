@@ -67,6 +67,12 @@ type ModelInfo struct {
 	// ThinkingAliasBase records the visible base model for auto-generated
 	// thinking-level aliases such as "model-high".
 	ThinkingAliasBase string `json:"-"`
+
+	// ThinkingPayloads maps a canonical reasoning label (minimal, low, medium,
+	// high, xhigh, max, none, auto) to a JSON object merged into the upstream
+	// request body when that label is requested. Used by OpenAI-compatibility
+	// models whose upstreams do not accept the standard reasoning_effort field.
+	ThinkingPayloads map[string]map[string]any `json:"-"`
 }
 
 type availableModelsCacheEntry struct {
@@ -551,7 +557,33 @@ func cloneModelInfo(model *ModelInfo) *ModelInfo {
 		}
 		copyModel.Thinking = &copyThinking
 	}
+	if len(model.ThinkingPayloads) > 0 {
+		copyModel.ThinkingPayloads = cloneThinkingPayloads(model.ThinkingPayloads)
+	}
 	return &copyModel
+}
+
+func cloneThinkingPayloads(payloads map[string]map[string]any) map[string]map[string]any {
+	out := make(map[string]map[string]any, len(payloads))
+	for label, patch := range payloads {
+		out[label] = clonePayloadObject(patch)
+	}
+	return out
+}
+
+func clonePayloadObject(patch map[string]any) map[string]any {
+	if patch == nil {
+		return nil
+	}
+	out := make(map[string]any, len(patch))
+	for key, value := range patch {
+		if nested, ok := value.(map[string]any); ok {
+			out[key] = clonePayloadObject(nested)
+			continue
+		}
+		out[key] = value
+	}
+	return out
 }
 
 func cloneModelInfosUnique(models []*ModelInfo) []*ModelInfo {

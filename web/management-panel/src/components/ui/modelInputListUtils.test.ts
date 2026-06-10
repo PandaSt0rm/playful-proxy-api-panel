@@ -85,6 +85,21 @@ describe('modelsToEntries', () => {
       { name: 'b', alias: '' },
     ]);
   });
+
+  it('copies thinkingPayloads into fresh objects and drops empty patches', () => {
+    const payloads = { high: { thinking: { type: 'enabled' } }, medium: {} };
+    const entries = modelsToEntries([{ name: 'm', thinkingPayloads: payloads }]);
+
+    expect(entries[0].thinkingPayloads).toEqual({ high: { thinking: { type: 'enabled' } } });
+    expect(entries[0].thinkingPayloads).not.toBe(payloads);
+    expect(entries[0].thinkingPayloads?.high).not.toBe(payloads.high);
+  });
+
+  it('omits thinkingPayloads when the model has none', () => {
+    const entries = modelsToEntries([{ name: 'm' }]);
+
+    expect(entries[0].thinkingPayloads).toBeUndefined();
+  });
 });
 
 describe('entriesToModels', () => {
@@ -144,6 +159,21 @@ describe('entriesToModels', () => {
 
   it('drops an empty thinking config that has no meaningful fields', () => {
     const entries: ModelEntry[] = [{ name: 'm', alias: '', thinking: {} }];
+
+    expect(entriesToModels(entries)).toEqual([{ name: 'm' }]);
+  });
+
+  it('carries thinkingPayloads onto the model as fresh objects', () => {
+    const payloads = { none: { thinking: { type: 'disabled' } } };
+    const entries: ModelEntry[] = [{ name: 'm', alias: '', thinkingPayloads: payloads }];
+
+    const models = entriesToModels(entries);
+    expect(models).toEqual([{ name: 'm', thinkingPayloads: payloads }]);
+    expect(models[0].thinkingPayloads).not.toBe(payloads);
+  });
+
+  it('omits thinkingPayloads when every patch is empty', () => {
+    const entries: ModelEntry[] = [{ name: 'm', alias: '', thinkingPayloads: { high: {} } }];
 
     expect(entriesToModels(entries)).toEqual([{ name: 'm' }]);
   });

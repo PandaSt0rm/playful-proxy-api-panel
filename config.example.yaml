@@ -316,8 +316,22 @@ nonstream-keepalive-interval: 0
 #       - name: "moonshotai/kimi-k2:free" # The actual model name.
 #         alias: "kimi-k2"               # The alias used in the API.
 #         image: false                   # optional: set true to allow this model on /v1/images/generations and /v1/images/edits
-#         thinking:                      # optional: omit to default to levels ["low","medium","high"]
+#         thinking:                      # optional: omit to derive levels from the model registry's catalog of known reasoning models
 #           levels: ["low", "medium", "high"]
+#       # For upstreams that do not accept the standard reasoning_effort field
+#       # (e.g. GLM's thinking.type or Qwen-style enable_thinking), map each
+#       # canonical label (minimal/low/medium/high/xhigh/max/none/auto) to a JSON
+#       # object merged into the request body. When a payload applies,
+#       # reasoning_effort is removed unless the payload sets it again; a null
+#       # value deletes that field. Level-named keys implicitly declare
+#       # thinking.levels, so -low/-high style aliases work automatically.
+#       - name: "glm-4.6"
+#         alias: "glm-4.6"
+#         thinking-payloads:
+#           none:
+#             thinking: { type: "disabled" }
+#           high:
+#             thinking: { type: "enabled" }
 #       # You may repeat the same alias to build an internal model pool.
 #       # The client still sees only one alias in the model list.
 #       # Requests to that alias will round-robin across the upstream names below,
@@ -391,8 +405,8 @@ nonstream-keepalive-interval: 0
 # you select the protocol surface, but inference backend selection can still follow the resolved
 # model/alias. For strict backend pinning, use unique aliases/prefixes or avoid overlapping names.
 # You can repeat the same name with different aliases to expose multiple client model names.
-# Models that declare thinking levels automatically expose -low, -medium, -high, and -xhigh
-# aliases when the level is supported (for example, gpt-5.3-codex-spark-high).
+# Models that declare thinking levels automatically expose -minimal, -low, -medium, -high,
+# -xhigh, and -max aliases when the level is supported (for example, gpt-5.3-codex-spark-high).
 # Requests may use either model(high) or model-high. Explicit configured names and aliases
 # keep priority over automatic suffix parsing, so old configs remain compatible.
 # oauth-model-alias:

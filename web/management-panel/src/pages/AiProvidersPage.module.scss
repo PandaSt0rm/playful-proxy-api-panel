@@ -1182,6 +1182,60 @@ $openai-toolbar-control-height: 36px;
   color: var(--text-secondary);
 }
 
+.modelPayloadEditor {
+  position: relative;
+  display: inline-flex;
+}
+
+.modelPayloadPanel {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: $z-dropdown;
+  width: min(420px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  padding: $spacing-sm;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: $radius-md;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.modelPayloadTextarea {
+  font-family: $font-mono;
+  font-size: 12px;
+  line-height: 1.5;
+  min-height: 140px;
+  resize: vertical;
+  padding: $spacing-xs $spacing-sm;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: $radius-sm;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
+
+  &[aria-invalid='true'] {
+    border-color: var(--danger-color, #c65746);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.modelPayloadError {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--danger-color, #c65746);
+}
+
 .modelTestPanel {
   display: flex;
   align-items: flex-start;
