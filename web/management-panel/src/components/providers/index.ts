@@ -9,6 +9,7 @@ export { ProviderList } from './ProviderList';
 export { ProviderStatusBar } from './ProviderStatusBar';
 export { ProviderConcurrencyInput } from './ProviderConcurrencyInput';
 export { ProviderConcurrencyBadge } from './ProviderConcurrencyBadge';
+export { ModelEffortPayloadsEditor } from './ModelEffortPayloadsEditor';
 export { ProviderNav } from './ProviderNav';
 export * from './hooks/useProviderRecentRequests';
 export * from './types';

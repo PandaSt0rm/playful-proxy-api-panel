@@ -390,7 +390,7 @@ describe('AiProvidersOpenAIEditPage', () => {
     });
   });
 
-  it('shows the payload count on the toggle and seeds the textarea from the entry', async () => {
+  it('shows the active label count on the toggle and seeds the JSON view from the entry', async () => {
     const user = userEvent.setup();
     const context = buildContext({
       form: buildForm({
@@ -407,9 +407,28 @@ describe('AiProvidersOpenAIEditPage', () => {
 
     const toggle = screen.getByRole('button', { name: 'effort payloads (1)' });
     await user.click(toggle);
+    await user.click(screen.getByRole('button', { name: 'JSON' }));
 
     const textarea = screen.getByRole('textbox', { name: 'effort payloads' });
     expect(textarea).toHaveValue(JSON.stringify({ high: { thinking: { type: 'enabled' } } }, null, 2));
+  });
+
+  it('toggles a reasoning level chip inside the effort payloads panel', async () => {
+    const user = userEvent.setup();
+    const setForm = vi.fn();
+    const context = buildContext({
+      form: buildForm({ modelEntries: [{ name: 'glm-4.6', alias: '' }] }),
+      setForm,
+    });
+    renderPage(context);
+
+    await user.click(screen.getByRole('button', { name: 'effort payloads' }));
+    await user.click(screen.getByRole('button', { name: 'high' }));
+
+    const updater = setForm.mock.calls.at(-1)?.[0] as (prev: OpenAIFormState) => OpenAIFormState;
+    expect(typeof updater).toBe('function');
+    const next = updater(context.form);
+    expect(next.modelEntries[0].thinkingLevels).toEqual(['high']);
   });
 
   it('flags invalid payload JSON without updating the entry', async () => {
@@ -423,6 +442,7 @@ describe('AiProvidersOpenAIEditPage', () => {
     );
 
     await user.click(screen.getByRole('button', { name: 'effort payloads' }));
+    await user.click(screen.getByRole('button', { name: 'JSON' }));
     const textarea = screen.getByRole('textbox', { name: 'effort payloads' });
     await user.type(textarea, '{{not json');
 
@@ -442,6 +462,7 @@ describe('AiProvidersOpenAIEditPage', () => {
     );
 
     await user.click(screen.getByRole('button', { name: 'effort payloads' }));
+    await user.click(screen.getByRole('button', { name: 'JSON' }));
     const textarea = screen.getByRole('textbox', { name: 'effort payloads' });
     await user.click(textarea);
     await user.paste('{"turbo": {"x": 1}}');

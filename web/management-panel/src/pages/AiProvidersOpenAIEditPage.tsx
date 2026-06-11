@@ -12,184 +12,16 @@ import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { useNotificationStore } from '@/stores';
 import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
-import type { ApiKeyEntry, ThinkingPayloadMap } from '@/types';
+import type { ApiKeyEntry } from '@/types';
 import { buildHeaderObject, hasHeader } from '@/utils/headers';
 import { buildApiKeyEntry, buildOpenAIChatCompletionsEndpoint } from '@/components/providers/utils';
-import { ProviderConcurrencyInput } from '@/components/providers';
+import { ModelEffortPayloadsEditor, ProviderConcurrencyInput } from '@/components/providers';
 import type { OpenAIEditOutletContext } from './AiProvidersOpenAIEditLayout';
 import type { KeyTestStatus } from '@/stores/useOpenAIEditDraftStore';
 import styles from './AiProvidersPage.module.scss';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
 
 const OPENAI_TEST_TIMEOUT_MS = 30_000;
-
-const REASONING_LEVELS = ['minimal', 'low', 'medium', 'high', 'xhigh', 'max'] as const;
-type ReasoningLevel = (typeof REASONING_LEVELS)[number];
-
-const THINKING_PAYLOAD_LABELS = new Set<string>([...REASONING_LEVELS, 'none', 'auto']);
-
-// Editable starting points for upstreams that do not accept reasoning_effort.
-const THINKING_PAYLOAD_PRESETS: Array<{ id: 'glm' | 'qwen' | 'openrouter'; payloads: ThinkingPayloadMap }> = [
-  {
-    id: 'glm',
-    payloads: {
-      none: { thinking: { type: 'disabled' } },
-      high: { thinking: { type: 'enabled' } },
-    },
-  },
-  {
-    id: 'qwen',
-    payloads: {
-      none: { enable_thinking: false },
-      low: { enable_thinking: true, thinking_budget: 1024 },
-      medium: { enable_thinking: true, thinking_budget: 8192 },
-      high: { enable_thinking: true, thinking_budget: 24576 },
-    },
-  },
-  {
-    id: 'openrouter',
-    payloads: {
-      none: { reasoning: { enabled: false } },
-      low: { reasoning: { effort: 'low' } },
-      medium: { reasoning: { effort: 'medium' } },
-      high: { reasoning: { effort: 'high' } },
-    },
-  },
-];
-
-const formatThinkingPayloads = (payloads?: ThinkingPayloadMap) =>
-  payloads && Object.keys(payloads).length ? JSON.stringify(payloads, null, 2) : '';
-
-const parseThinkingPayloads = (
-  text: string
-): { ok: boolean; payloads?: ThinkingPayloadMap } => {
-  const trimmed = text.trim();
-  if (!trimmed) return { ok: true, payloads: undefined };
-  try {
-    const parsed: unknown = JSON.parse(trimmed);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { ok: false };
-    const out: ThinkingPayloadMap = {};
-    for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
-      const label = key.trim().toLowerCase();
-      if (!THINKING_PAYLOAD_LABELS.has(label)) return { ok: false };
-      if (!value || typeof value !== 'object' || Array.isArray(value)) return { ok: false };
-      const patch = value as Record<string, unknown>;
-      if (!Object.keys(patch).length) continue;
-      out[label] = patch;
-    }
-    return { ok: true, payloads: Object.keys(out).length ? out : undefined };
-  } catch {
-    return { ok: false };
-  }
-};
-
-function ModelThinkingPayloadEditor({ entry, disabled, updateEntry }: ModelInputListRowExtrasArgs) {
-  const { t } = useTranslation();
-  const entrySerialized = formatThinkingPayloads(entry.thinkingPayloads);
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState(entrySerialized);
-  const [invalid, setInvalid] = useState(false);
-  // Resync the draft when the entry changes outside this editor (form reload,
-  // row reordering) without clobbering in-progress typing of the same value.
-  const [lastEntrySerialized, setLastEntrySerialized] = useState(entrySerialized);
-  if (entrySerialized !== lastEntrySerialized) {
-    setLastEntrySerialized(entrySerialized);
-    const parsed = parseThinkingPayloads(draft);
-    if (!(parsed.ok && formatThinkingPayloads(parsed.payloads) === entrySerialized)) {
-      setDraft(entrySerialized);
-      setInvalid(false);
-    }
-  }
-
-  const payloadCount = Object.keys(entry.thinkingPayloads ?? {}).length;
-
-  const applyText = (text: string) => {
-    setDraft(text);
-    const parsed = parseThinkingPayloads(text);
-    setInvalid(!parsed.ok);
-    if (parsed.ok) {
-      updateEntry({ thinkingPayloads: parsed.payloads });
-    }
-  };
-
-  const applyPreset = (payloads: ThinkingPayloadMap) => {
-    setInvalid(false);
-    setDraft(formatThinkingPayloads(payloads));
-    updateEntry({ thinkingPayloads: payloads });
-  };
-
-  const clearPayloads = () => {
-    setInvalid(false);
-    setDraft('');
-    updateEntry({ thinkingPayloads: undefined });
-  };
-
-  const toggleClassName = [
-    styles.modelLevelChip,
-    payloadCount || open ? styles.modelLevelChipActive : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
-
-  return (
-    <div className={styles.modelPayloadEditor}>
-      <button
-        type="button"
-        className={toggleClassName}
-        onClick={() => setOpen((value) => !value)}
-        disabled={disabled}
-        aria-expanded={open}
-      >
-        {t('ai_providers.thinking_payloads_toggle')}
-        {payloadCount ? ` (${payloadCount})` : ''}
-      </button>
-      {open && (
-        <div className={styles.modelPayloadPanel}>
-          <div className={styles.modelLevelChips}>
-            {THINKING_PAYLOAD_PRESETS.map((preset) => (
-              <button
-                type="button"
-                key={preset.id}
-                className={styles.modelLevelChip}
-                onClick={() => applyPreset(preset.payloads)}
-                disabled={disabled}
-              >
-                {t(`ai_providers.thinking_payloads_preset_${preset.id}`)}
-              </button>
-            ))}
-            <button
-              type="button"
-              className={styles.modelLevelChip}
-              onClick={clearPayloads}
-              disabled={disabled || (!payloadCount && !draft.trim())}
-            >
-              {t('ai_providers.thinking_payloads_preset_clear')}
-            </button>
-          </div>
-          <textarea
-            className={styles.modelPayloadTextarea}
-            value={draft}
-            onChange={(event) => applyText(event.target.value)}
-            disabled={disabled}
-            rows={8}
-            spellCheck={false}
-            placeholder={'{\n  "high": { "thinking": { "type": "enabled" } }\n}'}
-            aria-invalid={invalid}
-            aria-label={t('ai_providers.thinking_payloads_toggle')}
-          />
-          {invalid && (
-            <div className={styles.modelPayloadError}>
-              {t('ai_providers.thinking_payloads_invalid')}
-            </div>
-          )}
-          <div className={styles.modelLevelChipsHint}>
-            {t('ai_providers.thinking_payloads_hint')}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 const getErrorMessage = (err: unknown) => {
   if (err instanceof Error) return err.message;
@@ -557,53 +389,9 @@ export function AiProvidersOpenAIEditPage() {
     showNotification,
   ]);
 
-  const renderModelLevelChips = useCallback(
-    (args: ModelInputListRowExtrasArgs) => {
-      const { entry, disabled, updateEntry } = args;
-      const active = new Set(entry.thinkingLevels ?? []);
-      const toggleLevel = (level: ReasoningLevel) => {
-        const next = new Set(active);
-        if (next.has(level)) next.delete(level);
-        else next.add(level);
-        const ordered = [
-          ...REASONING_LEVELS.filter((known) => next.has(known)),
-          ...Array.from(next).filter(
-            (lvl) => !(REASONING_LEVELS as readonly string[]).includes(lvl)
-          ),
-        ];
-        updateEntry({
-          thinking: {
-            ...(entry.thinking ?? {}),
-            levels: ordered.length ? ordered : undefined,
-          },
-          thinkingLevels: ordered.length ? ordered : undefined,
-        });
-      };
-      return (
-        <div className={styles.modelLevelChips}>
-          {REASONING_LEVELS.map((level) => {
-            const on = active.has(level);
-            const className = [styles.modelLevelChip, on ? styles.modelLevelChipActive : '']
-              .filter(Boolean)
-              .join(' ');
-            return (
-              <button
-                type="button"
-                key={level}
-                className={className}
-                onClick={() => toggleLevel(level)}
-                disabled={disabled}
-                aria-pressed={on}
-              >
-                {t(`ai_providers.reasoning_level_${level}`)}
-              </button>
-            );
-          })}
-          <ModelThinkingPayloadEditor {...args} />
-        </div>
-      );
-    },
-    [t]
+  const renderModelEffortPayloads = useCallback(
+    (args: ModelInputListRowExtrasArgs) => <ModelEffortPayloadsEditor {...args} />,
+    []
   );
 
   const openOpenaiModelDiscovery = () => {
@@ -898,7 +686,7 @@ export function AiProvidersOpenAIEditPage() {
                 removeButtonClassName={styles.modelRowRemoveButton}
                 removeButtonTitle={t('common.delete')}
                 removeButtonAriaLabel={t('common.delete')}
-                renderRowExtras={renderModelLevelChips}
+                renderRowExtras={renderModelEffortPayloads}
               />
               <div className={styles.modelLevelChipsHint}>
                 {t('ai_providers.openai_models_variants_hint')}
