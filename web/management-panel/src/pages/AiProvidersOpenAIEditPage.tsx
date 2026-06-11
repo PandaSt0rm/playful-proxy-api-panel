@@ -14,8 +14,17 @@ import { useNotificationStore } from '@/stores';
 import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
 import type { ApiKeyEntry } from '@/types';
 import { buildHeaderObject, hasHeader } from '@/utils/headers';
-import { buildApiKeyEntry, buildOpenAIChatCompletionsEndpoint } from '@/components/providers/utils';
-import { ModelEffortPayloadsEditor, ProviderConcurrencyInput } from '@/components/providers';
+import {
+  buildApiKeyEntry,
+  buildOpenAIChatCompletionsEndpoint,
+  formatApiCallResultDetail,
+} from '@/components/providers/utils';
+import {
+  ModelEffortPayloadsEditor,
+  ProviderConcurrencyInput,
+  ProviderTestResultBox,
+  type ProviderTestResultEntry,
+} from '@/components/providers';
 import type { OpenAIEditOutletContext } from './AiProvidersOpenAIEditLayout';
 import type { KeyTestStatus } from '@/stores/useOpenAIEditDraftStore';
 import styles from './AiProvidersPage.module.scss';
@@ -234,6 +243,7 @@ export function AiProvidersOpenAIEditPage() {
       // Set loading state for this key
       setDraftKeyTestStatus(keyIndex, { status: 'loading', message: '' });
 
+      const startedAt = performance.now();
       try {
         const result = await apiCallApi.request(
           {
@@ -251,13 +261,32 @@ export function AiProvidersOpenAIEditPage() {
           { timeout: OPENAI_TEST_TIMEOUT_MS }
         );
 
+        const durationMs = Math.round(performance.now() - startedAt);
+        const detail = formatApiCallResultDetail(result);
+
         if (result.statusCode < 200 || result.statusCode >= 300) {
-          throw new Error(getApiCallErrorMessage(result));
+          setDraftKeyTestStatus(keyIndex, {
+            status: 'error',
+            message: getApiCallErrorMessage(result),
+            detail,
+            statusCode: result.statusCode,
+            durationMs,
+            model: modelName,
+          });
+          return false;
         }
 
-        setDraftKeyTestStatus(keyIndex, { status: 'success', message: '' });
+        setDraftKeyTestStatus(keyIndex, {
+          status: 'success',
+          message: t('ai_providers.openai_test_success'),
+          detail,
+          statusCode: result.statusCode,
+          durationMs,
+          model: modelName,
+        });
         return true;
       } catch (err: unknown) {
+        const durationMs = Math.round(performance.now() - startedAt);
         const message = getErrorMessage(err);
         const errorCode =
           typeof err === 'object' && err !== null && 'code' in err
@@ -267,7 +296,12 @@ export function AiProvidersOpenAIEditPage() {
         const errorMessage = isTimeout
           ? t('ai_providers.openai_test_timeout', { seconds: OPENAI_TEST_TIMEOUT_MS / 1000 })
           : message;
-        setDraftKeyTestStatus(keyIndex, { status: 'error', message: errorMessage });
+        setDraftKeyTestStatus(keyIndex, {
+          status: 'error',
+          message: errorMessage,
+          durationMs,
+          model: modelName,
+        });
         return false;
       }
     },
@@ -407,6 +441,29 @@ export function AiProvidersOpenAIEditPage() {
   const renderKeyEntries = (entries: ApiKeyEntry[]) => {
     const list = entries.length ? entries : [buildApiKeyEntry()];
 
+    const testResultEntries = list.reduce<ProviderTestResultEntry[]>((acc, _entry, index) => {
+      const keyStatus = keyTestStatuses[index];
+      if (!keyStatus || (keyStatus.status !== 'success' && keyStatus.status !== 'error')) {
+        return acc;
+      }
+      const meta = [
+        keyStatus.statusCode ? `HTTP ${keyStatus.statusCode}` : '',
+        keyStatus.durationMs !== undefined ? `${keyStatus.durationMs} ms` : '',
+        keyStatus.model ?? '',
+      ]
+        .filter(Boolean)
+        .join(' · ');
+      acc.push({
+        id: `key-${index}`,
+        status: keyStatus.status,
+        label: t('ai_providers.test_results_key_label', { index: index + 1 }),
+        message: keyStatus.message,
+        meta,
+        detail: keyStatus.detail,
+      });
+      return acc;
+    }, []);
+
     const updateEntry = (idx: number, field: keyof ApiKeyEntry, value: string) => {
       const next = list.map((entry, i) => (i === idx ? { ...entry, [field]: value } : entry));
       setForm((prev) => ({ ...prev, apiKeyEntries: next }));
@@ -526,6 +583,10 @@ export function AiProvidersOpenAIEditPage() {
             );
           })}
         </div>
+        <ProviderTestResultBox
+          title={t('ai_providers.test_results_title')}
+          entries={testResultEntries}
+        />
       </div>
     );
   };

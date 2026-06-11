@@ -63,6 +63,8 @@ const buildContext = (
   setTestStatus: vi.fn(),
   testMessage: '',
   setTestMessage: vi.fn(),
+  testResult: null,
+  setTestResult: vi.fn(),
   availableModels: [],
   concurrencyLimit: '',
   setConcurrencyLimit: vi.fn(),
@@ -318,6 +320,66 @@ describe('AiProvidersClaudeEditPage', () => {
         'error'
       )
     );
+  });
+
+  it('stores the full response detail when the connectivity test completes', async () => {
+    const user = userEvent.setup();
+    const setTestResult = vi.fn();
+    const responseBody = { content: [{ type: 'text', text: 'Hi there!' }] };
+    apiCallRequest.mockResolvedValue({
+      statusCode: 200,
+      header: {},
+      bodyText: JSON.stringify(responseBody),
+      body: responseBody,
+    });
+    renderPage(
+      buildContext({
+        form: buildForm({ apiKey: 'sk-key', baseUrl: 'https://api.anthropic.com' }),
+        testModel: 'claude-3-5-sonnet',
+        availableModels: ['claude-3-5-sonnet'],
+        setTestResult,
+      })
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Test' }));
+
+    await waitFor(() =>
+      expect(setTestResult).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: JSON.stringify(responseBody, null, 2),
+          statusCode: 200,
+          model: 'claude-3-5-sonnet',
+          durationMs: expect.any(Number),
+        })
+      )
+    );
+  });
+
+  it('renders the test results box with the full response from the context', () => {
+    renderPage(
+      buildContext({
+        testStatus: 'success',
+        testMessage: 'Test succeeded. Claude model responded.',
+        testResult: {
+          detail: '{\n  "content": "Hi there!"\n}',
+          statusCode: 200,
+          durationMs: 318,
+          model: 'claude-3-5-sonnet',
+        },
+      })
+    );
+
+    expect(screen.getByText('Test Results')).toBeInTheDocument();
+    expect(screen.getByText('HTTP 200 · 318 ms · claude-3-5-sonnet')).toBeInTheDocument();
+    expect(screen.getByText('Test succeeded. Claude model responded.')).toBeInTheDocument();
+    expect(screen.getByText(/"content": "Hi there!"/)).toBeInTheDocument();
+  });
+
+  it('falls back to the status badge when no HTTP result is available', () => {
+    renderPage(buildContext({ testStatus: 'error', testMessage: 'Please select a model to test' }));
+
+    expect(screen.queryByText('Test Results')).not.toBeInTheDocument();
+    expect(screen.getByText('Please select a model to test')).toBeInTheDocument();
   });
 
   it('renders the cloak mode controls only after cloaking is enabled in the form', () => {

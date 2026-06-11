@@ -11,6 +11,8 @@ export { ProviderStatusBar } from './ProviderStatusBar';
 export { ProviderConcurrencyInput } from './ProviderConcurrencyInput';
 export { ProviderConcurrencyBadge } from './ProviderConcurrencyBadge';
 export { ModelEffortPayloadsEditor } from './ModelEffortPayloadsEditor';
+export { ProviderTestResultBox } from './ProviderTestResultBox';
+export type { ProviderTestResultEntry } from './ProviderTestResultBox';
 export { ProviderNav } from './ProviderNav';
 export * from './hooks/useProviderRecentRequests';
 export * from './types';

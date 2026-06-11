@@ -18,6 +18,11 @@ export type OpenAITestStatus = 'idle' | 'loading' | 'success' | 'error';
 export type KeyTestStatus = {
   status: OpenAITestStatus;
   message: string;
+  /** Full upstream response body. `undefined` means no HTTP response was received. */
+  detail?: string;
+  statusCode?: number;
+  durationMs?: number;
+  model?: string;
 };
 
 export type OpenAIEditBaseline = {

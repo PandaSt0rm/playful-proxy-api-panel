@@ -409,6 +409,21 @@ describe('useOpenAIEditDraftStore setDraftKeyTestStatus', () => {
     expect(get().drafts['openai:0'].keyTestStatuses[0]).toEqual(status);
   });
 
+  it('stores the full response detail fields alongside the status', () => {
+    const status: KeyTestStatus = {
+      status: 'error',
+      message: '400 Unknown Model',
+      detail: '{"error":"Unknown Model"}',
+      statusCode: 400,
+      durationMs: 245,
+      model: 'gpt-4o',
+    };
+
+    get().setDraftKeyTestStatus('openai:0', 0, status);
+
+    expect(get().drafts['openai:0'].keyTestStatuses[0]).toEqual(status);
+  });
+
   it('marks the draft as initialized', () => {
     get().setDraftKeyTestStatus('openai:0', 0, { status: 'loading', message: '' });
 

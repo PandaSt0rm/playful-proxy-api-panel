@@ -14,6 +14,14 @@ import type { ProviderFormState } from '@/components/providers/types';
 
 export type ClaudeTestStatus = 'idle' | 'loading' | 'success' | 'error';
 
+export type ClaudeTestResult = {
+  /** Full upstream response body. `undefined` means no HTTP response was received. */
+  detail?: string;
+  statusCode?: number;
+  durationMs?: number;
+  model?: string;
+};
+
 export type ClaudeCloakBaseline = {
   mode: string;
   strictMode: boolean;
@@ -42,6 +50,7 @@ type ClaudeEditDraft = {
   testModel: string;
   testStatus: ClaudeTestStatus;
   testMessage: string;
+  testResult: ClaudeTestResult | null;
 };
 
 interface ClaudeEditDraftState {
@@ -56,6 +65,7 @@ interface ClaudeEditDraftState {
   setDraftTestModel: (key: string, action: SetStateAction<string>) => void;
   setDraftTestStatus: (key: string, action: SetStateAction<ClaudeTestStatus>) => void;
   setDraftTestMessage: (key: string, action: SetStateAction<string>) => void;
+  setDraftTestResult: (key: string, action: SetStateAction<ClaudeTestResult | null>) => void;
   clearDraft: (key: string) => void;
 }
 
@@ -83,6 +93,7 @@ const buildEmptyDraft = (): ClaudeEditDraft => ({
   testModel: '',
   testStatus: 'idle',
   testMessage: '',
+  testResult: null,
 });
 
 export const useClaudeEditDraftStore = create<ClaudeEditDraftState>((set, get) => ({
@@ -202,6 +213,20 @@ export const useClaudeEditDraftStore = create<ClaudeEditDraftState>((set, get) =
         drafts: {
           ...state.drafts,
           [key]: { ...existing, initialized: true, testMessage: nextValue },
+        },
+      };
+    });
+  },
+
+  setDraftTestResult: (key, action) => {
+    if (!key) return;
+    set((state) => {
+      const existing = state.drafts[key] ?? buildEmptyDraft();
+      const nextValue = resolveAction(action, existing.testResult);
+      return {
+        drafts: {
+          ...state.drafts,
+          [key]: { ...existing, initialized: true, testResult: nextValue },
         },
       };
     });

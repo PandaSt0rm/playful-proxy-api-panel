@@ -21,6 +21,7 @@ import {
   buildOpenAIModelsEndpoint,
   buildOpenAIChatCompletionsEndpoint,
   buildClaudeMessagesEndpoint,
+  formatApiCallResultDetail,
   getProviderRecentUsageEntry,
   getProviderTotalStats,
   getProviderRecentStats,
@@ -238,6 +239,41 @@ describe('buildClaudeMessagesEndpoint', () => {
 
   it('builds the messages endpoint from the anthropic default for empty input', () => {
     expect(buildClaudeMessagesEndpoint('')).toBe('https://api.anthropic.com/v1/messages');
+  });
+});
+
+describe('formatApiCallResultDetail', () => {
+  it('pretty-prints an object body as indented JSON', () => {
+    const detail = formatApiCallResultDetail({
+      statusCode: 200,
+      header: {},
+      bodyText: '{"ok":true}',
+      body: { ok: true },
+    });
+
+    expect(detail).toBe('{\n  "ok": true\n}');
+  });
+
+  it('falls back to the trimmed raw body text for non-object bodies', () => {
+    const detail = formatApiCallResultDetail({
+      statusCode: 502,
+      header: {},
+      bodyText: '  upstream unavailable  ',
+      body: 'upstream unavailable',
+    });
+
+    expect(detail).toBe('upstream unavailable');
+  });
+
+  it('returns an empty string when the response had no body', () => {
+    const detail = formatApiCallResultDetail({
+      statusCode: 204,
+      header: {},
+      bodyText: '',
+      body: null,
+    });
+
+    expect(detail).toBe('');
   });
 });
 

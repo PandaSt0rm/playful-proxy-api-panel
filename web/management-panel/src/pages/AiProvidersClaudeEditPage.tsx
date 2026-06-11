@@ -13,8 +13,16 @@ import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
 import { useConfigStore, useNotificationStore } from '@/stores';
 import { buildHeaderObject } from '@/utils/headers';
-import { buildClaudeMessagesEndpoint, parseTextList } from '@/components/providers/utils';
-import { ProviderConcurrencyInput } from '@/components/providers';
+import {
+  buildClaudeMessagesEndpoint,
+  formatApiCallResultDetail,
+  parseTextList,
+} from '@/components/providers/utils';
+import {
+  ProviderConcurrencyInput,
+  ProviderTestResultBox,
+  type ProviderTestResultEntry,
+} from '@/components/providers';
 import type { ClaudeEditOutletContext } from './AiProvidersClaudeEditLayout';
 import styles from './AiProvidersPage.module.scss';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
@@ -62,6 +70,8 @@ export function AiProvidersClaudeEditPage() {
     setTestStatus,
     testMessage,
     setTestMessage,
+    testResult,
+    setTestResult,
     availableModels,
     concurrencyLimit,
     setConcurrencyLimit,
@@ -159,11 +169,31 @@ export function AiProvidersClaudeEditPage() {
     previousConnectivityConfigRef.current = connectivityConfigSignature;
     setTestStatus('idle');
     setTestMessage('');
-  }, [connectivityConfigSignature, setTestMessage, setTestStatus]);
+    setTestResult(null);
+  }, [connectivityConfigSignature, setTestMessage, setTestResult, setTestStatus]);
 
   const openClaudeModelDiscovery = () => {
     navigate('models');
   };
+
+  const testResultEntries: ProviderTestResultEntry[] =
+    (testStatus === 'success' || testStatus === 'error') && testResult
+      ? [
+          {
+            id: 'claude-test',
+            status: testStatus,
+            message: testMessage,
+            meta: [
+              testResult.statusCode ? `HTTP ${testResult.statusCode}` : '',
+              testResult.durationMs !== undefined ? `${testResult.durationMs} ms` : '',
+              testResult.model ?? '',
+            ]
+              .filter(Boolean)
+              .join(' · '),
+            detail: testResult.detail,
+          },
+        ]
+      : [];
 
   const runClaudeConnectivityTest = useCallback(async () => {
     if (isTesting) return;
@@ -222,7 +252,9 @@ export function AiProvidersClaudeEditPage() {
     setIsTesting(true);
     setTestStatus('loading');
     setTestMessage(t('ai_providers.claude_test_running'));
+    setTestResult(null);
 
+    const startedAt = performance.now();
     try {
       const result = await apiCallApi.request(
         {
@@ -238,8 +270,20 @@ export function AiProvidersClaudeEditPage() {
         { timeout: CLAUDE_TEST_TIMEOUT_MS }
       );
 
+      const durationMs = Math.round(performance.now() - startedAt);
+      setTestResult({
+        detail: formatApiCallResultDetail(result),
+        statusCode: result.statusCode,
+        durationMs,
+        model: modelName,
+      });
+
       if (result.statusCode < 200 || result.statusCode >= 300) {
-        throw new Error(getApiCallErrorMessage(result));
+        const message = `${t('ai_providers.claude_test_failed')}: ${getApiCallErrorMessage(result)}`;
+        setTestStatus('error');
+        setTestMessage(message);
+        showNotification(message, 'error');
+        return;
       }
 
       const message = t('ai_providers.claude_test_success');
@@ -247,6 +291,7 @@ export function AiProvidersClaudeEditPage() {
       setTestMessage(message);
       showNotification(message, 'success');
     } catch (err: unknown) {
+      const durationMs = Math.round(performance.now() - startedAt);
       const message = getErrorMessage(err);
       const errorCode =
         typeof err === 'object' && err !== null && 'code' in err
@@ -258,6 +303,7 @@ export function AiProvidersClaudeEditPage() {
         : `${t('ai_providers.claude_test_failed')}: ${message || t('common.unknown_error')}`;
       setTestStatus('error');
       setTestMessage(resolvedMessage);
+      setTestResult({ durationMs, model: modelName });
       showNotification(resolvedMessage, 'error');
     } finally {
       setIsTesting(false);
@@ -269,6 +315,7 @@ export function AiProvidersClaudeEditPage() {
     form.headers,
     isTesting,
     setTestMessage,
+    setTestResult,
     setTestStatus,
     showNotification,
     t,
@@ -503,7 +550,7 @@ export function AiProvidersClaudeEditPage() {
                 </div>
               </div>
 
-              {testMessage && (
+              {testMessage && testResultEntries.length === 0 && (
                 <div
                   className={`status-badge ${
                     testStatus === 'error'
@@ -516,6 +563,10 @@ export function AiProvidersClaudeEditPage() {
                   {testMessage}
                 </div>
               )}
+              <ProviderTestResultBox
+                title={t('ai_providers.test_results_title')}
+                entries={testResultEntries}
+              />
             </div>
 
             <div className="form-group">

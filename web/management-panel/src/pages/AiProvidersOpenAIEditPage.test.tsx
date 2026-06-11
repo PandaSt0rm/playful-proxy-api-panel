@@ -363,6 +363,92 @@ describe('AiProvidersOpenAIEditPage', () => {
     expect(screen.getByText('All 3 keys passed the test')).toBeInTheDocument();
   });
 
+  it('stores the full response detail when a single-key test succeeds', async () => {
+    const user = userEvent.setup();
+    const setDraftKeyTestStatus = vi.fn();
+    const responseBody = { choices: [{ message: { role: 'assistant', content: 'Hello!' } }] };
+    apiCallRequest.mockResolvedValue({
+      statusCode: 200,
+      header: {},
+      bodyText: JSON.stringify(responseBody),
+      body: responseBody,
+    });
+    renderPage(testableContext({ setDraftKeyTestStatus }));
+
+    await user.click(screen.getByRole('button', { name: 'Test', exact: true }));
+
+    await waitFor(() =>
+      expect(setDraftKeyTestStatus).toHaveBeenCalledWith(
+        0,
+        expect.objectContaining({
+          status: 'success',
+          detail: JSON.stringify(responseBody, null, 2),
+          statusCode: 200,
+          model: 'gpt-4o',
+          durationMs: expect.any(Number),
+        })
+      )
+    );
+  });
+
+  it('stores the full error body when a single-key test gets a non-2xx response', async () => {
+    const user = userEvent.setup();
+    const setDraftKeyTestStatus = vi.fn();
+    const errorBody = { error: { message: 'Unknown Model, please check the model code.' } };
+    apiCallRequest.mockResolvedValue({
+      statusCode: 400,
+      header: {},
+      bodyText: JSON.stringify(errorBody),
+      body: errorBody,
+    });
+    renderPage(testableContext({ setDraftKeyTestStatus }));
+
+    await user.click(screen.getByRole('button', { name: 'Test', exact: true }));
+
+    await waitFor(() =>
+      expect(setDraftKeyTestStatus).toHaveBeenCalledWith(
+        0,
+        expect.objectContaining({
+          status: 'error',
+          message: 'api error 400',
+          detail: JSON.stringify(errorBody, null, 2),
+          statusCode: 400,
+        })
+      )
+    );
+  });
+
+  it('renders the per-key test results box with the full response from the context', () => {
+    renderPage(
+      testableContext({
+        keyTestStatuses: [
+          {
+            status: 'error',
+            message: '400 Unknown Model, please check the model code.',
+            detail: '{\n  "error": "Unknown Model"\n}',
+            statusCode: 400,
+            durationMs: 245,
+            model: 'gpt-4o',
+          },
+        ],
+      })
+    );
+
+    expect(screen.getByText('Test Results')).toBeInTheDocument();
+    expect(screen.getByText('Key #1')).toBeInTheDocument();
+    expect(screen.getByText('HTTP 400 · 245 ms · gpt-4o')).toBeInTheDocument();
+    expect(
+      screen.getByText('400 Unknown Model, please check the model code.')
+    ).toBeInTheDocument();
+    expect(screen.getByText(/"error": "Unknown Model"/)).toBeInTheDocument();
+  });
+
+  it('does not render the test results box while all key statuses are idle', () => {
+    renderPage(testableContext({ keyTestStatuses: [{ status: 'idle', message: '' }] }));
+
+    expect(screen.queryByText('Test Results')).not.toBeInTheDocument();
+  });
+
   it('disables the per-row delete button when only one key entry exists', () => {
     renderPage(buildContext({ form: buildForm({ apiKeyEntries: [buildKeyEntry({ apiKey: 'a' })] }) }));
 

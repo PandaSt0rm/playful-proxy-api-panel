@@ -21,7 +21,7 @@ import {
 } from '@/utils/compare';
 import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
 import { modelsToEntries } from '@/components/ui/modelInputListUtils';
-import type { ClaudeEditBaseline } from '@/stores/useClaudeEditDraftStore';
+import type { ClaudeEditBaseline, ClaudeTestResult } from '@/stores/useClaudeEditDraftStore';
 import {
   concurrencyLimitToDraft,
   getProviderConcurrencyOverride,
@@ -48,6 +48,8 @@ export type ClaudeEditOutletContext = {
   setTestStatus: Dispatch<SetStateAction<TestStatus>>;
   testMessage: string;
   setTestMessage: Dispatch<SetStateAction<string>>;
+  testResult: ClaudeTestResult | null;
+  setTestResult: Dispatch<SetStateAction<ClaudeTestResult | null>>;
   availableModels: string[];
   concurrencyLimit: string;
   setConcurrencyLimit: Dispatch<SetStateAction<string>>;
@@ -192,11 +194,13 @@ export function AiProvidersClaudeEditLayout() {
   const setDraftTestModel = useClaudeEditDraftStore((state) => state.setDraftTestModel);
   const setDraftTestStatus = useClaudeEditDraftStore((state) => state.setDraftTestStatus);
   const setDraftTestMessage = useClaudeEditDraftStore((state) => state.setDraftTestMessage);
+  const setDraftTestResult = useClaudeEditDraftStore((state) => state.setDraftTestResult);
 
   const form = draft?.form ?? buildEmptyForm();
   const testModel = draft?.testModel ?? '';
   const testStatus = draft?.testStatus ?? 'idle';
   const testMessage = draft?.testMessage ?? '';
+  const testResult = draft?.testResult ?? null;
 
   const setForm: Dispatch<SetStateAction<ProviderFormState>> = useCallback(
     (action) => {
@@ -224,6 +228,13 @@ export function AiProvidersClaudeEditLayout() {
       setDraftTestMessage(draftKey, action);
     },
     [draftKey, setDraftTestMessage]
+  );
+
+  const setTestResult: Dispatch<SetStateAction<ClaudeTestResult | null>> = useCallback(
+    (action) => {
+      setDraftTestResult(draftKey, action);
+    },
+    [draftKey, setDraftTestResult]
   );
 
   const initialData = useMemo(() => {
@@ -303,6 +314,7 @@ export function AiProvidersClaudeEditLayout() {
         testModel: available[0] || '',
         testStatus: 'idle',
         testMessage: '',
+        testResult: null,
       });
       return;
     }
@@ -319,6 +331,7 @@ export function AiProvidersClaudeEditLayout() {
       testModel: '',
       testStatus: 'idle',
       testMessage: '',
+      testResult: null,
     });
   }, [config?.upstreamConcurrency, draft?.initialized, draftKey, initDraft, initialData, loading]);
 
@@ -410,6 +423,7 @@ export function AiProvidersClaudeEditLayout() {
         setTestModel('');
         setTestStatus('idle');
         setTestMessage('');
+        setTestResult(null);
       }
       return;
     }
@@ -418,8 +432,17 @@ export function AiProvidersClaudeEditLayout() {
       setTestModel(availableModels[0]);
       setTestStatus('idle');
       setTestMessage('');
+      setTestResult(null);
     }
-  }, [availableModels, resolvedLoading, setTestMessage, setTestModel, setTestStatus, testModel]);
+  }, [
+    availableModels,
+    resolvedLoading,
+    setTestMessage,
+    setTestModel,
+    setTestResult,
+    setTestStatus,
+    testModel,
+  ]);
 
   const mergeDiscoveredModels = useCallback(
     (selectedModels: ModelInfo[]) => {
@@ -565,6 +588,8 @@ export function AiProvidersClaudeEditLayout() {
           setTestStatus,
           testMessage,
           setTestMessage,
+          testResult,
+          setTestResult,
           availableModels,
           concurrencyLimit,
           setConcurrencyLimit,

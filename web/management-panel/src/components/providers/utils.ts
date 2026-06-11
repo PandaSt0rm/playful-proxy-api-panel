@@ -5,6 +5,7 @@ import type {
   ApiKeyEntry,
   OpenAIProviderConfig,
 } from '@/types';
+import type { ApiCallResult } from '@/services/api';
 import {
   buildRecentRequestCompositeKey,
   mergeRecentRequestBucketGroups,
@@ -98,6 +99,17 @@ export const buildClaudeMessagesEndpoint = (baseUrl: string): string => {
     return `${trimmed}/messages`;
   }
   return `${trimmed}/v1/messages`;
+};
+
+export const formatApiCallResultDetail = (result: ApiCallResult): string => {
+  if (result.body !== null && typeof result.body === 'object') {
+    try {
+      return JSON.stringify(result.body, null, 2);
+    } catch {
+      // Circular or otherwise non-serializable body; fall back to the raw text.
+    }
+  }
+  return result.bodyText.trim();
 };
 
 export type ProviderRecentUsageMap = Map<string, Map<string, RecentRequestUsageEntry>>;
