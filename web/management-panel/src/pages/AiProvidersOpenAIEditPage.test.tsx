@@ -132,6 +132,12 @@ describe('AiProvidersOpenAIEditPage', () => {
     expect(screen.getByText('Add Z.AI Provider')).toBeInTheDocument();
   });
 
+  it('shows the OpenRouter add-modal title when provider mode is openrouter', () => {
+    renderPage(buildContext({ providerMode: 'openrouter', hasIndexParam: false }));
+
+    expect(screen.getByText('Add OpenRouter Provider')).toBeInTheDocument();
+  });
+
   it('renders the invalid-index hint instead of the form when invalidIndexParam is set', () => {
     renderPage(buildContext({ invalidIndexParam: true }));
 

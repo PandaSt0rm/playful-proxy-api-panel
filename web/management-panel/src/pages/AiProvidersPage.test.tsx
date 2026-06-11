@@ -51,6 +51,7 @@ vi.mock('@/components/providers', () => {
     VertexSection: makeStub('vertex-section'),
     AmpcodeSection: makeStub('ampcode-section'),
     ZaiSection: makeStub('zai-section'),
+    OpenRouterSection: makeStub('openrouter-section'),
     OpenAISection: makeStub('openai-section'),
     ProviderNav: () => <nav data-testid="provider-nav" />,
     useProviderRecentRequests: () => ({
@@ -132,6 +133,7 @@ describe('AiProvidersPage', () => {
     expect(screen.getByTestId('vertex-section')).toBeInTheDocument();
     expect(screen.getByTestId('ampcode-section')).toBeInTheDocument();
     expect(screen.getByTestId('zai-section')).toBeInTheDocument();
+    expect(screen.getByTestId('openrouter-section')).toBeInTheDocument();
     expect(screen.getByTestId('openai-section')).toBeInTheDocument();
     expect(screen.getByTestId('provider-nav')).toBeInTheDocument();
   });
@@ -171,6 +173,19 @@ describe('AiProvidersPage', () => {
     await user.click(screen.getByRole('button', { name: 'add-zai-section' }));
 
     expect(navigateSpy).toHaveBeenCalledWith('/ai-providers/zai/new', {
+      state: { fromAiProviders: true },
+    });
+  });
+
+  it('navigates to the openrouter add route from the OpenRouter section add button', async () => {
+    const user = userEvent.setup();
+    seedValidCache(baseConfig);
+    renderWithRouter(<AiProvidersPage />);
+    await screen.findByTestId('openrouter-section');
+
+    await user.click(screen.getByRole('button', { name: 'add-openrouter-section' }));
+
+    expect(navigateSpy).toHaveBeenCalledWith('/ai-providers/openrouter/new', {
       state: { fromAiProviders: true },
     });
   });

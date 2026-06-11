@@ -142,6 +142,9 @@ describe('AuthFilesOAuthModelAliasEditPage save', () => {
 
     renderPage('/auth-files/oauth-model-alias?provider=codex');
     await screen.findByPlaceholderText('Alias (required)');
+    // Let the mount-time requestAnimationFrame settle before interacting;
+    // under full-suite load it otherwise races userEvent (see ProviderNav.test).
+    await new Promise((resolve) => requestAnimationFrame(resolve));
     await user.type(getSourceInputs()[0], 'gpt-4o');
     await user.type(getAliasInputs()[0], 'best');
     await user.click(screen.getByRole('button', { name: 'Save/Update' }));

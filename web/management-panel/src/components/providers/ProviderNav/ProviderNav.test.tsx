@@ -3,7 +3,16 @@ import { renderWithRouter, screen, userEvent } from '@/test/utils';
 import { useThemeStore } from '@/stores';
 import { ProviderNav } from './ProviderNav';
 
-const PROVIDER_IDS = ['gemini', 'codex', 'claude', 'vertex', 'ampcode', 'zai', 'openai'] as const;
+const PROVIDER_IDS = [
+  'gemini',
+  'codex',
+  'claude',
+  'vertex',
+  'ampcode',
+  'zai',
+  'openrouter',
+  'openai',
+] as const;
 
 // scrollToProvider bails out unless a `#provider-<id>` anchor exists in the
 // document, so inject them to exercise the active-state behaviour.

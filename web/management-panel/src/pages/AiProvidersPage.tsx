@@ -7,6 +7,7 @@ import {
   CodexSection,
   GeminiSection,
   OpenAISection,
+  OpenRouterSection,
   VertexSection,
   ZaiSection,
   ProviderNav,
@@ -22,6 +23,7 @@ import { ampcodeApi, providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore, useThemeStore } from '@/stores';
 import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 import { isZaiOpenAIProvider } from '@/utils/zaiProvider';
+import { isOpenRouterOpenAIProvider } from '@/utils/openrouterProvider';
 import styles from './AiProvidersPage.module.scss';
 
 export function AiProvidersPage() {
@@ -77,8 +79,19 @@ export function AiProvidersPage() {
     [openaiProviders]
   );
 
+  const openrouterProviders = useMemo(
+    () =>
+      openaiProviders
+        .map((config, originalIndex) => ({ config, originalIndex }))
+        .filter(
+          ({ config }) => !isZaiOpenAIProvider(config) && isOpenRouterOpenAIProvider(config)
+        ),
+    [openaiProviders]
+  );
+
   const isGenericOpenAIProvider = useCallback(
-    (provider: OpenAIProviderConfig) => !isZaiOpenAIProvider(provider),
+    (provider: OpenAIProviderConfig) =>
+      !isZaiOpenAIProvider(provider) && !isOpenRouterOpenAIProvider(provider),
     []
   );
 
@@ -396,12 +409,20 @@ export function AiProvidersPage() {
     });
   };
 
-  const deleteOpenai = async (index: number, providerKind: 'openai' | 'zai' = 'openai') => {
+  const deleteOpenai = async (
+    index: number,
+    providerKind: 'openai' | 'zai' | 'openrouter' = 'openai'
+  ) => {
     const entry = openaiProviders[index];
     if (!entry) return;
+    const deleteTitleDefaults: Record<typeof providerKind, string> = {
+      openai: 'Delete OpenAI Provider',
+      zai: 'Delete Z.AI Provider',
+      openrouter: 'Delete OpenRouter Provider',
+    };
     showConfirmation({
       title: t(`ai_providers.${providerKind}_delete_title`, {
-        defaultValue: providerKind === 'zai' ? 'Delete Z.AI Provider' : 'Delete OpenAI Provider',
+        defaultValue: deleteTitleDefaults[providerKind],
       }),
       message: t(`ai_providers.${providerKind}_delete_confirm`),
       variant: 'danger',
@@ -413,14 +434,7 @@ export function AiProvidersPage() {
           setOpenaiProviders(next);
           updateConfigValue('openai-compatibility', next);
           clearCache('openai-compatibility');
-          showNotification(
-            t(
-              providerKind === 'zai'
-                ? 'notification.zai_provider_deleted'
-                : 'notification.openai_provider_deleted'
-            ),
-            'success'
-          );
+          showNotification(t(`notification.${providerKind}_provider_deleted`), 'success');
         } catch (err: unknown) {
           const message = getErrorMessage(err);
           showNotification(`${t('notification.delete_failed')}: ${message}`, 'error');
@@ -516,6 +530,21 @@ export function AiProvidersPage() {
             onAdd={() => openEditor('/ai-providers/zai/new')}
             onEdit={(index) => openEditor(`/ai-providers/zai/${index}`)}
             onDelete={(index) => void deleteOpenai(index, 'zai')}
+            onToggle={(index, enabled) => void setOpenAIProviderEnabled(index, enabled)}
+          />
+        </div>
+
+        <div id="provider-openrouter">
+          <OpenRouterSection
+            providers={openrouterProviders}
+            upstreamConcurrency={config?.upstreamConcurrency}
+            usageByProvider={usageByProvider}
+            loading={loading}
+            disableControls={disableControls}
+            isSwitching={isSwitching}
+            onAdd={() => openEditor('/ai-providers/openrouter/new')}
+            onEdit={(index) => openEditor(`/ai-providers/openrouter/${index}`)}
+            onDelete={(index) => void deleteOpenai(index, 'openrouter')}
             onToggle={(index, enabled) => void setOpenAIProviderEnabled(index, enabled)}
           />
         </div>

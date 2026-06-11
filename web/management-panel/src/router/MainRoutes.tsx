@@ -82,6 +82,22 @@ const mainRoutes = [
       { path: 'models', element: <AiProvidersOpenAIModelsPage /> },
     ],
   },
+  {
+    path: '/ai-providers/openrouter/new',
+    element: <AiProvidersOpenAIEditLayout providerMode="openrouter" />,
+    children: [
+      { index: true, element: <AiProvidersOpenAIEditPage /> },
+      { path: 'models', element: <AiProvidersOpenAIModelsPage /> },
+    ],
+  },
+  {
+    path: '/ai-providers/openrouter/:index',
+    element: <AiProvidersOpenAIEditLayout providerMode="openrouter" />,
+    children: [
+      { index: true, element: <AiProvidersOpenAIEditPage /> },
+      { path: 'models', element: <AiProvidersOpenAIModelsPage /> },
+    ],
+  },
   { path: '/ai-providers/ampcode', element: <AiProvidersAmpcodeEditPage /> },
   { path: '/ai-providers', element: <AiProvidersPage /> },
   { path: '/ai-providers/*', element: <AiProvidersPage /> },

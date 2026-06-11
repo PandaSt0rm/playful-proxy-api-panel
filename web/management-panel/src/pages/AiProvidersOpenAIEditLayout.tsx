@@ -17,6 +17,10 @@ import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/u
 import { areKeyValueEntriesEqual, areModelEntriesEqual } from '@/utils/compare';
 import { buildApiKeyEntry } from '@/components/providers/utils';
 import { buildDefaultZaiProvider, isZaiOpenAIProvider } from '@/utils/zaiProvider';
+import {
+  buildDefaultOpenRouterProvider,
+  isOpenRouterOpenAIProvider,
+} from '@/utils/openrouterProvider';
 import type { ModelEntry, OpenAIFormState } from '@/components/providers/types';
 import type { KeyTestStatus, OpenAIEditBaseline } from '@/stores/useOpenAIEditDraftStore';
 import {
@@ -26,7 +30,7 @@ import {
 } from '@/utils/upstreamConcurrency';
 
 type LocationState = { fromAiProviders?: boolean } | null;
-export type OpenAIProviderEditorMode = 'openai' | 'zai';
+export type OpenAIProviderEditorMode = 'openai' | 'zai' | 'openrouter';
 
 export type OpenAIEditOutletContext = {
   providerMode: OpenAIProviderEditorMode;
@@ -72,6 +76,9 @@ const providerToForm = (provider: OpenAIProviderConfig): OpenAIFormState => ({
 const buildEmptyForm = (providerMode: OpenAIProviderEditorMode): OpenAIFormState => {
   if (providerMode === 'zai') {
     return providerToForm(buildDefaultZaiProvider());
+  }
+  if (providerMode === 'openrouter') {
+    return providerToForm(buildDefaultOpenRouterProvider());
   }
   return {
     name: '',
@@ -299,8 +306,13 @@ export function AiProvidersOpenAIEditLayout({
   useEffect(() => {
     if (providerMode !== 'openai') return;
     if (!providerListReady || editIndex === null || !initialData) return;
-    if (!isZaiOpenAIProvider(initialData)) return;
-    navigate(`/ai-providers/zai/${editIndex}`, { replace: true, state: location.state });
+    if (isZaiOpenAIProvider(initialData)) {
+      navigate(`/ai-providers/zai/${editIndex}`, { replace: true, state: location.state });
+      return;
+    }
+    if (isOpenRouterOpenAIProvider(initialData)) {
+      navigate(`/ai-providers/openrouter/${editIndex}`, { replace: true, state: location.state });
+    }
   }, [editIndex, initialData, location.state, navigate, providerListReady, providerMode]);
 
   const availableModels = useMemo(
