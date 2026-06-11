@@ -16,6 +16,7 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v7/internal/buildinfo"
 	"github.com/router-for-me/CLIProxyAPI/v7/internal/config"
 	"github.com/router-for-me/CLIProxyAPI/v7/internal/pluginhost"
+	"github.com/router-for-me/CLIProxyAPI/v7/internal/syncstate"
 	"github.com/router-for-me/CLIProxyAPI/v7/internal/usage"
 	sdkAuth "github.com/router-for-me/CLIProxyAPI/v7/sdk/auth"
 	coreauth "github.com/router-for-me/CLIProxyAPI/v7/sdk/cliproxy/auth"
@@ -51,6 +52,8 @@ type Handler struct {
 	postAuthHook        coreauth.PostAuthHook
 	postAuthPersistHook coreauth.PostAuthHook
 	pluginHost          *pluginhost.Host
+	syncStateMu         sync.Mutex
+	syncStateStore      *syncstate.Store
 }
 
 // NewHandler creates a new management handler instance.

@@ -1846,7 +1846,8 @@
       "synced": "Synced",
       "outdated": "Outdated",
       "never-synced": "Never Synced",
-      "error": "Error"
+      "error": "Error",
+      "conflict": "Conflict"
     },
     "form": {
       "create_title": "Create Sync Profile",

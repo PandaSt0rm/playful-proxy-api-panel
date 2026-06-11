@@ -11,7 +11,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Modal } from '@/components/ui/Modal';
 import { syncApi } from '@/services/api/sync';
 import { useNotificationStore } from '@/stores';
-import type { SyncProfile } from '@/types';
+import type { SyncProfile, SyncStateResponse, SyncToolReport } from '@/types';
 import { SYNC_TOOLS } from './constants';
 import { SyncProfileForm } from './SyncProfileForm';
 import { SyncStatusIndicator, type SyncStatus } from './SyncStatusIndicator';
@@ -29,10 +29,10 @@ export function SyncProfilesSection() {
   const showNotification = useNotificationStore((s) => s.showNotification);
 
   const [profiles, setProfiles] = useState<SyncProfile[]>([]);
+  const [syncState, setSyncState] = useState<SyncStateResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [formMode, setFormMode] = useState<FormMode>('closed');
-  const [editIndex, setEditIndex] = useState<number>(-1);
   const [editProfile, setEditProfile] = useState<SyncProfile | undefined>(undefined);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
@@ -52,6 +52,14 @@ export function SyncProfilesSection() {
     } finally {
       setLoading(false);
     }
+
+    // Sync state is best-effort decoration — its absence must not block
+    // the profile list.
+    try {
+      setSyncState(await syncApi.getSyncState());
+    } catch {
+      setSyncState(null);
+    }
   }, []);
 
   useEffect(() => {
@@ -60,25 +68,21 @@ export function SyncProfilesSection() {
 
   const handleCreate = () => {
     setFormMode('create');
-    setEditIndex(-1);
     setEditProfile(undefined);
   };
 
   const handleEdit = (index: number) => {
     setFormMode('edit');
-    setEditIndex(index);
     setEditProfile(profiles[index]);
   };
 
   const handleFormClose = () => {
     setFormMode('closed');
-    setEditIndex(-1);
     setEditProfile(undefined);
   };
 
   const handleFormSaved = () => {
     setFormMode('closed');
-    setEditIndex(-1);
     setEditProfile(undefined);
     fetchProfiles();
   };
@@ -119,11 +123,26 @@ export function SyncProfilesSection() {
     setExpandedIndex((prev) => (prev === index ? null : index));
   };
 
-  // Determine sync status for a tool target.
-  // Since the server doesn't track sync state, we default to 'never-synced'.
-  // This will be enhanced when a sync-status endpoint is available.
-  const getToolStatus = (_targetTool: string): { status: SyncStatus; lastSync?: string } => {
-    return { status: 'never-synced' };
+  // Resolve a tool's sync status from the most recent report across all
+  // hosts that have synced against this server. No report → never synced.
+  const getToolStatus = (
+    targetTool: string,
+  ): { status: SyncStatus; lastSync?: string; errorDetail?: string } => {
+    let latest: SyncToolReport | undefined;
+    for (const host of Object.values(syncState?.hosts ?? {})) {
+      const report = host.tools?.[targetTool];
+      if (!report) continue;
+      if (!latest || Date.parse(report.timestamp) > Date.parse(latest.timestamp)) {
+        latest = report;
+      }
+    }
+    if (!latest) {
+      return { status: 'never-synced' };
+    }
+
+    const parsed = Date.parse(latest.timestamp);
+    const lastSync = Number.isNaN(parsed) ? undefined : new Date(parsed).toLocaleString();
+    return { status: latest.status, lastSync, errorDetail: latest.error };
   };
 
   return (
@@ -232,7 +251,7 @@ export function SyncProfilesSection() {
                   <div className={styles.profileDetail}>
                     <div className={styles.profileDetailTargets}>
                       {profile.targets?.map((target) => {
-                        const { status, lastSync } = getToolStatus(target.tool);
+                        const { status, lastSync, errorDetail } = getToolStatus(target.tool);
                         return (
                           <div key={target.tool} className={styles.targetDetailRow}>
                             <span className={styles.targetDetailToolLabel}>
@@ -248,7 +267,7 @@ export function SyncProfilesSection() {
                                 /{target['model-filter']}/
                               </span>
                             )}
-                            <SyncStatusIndicator status={status} lastSync={lastSync} />
+                            <SyncStatusIndicator status={status} lastSync={lastSync} errorDetail={errorDetail} />
                           </div>
                         );
                       })}
@@ -274,7 +293,6 @@ export function SyncProfilesSection() {
       >
         <SyncProfileForm
           profile={editProfile}
-          profileIndex={editIndex}
           onClose={handleFormClose}
           onSaved={handleFormSaved}
         />

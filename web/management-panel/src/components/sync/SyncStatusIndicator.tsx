@@ -5,7 +5,7 @@
 import { useTranslation } from 'react-i18next';
 import styles from './sync.module.scss';
 
-export type SyncStatus = 'synced' | 'outdated' | 'never-synced' | 'error';
+export type SyncStatus = 'synced' | 'outdated' | 'never-synced' | 'error' | 'conflict';
 
 interface SyncStatusIndicatorProps {
   status: SyncStatus;
@@ -18,6 +18,7 @@ const STATUS_CLASS_MAP: Record<SyncStatus, string> = {
   outdated: styles.statusOutdated,
   'never-synced': styles.statusNeverSynced,
   error: styles.statusError,
+  conflict: styles.statusConflict,
 };
 
 export function SyncStatusIndicator({ status, lastSync, errorDetail }: SyncStatusIndicatorProps) {
@@ -35,7 +36,7 @@ export function SyncStatusIndicator({ status, lastSync, errorDetail }: SyncStatu
           {lastSync}
         </span>
       )}
-      {status === 'error' && errorDetail && (
+      {(status === 'error' || status === 'conflict') && errorDetail && (
         <span className={styles.statusTimestamp} title={errorDetail} aria-label={errorDetail}>
           ({errorDetail})
         </span>

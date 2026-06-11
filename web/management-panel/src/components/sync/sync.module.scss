@@ -427,6 +427,11 @@
   .statusDot { background: $error-color; }
 }
 
+.statusConflict {
+  color: $warning-color;
+  .statusDot { background: $warning-color; }
+}
+
 .statusTimestamp {
   font-size: 11px;
   color: var(--text-tertiary);

@@ -670,6 +670,8 @@ func (s *Server) registerManagementRoutes() {
 		mgmt.DELETE("/sync-profiles", s.mgmt.DeleteSyncProfiles)
 
 		mgmt.GET("/sync/available-configs", s.mgmt.GetSyncAvailableConfigs)
+		mgmt.GET("/sync/state", s.mgmt.GetSyncState)
+		mgmt.POST("/sync/state", s.mgmt.PostSyncState)
 		mgmt.GET("/tooling-templates", s.mgmt.GetToolingTemplates)
 		mgmt.POST("/tooling-templates/render", s.mgmt.RenderToolingTemplates)
 

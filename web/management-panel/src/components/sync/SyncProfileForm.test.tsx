@@ -9,6 +9,7 @@ vi.mock('@/services/api/sync', () => ({
   syncApi: {
     getSyncProfiles: vi.fn(),
     saveSyncProfiles: vi.fn(),
+    updateSyncProfileByName: vi.fn(),
     deleteSyncProfile: vi.fn(),
     getSyncAvailableConfigs: vi.fn(),
   },
@@ -33,6 +34,7 @@ beforeEach(() => {
   mockedApi.getSyncAvailableConfigs.mockResolvedValue(CONFIGS);
   mockedApi.getSyncProfiles.mockResolvedValue([]);
   mockedApi.saveSyncProfiles.mockResolvedValue({ status: 'ok' });
+  mockedApi.updateSyncProfileByName.mockResolvedValue({ status: 'ok' });
 });
 
 function renderCreate(extra: Partial<Parameters<typeof SyncProfileForm>[0]> = {}) {
@@ -42,12 +44,10 @@ function renderCreate(extra: Partial<Parameters<typeof SyncProfileForm>[0]> = {}
   return { onClose, onSaved };
 }
 
-function renderEdit(profile: SyncProfile, index: number, extra: Partial<Parameters<typeof SyncProfileForm>[0]> = {}) {
+function renderEdit(profile: SyncProfile, extra: Partial<Parameters<typeof SyncProfileForm>[0]> = {}) {
   const onClose = vi.fn();
   const onSaved = vi.fn();
-  render(
-    <SyncProfileForm profile={profile} profileIndex={index} onClose={onClose} onSaved={onSaved} {...extra} />
-  );
+  render(<SyncProfileForm profile={profile} onClose={onClose} onSaved={onSaved} {...extra} />);
   return { onClose, onSaved };
 }
 
@@ -81,21 +81,21 @@ describe('SyncProfileForm — rendering', () => {
   });
 
   it('shows the "Save" submit button in edit mode', async () => {
-    renderEdit({ name: 'Prod', targets: [{ tool: 'codex' }] }, 0);
+    renderEdit({ name: 'Prod', targets: [{ tool: 'codex' }] });
 
     expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
     await flushConfigs();
   });
 
   it('prefills the name from an existing profile in edit mode', async () => {
-    renderEdit({ name: 'Prod', targets: [{ tool: 'codex' }] }, 0);
+    renderEdit({ name: 'Prod', targets: [{ tool: 'codex' }] });
 
     expect(screen.getByLabelText('Profile name')).toHaveValue('Prod');
     await flushConfigs();
   });
 
   it('expands the target tool into a config card in edit mode', async () => {
-    renderEdit({ name: 'Prod', targets: [{ tool: 'codex' }] }, 0);
+    renderEdit({ name: 'Prod', targets: [{ tool: 'codex' }] });
 
     expect(screen.getByRole('checkbox', { name: 'Codex' })).toBeChecked();
     await flushConfigs();
@@ -231,69 +231,85 @@ describe('SyncProfileForm — submit payload (create)', () => {
 });
 
 describe('SyncProfileForm — submit payload (edit)', () => {
-  it('replaces the profile at the edited index in the persisted list', async () => {
-    mockedApi.getSyncProfiles.mockResolvedValue([
-      { name: 'A', targets: [{ tool: 'aider' }] },
-      { name: 'B', targets: [{ tool: 'codex' }] },
-    ]);
-    renderEdit({ name: 'B', targets: [{ tool: 'codex' }] }, 1);
+  it('patches the profile by its original name instead of rewriting the list', async () => {
+    renderEdit({ name: 'B', targets: [{ tool: 'codex' }] });
     await screen.findByDisplayValue('B');
 
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-    await waitFor(() => expect(mockedApi.saveSyncProfiles).toHaveBeenCalledTimes(1));
-    expect(mockedApi.saveSyncProfiles).toHaveBeenCalledWith([
-      { name: 'A', targets: [{ tool: 'aider' }] },
-      { name: 'B', targets: [{ tool: 'codex' }] },
-    ]);
+    await waitFor(() => expect(mockedApi.updateSyncProfileByName).toHaveBeenCalledTimes(1));
+    expect(mockedApi.updateSyncProfileByName).toHaveBeenCalledWith('B', {
+      name: 'B',
+      targets: [{ tool: 'codex' }],
+    });
+    expect(mockedApi.saveSyncProfiles).not.toHaveBeenCalled();
+  });
+
+  it('patches under the original name when the profile is renamed', async () => {
+    renderEdit({ name: 'Old', targets: [{ tool: 'codex' }] });
+    await screen.findByDisplayValue('Old');
+    await userEvent.clear(screen.getByLabelText('Profile name'));
+    await userEvent.type(screen.getByLabelText('Profile name'), 'New');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(mockedApi.updateSyncProfileByName).toHaveBeenCalledTimes(1));
+    expect(mockedApi.updateSyncProfileByName).toHaveBeenCalledWith('Old', {
+      name: 'New',
+      targets: [{ tool: 'codex' }],
+    });
   });
 
   it('preserves an active-model on the round-trip through edit', async () => {
-    renderEdit({ name: 'Prod', targets: [{ tool: 'codex', 'active-model': 'gpt-5' }] }, 0);
+    renderEdit({ name: 'Prod', targets: [{ tool: 'codex', 'active-model': 'gpt-5' }] });
     await screen.findByDisplayValue('Prod');
 
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-    await waitFor(() => expect(mockedApi.saveSyncProfiles).toHaveBeenCalledTimes(1));
-    expect(mockedApi.saveSyncProfiles).toHaveBeenCalledWith([
-      { name: 'Prod', targets: [{ tool: 'codex', 'active-model': 'gpt-5' }] },
-    ]);
+    await waitFor(() => expect(mockedApi.updateSyncProfileByName).toHaveBeenCalledTimes(1));
+    expect(mockedApi.updateSyncProfileByName).toHaveBeenCalledWith('Prod', {
+      name: 'Prod',
+      targets: [{ tool: 'codex', 'active-model': 'gpt-5' }],
+    });
   });
 
   it('preserves an api-key-index as a number on the round-trip through edit', async () => {
-    renderEdit({ name: 'Prod', targets: [{ tool: 'codex', 'api-key-index': 1 }] }, 0);
+    renderEdit({ name: 'Prod', targets: [{ tool: 'codex', 'api-key-index': 1 }] });
     await screen.findByDisplayValue('Prod');
 
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-    await waitFor(() => expect(mockedApi.saveSyncProfiles).toHaveBeenCalledTimes(1));
-    expect(mockedApi.saveSyncProfiles).toHaveBeenCalledWith([
-      { name: 'Prod', targets: [{ tool: 'codex', 'api-key-index': 1 }] },
-    ]);
+    await waitFor(() => expect(mockedApi.updateSyncProfileByName).toHaveBeenCalledTimes(1));
+    expect(mockedApi.updateSyncProfileByName).toHaveBeenCalledWith('Prod', {
+      name: 'Prod',
+      targets: [{ tool: 'codex', 'api-key-index': 1 }],
+    });
   });
 
   it('re-encodes a decoded chip-list model-filter to its canonical regex on save', async () => {
-    renderEdit({ name: 'Prod', targets: [{ tool: 'codex', 'model-filter': '^(?:gpt-5)$' }] }, 0);
+    renderEdit({ name: 'Prod', targets: [{ tool: 'codex', 'model-filter': '^(?:gpt-5)$' }] });
     await screen.findByDisplayValue('Prod');
 
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-    await waitFor(() => expect(mockedApi.saveSyncProfiles).toHaveBeenCalledTimes(1));
-    expect(mockedApi.saveSyncProfiles).toHaveBeenCalledWith([
-      { name: 'Prod', targets: [{ tool: 'codex', 'model-filter': '^(?:gpt-5)$' }] },
-    ]);
+    await waitFor(() => expect(mockedApi.updateSyncProfileByName).toHaveBeenCalledTimes(1));
+    expect(mockedApi.updateSyncProfileByName).toHaveBeenCalledWith('Prod', {
+      name: 'Prod',
+      targets: [{ tool: 'codex', 'model-filter': '^(?:gpt-5)$' }],
+    });
   });
 
   it('preserves a raw regex model-filter verbatim on save', async () => {
-    renderEdit({ name: 'Prod', targets: [{ tool: 'codex', 'model-filter': '^gpt-.*' }] }, 0);
+    renderEdit({ name: 'Prod', targets: [{ tool: 'codex', 'model-filter': '^gpt-.*' }] });
     await screen.findByDisplayValue('Prod');
 
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-    await waitFor(() => expect(mockedApi.saveSyncProfiles).toHaveBeenCalledTimes(1));
-    expect(mockedApi.saveSyncProfiles).toHaveBeenCalledWith([
-      { name: 'Prod', targets: [{ tool: 'codex', 'model-filter': '^gpt-.*' }] },
-    ]);
+    await waitFor(() => expect(mockedApi.updateSyncProfileByName).toHaveBeenCalledTimes(1));
+    expect(mockedApi.updateSyncProfileByName).toHaveBeenCalledWith('Prod', {
+      name: 'Prod',
+      targets: [{ tool: 'codex', 'model-filter': '^gpt-.*' }],
+    });
   });
 });
 
@@ -351,7 +367,7 @@ describe('SyncProfileForm — cancel', () => {
 
 describe('SyncProfileForm — api key options', () => {
   it('renders the default api-key option with the first key tail in edit mode', async () => {
-    renderEdit({ name: 'Prod', targets: [{ tool: 'codex' }] }, 0);
+    renderEdit({ name: 'Prod', targets: [{ tool: 'codex' }] });
 
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'API key' })).toHaveTextContent('Default (Key #1 · ****abcd)')

@@ -71,3 +71,38 @@ export interface SyncAvailableConfigs {
   /** Deduplicated union of all model names across providers and channels. */
   all_models: string[];
 }
+
+// --- Sync State (reported by the ppap-sync CLI) ---
+
+/** Per-tool sync outcome reported by a host. */
+export type SyncToolReportStatus = 'synced' | 'error' | 'conflict';
+
+/** A single tool's latest sync report from one host. */
+export interface SyncToolReport {
+  /** Sync tool identifier (e.g., "factory-droid"). */
+  tool: string;
+  /** Sync outcome. */
+  status: SyncToolReportStatus;
+  /** When the CLI performed the sync (RFC 3339). */
+  timestamp: string;
+  /** SHA-256 of the written config, when available. */
+  config_hash?: string;
+  /** Failure detail when status is not "synced". */
+  error?: string;
+}
+
+/** Latest sync reports from a single host. */
+export interface SyncHostReport {
+  /** When the server received the most recent report (RFC 3339). */
+  reported_at: string;
+  /** Sync profile the host last applied. */
+  profile?: string;
+  /** Tool ID → latest report. */
+  tools: Record<string, SyncToolReport>;
+}
+
+/** Response of GET /v0/management/sync/state. */
+export interface SyncStateResponse {
+  /** Hostname → latest host report. */
+  hosts: Record<string, SyncHostReport>;
+}

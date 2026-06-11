@@ -177,6 +177,10 @@ type Config struct {
 	// configuration to local CLI tool config files via ppap-sync.
 	SyncProfiles []SyncProfile `yaml:"sync-profiles,omitempty" json:"sync-profiles,omitempty"`
 
+	// SyncStatePath stores per-host sync status reports submitted by the
+	// ppap-sync CLI. When empty, it defaults to sync-state.json next to config.yaml.
+	SyncStatePath string `yaml:"sync-state-path,omitempty" json:"sync-state-path,omitempty"`
+
 	legacyMigrationPending bool `yaml:"-" json:"-"`
 }
 

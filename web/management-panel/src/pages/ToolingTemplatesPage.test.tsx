@@ -23,7 +23,7 @@ vi.mock('@/services/api/toolingTemplates', () => ({
   toolingTemplatesApi: { list: vi.fn(), render: vi.fn() },
 }));
 vi.mock('@/services/api/sync', () => ({
-  syncApi: { getSyncProfiles: vi.fn() },
+  syncApi: { getSyncProfiles: vi.fn(), getSyncState: vi.fn() },
 }));
 vi.mock('@/utils/clipboard', () => ({ copyToClipboard: vi.fn() }));
 
@@ -32,6 +32,7 @@ const mockedFetchModels = vi.mocked(modelsApi.fetchModels);
 const mockedTemplatesList = vi.mocked(toolingTemplatesApi.list);
 const mockedTemplatesRender = vi.mocked(toolingTemplatesApi.render);
 const mockedGetSyncProfiles = vi.mocked(syncApi.getSyncProfiles);
+const mockedGetSyncState = vi.mocked(syncApi.getSyncState);
 const mockedCopy = vi.mocked(copyToClipboard);
 
 const metadata = (overrides: Partial<ToolTemplateMetadata> = {}): ToolTemplateMetadata => ({
@@ -85,6 +86,7 @@ beforeEach(() => {
   mockedTemplatesList.mockResolvedValue([metadata()]);
   mockedTemplatesRender.mockResolvedValue(renderResponse());
   mockedGetSyncProfiles.mockResolvedValue([]);
+  mockedGetSyncState.mockResolvedValue({ hosts: {} });
   mockedCopy.mockResolvedValue(true);
 });
 

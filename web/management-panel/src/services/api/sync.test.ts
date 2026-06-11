@@ -163,41 +163,8 @@ describe('syncApi.saveSyncProfiles', () => {
   });
 });
 
-describe('syncApi.updateSyncProfile', () => {
-  it('serializes the full profile when a name is present', async () => {
-    mockedPatch.mockResolvedValue({ status: 'ok' });
-
-    await syncApi.updateSyncProfile(2, { name: 'renamed', targets: [{ tool: 'droid' }] });
-
-    expect(mockedPatch).toHaveBeenCalledWith('/sync-profiles', {
-      index: 2,
-      value: { name: 'renamed', targets: [{ tool: 'droid' }] },
-    });
-  });
-
-  it('serializes only targets when name is absent but targets are present', async () => {
-    mockedPatch.mockResolvedValue({ status: 'ok' });
-
-    await syncApi.updateSyncProfile(1, { targets: [{ tool: 'hermes', 'active-model': ' x ' }] });
-
-    expect(mockedPatch).toHaveBeenCalledWith('/sync-profiles', {
-      index: 1,
-      value: { targets: [{ tool: 'hermes', 'active-model': 'x' }] },
-    });
-  });
-
-  it('passes the raw partial value through when neither name nor targets are present', async () => {
-    mockedPatch.mockResolvedValue({ status: 'ok' });
-    const value = {} as Partial<SyncProfile>;
-
-    await syncApi.updateSyncProfile(0, value);
-
-    expect(mockedPatch).toHaveBeenCalledWith('/sync-profiles', { index: 0, value });
-  });
-});
-
 describe('syncApi.updateSyncProfileByName', () => {
-  it('serializes the full profile when name is provided', async () => {
+  it('serializes the full profile when name and targets are provided', async () => {
     mockedPatch.mockResolvedValue({ status: 'ok' });
 
     await syncApi.updateSyncProfileByName('main', { name: 'main', targets: [{ tool: 'droid' }] });
@@ -208,14 +175,25 @@ describe('syncApi.updateSyncProfileByName', () => {
     });
   });
 
-  it('serializes the full profile shape when only targets are provided', async () => {
+  it('sends only targets when name is absent', async () => {
     mockedPatch.mockResolvedValue({ status: 'ok' });
 
-    await syncApi.updateSyncProfileByName('main', { targets: [{ tool: 'hermes' }] });
+    await syncApi.updateSyncProfileByName('main', { targets: [{ tool: 'hermes', 'active-model': ' x ' }] });
 
     expect(mockedPatch).toHaveBeenCalledWith('/sync-profiles', {
       match: 'main',
-      value: { name: undefined, targets: [{ tool: 'hermes' }] },
+      value: { targets: [{ tool: 'hermes', 'active-model': 'x' }] },
+    });
+  });
+
+  it('sends only the name for a rename — no targets key that would wipe them', async () => {
+    mockedPatch.mockResolvedValue({ status: 'ok' });
+
+    await syncApi.updateSyncProfileByName('main', { name: 'renamed' });
+
+    expect(mockedPatch).toHaveBeenCalledWith('/sync-profiles', {
+      match: 'main',
+      value: { name: 'renamed' },
     });
   });
 
@@ -252,6 +230,43 @@ describe('syncApi.deleteSyncProfile', () => {
     const result = await syncApi.deleteSyncProfile(0);
 
     expect(result).toEqual({ status: 'ok' });
+  });
+});
+
+describe('syncApi.getSyncState', () => {
+  it('requests /sync/state', async () => {
+    mockedGet.mockResolvedValue({ hosts: {} });
+
+    await syncApi.getSyncState();
+
+    expect(mockedGet).toHaveBeenCalledWith('/sync/state');
+  });
+
+  it('returns the hosts map unchanged', async () => {
+    const body = {
+      hosts: {
+        devbox: {
+          reported_at: '2026-06-11T10:00:00Z',
+          profile: 'default',
+          tools: {
+            codex: { tool: 'codex', status: 'synced', timestamp: '2026-06-11T10:00:00Z' },
+          },
+        },
+      },
+    };
+    mockedGet.mockResolvedValue(body);
+
+    const result = await syncApi.getSyncState();
+
+    expect(result).toEqual(body);
+  });
+
+  it('normalizes a malformed response to empty hosts', async () => {
+    mockedGet.mockResolvedValue(null);
+
+    const result = await syncApi.getSyncState();
+
+    expect(result).toEqual({ hosts: {} });
   });
 });
 

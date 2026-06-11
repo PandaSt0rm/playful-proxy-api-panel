@@ -19,6 +19,7 @@ Source of truth: `src/internal/config/config.go`, `src/internal/config/sdk_confi
 | `ampcode.*` | Amp provider page and Config source fallback | Amp management endpoints | Amp summary exposes security-relevant `restrict-management-to-localhost`; mappings preserve regex support. |
 | `oauth-excluded-models`, `oauth-model-alias` | Auth Files dedicated pages | OAuth management endpoints | Dedicated pages remain the source of truth. |
 | `sync-profiles` | Tooling Templates | Sync profile endpoints | Sync profile editing remains with tooling template flows. |
+| `sync-state-path` | Config source editor (source-only) | `/config.yaml` | Operational path for ppap-sync status reports (like `usage-statistics-path`); no typed control needed. The reported state itself is displayed on Tooling Templates via the sync-state endpoint. |
 
 ## Source-Only Policy
 

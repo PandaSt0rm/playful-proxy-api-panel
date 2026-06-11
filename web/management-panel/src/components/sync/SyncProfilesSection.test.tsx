@@ -9,8 +9,10 @@ vi.mock('@/services/api/sync', () => ({
   syncApi: {
     getSyncProfiles: vi.fn(),
     saveSyncProfiles: vi.fn(),
+    updateSyncProfileByName: vi.fn(),
     deleteSyncProfile: vi.fn(),
     getSyncAvailableConfigs: vi.fn(),
+    getSyncState: vi.fn(),
   },
 }));
 
@@ -42,6 +44,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   useNotificationStore.setState({ notifications: [], confirmation: { isOpen: false, isLoading: false, options: null } });
   mockedApi.getSyncAvailableConfigs.mockResolvedValue(EMPTY_CONFIGS);
+  mockedApi.getSyncState.mockResolvedValue({ hosts: {} });
 });
 
 describe('SyncProfilesSection — load states', () => {
@@ -150,6 +153,99 @@ describe('SyncProfilesSection — expand/collapse', () => {
     await userEvent.click(nameButton);
 
     expect(screen.queryByText('gpt-5')).not.toBeInTheDocument();
+  });
+});
+
+describe('SyncProfilesSection — sync status', () => {
+  beforeEach(() => {
+    mockedApi.getSyncProfiles.mockResolvedValue(PROFILES);
+  });
+
+  it('shows never-synced when no host has reported the tool', async () => {
+    render(<SyncProfilesSection />);
+    const nameButton = await screen.findByRole('button', { name: /Staging/ });
+
+    await userEvent.click(nameButton);
+
+    expect(screen.getByText('Never Synced')).toBeInTheDocument();
+  });
+
+  it('shows the reported status and timestamp for a synced tool', async () => {
+    mockedApi.getSyncState.mockResolvedValue({
+      hosts: {
+        devbox: {
+          reported_at: '2026-06-11T10:00:00Z',
+          profile: 'Production',
+          tools: {
+            codex: { tool: 'codex', status: 'synced', timestamp: '2026-06-11T10:00:00Z' },
+          },
+        },
+      },
+    });
+    render(<SyncProfilesSection />);
+    const nameButton = await screen.findByRole('button', { name: /Production/ });
+
+    await userEvent.click(nameButton);
+
+    await waitFor(() => expect(screen.getByText('Synced')).toBeInTheDocument());
+    // claude-code in the same profile has no report.
+    expect(screen.getByText('Never Synced')).toBeInTheDocument();
+  });
+
+  it('uses the most recent report when multiple hosts cover the same tool', async () => {
+    mockedApi.getSyncState.mockResolvedValue({
+      hosts: {
+        older: {
+          reported_at: '2026-06-10T08:00:00Z',
+          tools: {
+            codex: { tool: 'codex', status: 'error', timestamp: '2026-06-10T08:00:00Z', error: 'stale' },
+          },
+        },
+        newer: {
+          reported_at: '2026-06-11T09:00:00Z',
+          tools: {
+            codex: { tool: 'codex', status: 'synced', timestamp: '2026-06-11T09:00:00Z' },
+          },
+        },
+      },
+    });
+    render(<SyncProfilesSection />);
+    const nameButton = await screen.findByRole('button', { name: /Production/ });
+
+    await userEvent.click(nameButton);
+
+    await waitFor(() => expect(screen.getByText('Synced')).toBeInTheDocument());
+    expect(screen.queryByText('Error')).not.toBeInTheDocument();
+  });
+
+  it('shows a conflict status with its error detail', async () => {
+    mockedApi.getSyncState.mockResolvedValue({
+      hosts: {
+        devbox: {
+          reported_at: '2026-06-11T10:00:00Z',
+          tools: {
+            codex: { tool: 'codex', status: 'conflict', timestamp: '2026-06-11T10:00:00Z', error: 'hash mismatch' },
+          },
+        },
+      },
+    });
+    render(<SyncProfilesSection />);
+    const nameButton = await screen.findByRole('button', { name: /Production/ });
+
+    await userEvent.click(nameButton);
+
+    await waitFor(() => expect(screen.getByText('Conflict')).toBeInTheDocument());
+    expect(screen.getByText('(hash mismatch)')).toBeInTheDocument();
+  });
+
+  it('still renders profiles when the sync state request fails', async () => {
+    mockedApi.getSyncState.mockRejectedValue(new Error('boom'));
+    render(<SyncProfilesSection />);
+    const nameButton = await screen.findByRole('button', { name: /Production/ });
+
+    await userEvent.click(nameButton);
+
+    expect(screen.getAllByText('Never Synced').length).toBeGreaterThan(0);
   });
 });
 

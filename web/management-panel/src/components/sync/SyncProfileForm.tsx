@@ -23,7 +23,6 @@ import styles from './sync.module.scss';
 
 interface SyncProfileFormProps {
   profile?: SyncProfile;
-  profileIndex?: number;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -53,10 +52,10 @@ function emptyConfig(): ToolCardConfig {
   };
 }
 
-export function SyncProfileForm({ profile, profileIndex, onClose, onSaved }: SyncProfileFormProps) {
+export function SyncProfileForm({ profile, onClose, onSaved }: SyncProfileFormProps) {
   const { t } = useTranslation();
   const showNotification = useNotificationStore((s) => s.showNotification);
-  const isEdit = profile !== undefined && profileIndex !== undefined;
+  const isEdit = profile !== undefined;
 
   const [name, setName] = useState(profile?.name ?? '');
   const [selectedTools, setSelectedTools] = useState<Set<SyncToolId>>(() => {
@@ -250,11 +249,10 @@ export function SyncProfileForm({ profile, profileIndex, onClose, onSaved }: Syn
     try {
       const profileData: SyncProfile = { name: name.trim(), targets: buildTargets() };
 
-      if (isEdit) {
-        const current = await syncApi.getSyncProfiles();
-        const updated = [...current];
-        updated[profileIndex] = profileData;
-        await syncApi.saveSyncProfiles(updated);
+      if (isEdit && profile) {
+        // Patch by the original name so the update targets the right
+        // profile even if the list was reordered or edited elsewhere.
+        await syncApi.updateSyncProfileByName(profile.name, profileData);
       } else {
         const current = await syncApi.getSyncProfiles();
         await syncApi.saveSyncProfiles([...current, profileData]);

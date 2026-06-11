@@ -7,7 +7,8 @@ import { apiClient } from './client';
 import type {
   SyncProfile,
   SyncProfileTarget,
-  SyncAvailableConfigs
+  SyncAvailableConfigs,
+  SyncStateResponse
 } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -71,37 +72,28 @@ export const syncApi = {
   },
 
   /**
-   * Update a single profile by index (partial update).
-   * PATCH /v0/management/sync-profiles with {index, value} → {"status": "ok"}
-   */
-  updateSyncProfile(index: number, value: Partial<SyncProfile>): Promise<{ status: string }> {
-    const payload: Record<string, unknown> = { index };
-    // Only serialize fields that are actually provided (partial update).
-    if (value.name !== undefined) {
-      payload.value = serializeProfile(value as SyncProfile);
-    } else if (value.targets !== undefined) {
-      payload.value = { targets: value.targets.map(serializeTarget) };
-    } else {
-      // Allow raw partial value passthrough for arbitrary field updates.
-      payload.value = value;
-    }
-    return apiClient.patch('/sync-profiles', payload);
-  },
-
-  /**
    * Update a single profile by name match (partial update).
    * PATCH /v0/management/sync-profiles with {match, value} → {"status": "ok"}
+   *
+   * Only the fields present on `value` are sent — the server applies a
+   * `targets` key as a full replacement, so a rename-only update must not
+   * include an empty targets array.
    */
   updateSyncProfileByName(
     name: string,
     value: Partial<SyncProfile>
   ): Promise<{ status: string }> {
-    const payload: Record<string, unknown> = { match: name };
-    if (value.name !== undefined || value.targets !== undefined) {
-      payload.value = serializeProfile(value as SyncProfile);
-    } else {
-      payload.value = value;
+    const patchValue: Record<string, unknown> = {};
+    if (value.name !== undefined) {
+      patchValue.name = value.name;
     }
+    if (value.targets !== undefined) {
+      patchValue.targets = value.targets.map(serializeTarget);
+    }
+    const payload: Record<string, unknown> = {
+      match: name,
+      value: Object.keys(patchValue).length > 0 ? patchValue : value
+    };
     return apiClient.patch('/sync-profiles', payload);
   },
 
@@ -122,5 +114,17 @@ export const syncApi = {
    */
   async getSyncAvailableConfigs(): Promise<SyncAvailableConfigs> {
     return apiClient.get('/sync/available-configs');
+  },
+
+  /**
+   * Fetch per-host sync status reported by ppap-sync CLIs.
+   * GET /v0/management/sync/state → {"hosts": {...}}
+   */
+  async getSyncState(): Promise<SyncStateResponse> {
+    const data = await apiClient.get('/sync/state');
+    if (isRecord(data) && isRecord(data.hosts)) {
+      return data as unknown as SyncStateResponse;
+    }
+    return { hosts: {} };
   }
 };

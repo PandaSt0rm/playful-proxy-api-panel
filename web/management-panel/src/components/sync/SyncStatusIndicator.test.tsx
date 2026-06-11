@@ -8,6 +8,7 @@ describe('SyncStatusIndicator', () => {
     ['outdated', 'Outdated'],
     ['never-synced', 'Never Synced'],
     ['error', 'Error'],
+    ['conflict', 'Conflict'],
   ] as [SyncStatus, string][])(
     'renders the %s status with the "%s" label',
     (status, expectedLabel) => {
@@ -65,5 +66,11 @@ describe('SyncStatusIndicator', () => {
     const { container } = render(<SyncStatusIndicator status="error" />);
 
     expect(container.textContent).toBe('Error');
+  });
+
+  it('renders the error detail for a conflict status', () => {
+    render(<SyncStatusIndicator status="conflict" errorDetail="hash mismatch" />);
+
+    expect(screen.getByText('(hash mismatch)')).toBeInTheDocument();
   });
 });
