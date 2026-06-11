@@ -13,7 +13,8 @@ type EffortLabel = (typeof EFFORT_LABELS)[number];
 const THINKING_PAYLOAD_LABELS = new Set<string>(EFFORT_LABELS);
 
 // Editable starting points for upstreams that do not accept reasoning_effort.
-const THINKING_PAYLOAD_PRESETS: Array<{ id: 'glm' | 'qwen' | 'openrouter'; payloads: ThinkingPayloadMap }> = [
+type PresetId = 'glm' | 'qwen' | 'openrouter' | 'deepseek' | 'doubao' | 'kimi' | 'vllm' | 'gemini';
+const THINKING_PAYLOAD_PRESETS: Array<{ id: PresetId; payloads: ThinkingPayloadMap }> = [
   {
     id: 'glm',
     payloads: {
@@ -39,6 +40,52 @@ const THINKING_PAYLOAD_PRESETS: Array<{ id: 'glm' | 'qwen' | 'openrouter'; paylo
       high: { reasoning: { effort: 'high' } },
     },
   },
+  {
+    // DeepSeek V3.2+ chat completions: thinking.type toggles CoT, and the
+    // native reasoning_effort only accepts high/max while thinking is on.
+    id: 'deepseek',
+    payloads: {
+      none: { thinking: { type: 'disabled' } },
+      high: { thinking: { type: 'enabled' }, reasoning_effort: 'high' },
+      max: { thinking: { type: 'enabled' }, reasoning_effort: 'max' },
+    },
+  },
+  {
+    // Volcengine Ark (Doubao seed models): thinking.type enabled/disabled/auto.
+    id: 'doubao',
+    payloads: {
+      none: { thinking: { type: 'disabled' } },
+      auto: { thinking: { type: 'auto' } },
+      high: { thinking: { type: 'enabled' } },
+    },
+  },
+  {
+    // Moonshot Kimi K2 thinking models: thinking.type enabled/disabled.
+    id: 'kimi',
+    payloads: {
+      none: { thinking: { type: 'disabled' } },
+      high: { thinking: { type: 'enabled' } },
+    },
+  },
+  {
+    // vLLM/SGLang self-hosted hybrid-reasoning models (Qwen3 etc.):
+    // enable_thinking flows to the chat template.
+    id: 'vllm',
+    payloads: {
+      none: { chat_template_kwargs: { enable_thinking: false } },
+      high: { chat_template_kwargs: { enable_thinking: true } },
+    },
+  },
+  {
+    // Gemini OpenAI-compat endpoint: a literal extra_body.google.thinking_config
+    // key; thinking_budget: 0 disables on 2.5, thinking_level on newer models.
+    id: 'gemini',
+    payloads: {
+      none: { extra_body: { google: { thinking_config: { thinking_budget: 0 } } } },
+      low: { extra_body: { google: { thinking_config: { thinking_level: 'low' } } } },
+      high: { extra_body: { google: { thinking_config: { thinking_level: 'high' } } } },
+    },
+  },
 ];
 
 const isReasoningLevel = (label: string): boolean =>
@@ -52,27 +99,37 @@ const orderLevels = (levels: Set<string>): string[] => [
 const clonePayloadMap = (payloads: ThinkingPayloadMap): ThinkingPayloadMap =>
   Object.fromEntries(Object.entries(payloads).map(([key, value]) => [key, { ...value }]));
 
-const formatThinkingPayloads = (payloads?: ThinkingPayloadMap) =>
-  payloads && Object.keys(payloads).length ? JSON.stringify(payloads, null, 2) : '';
+// JSON mode shows the whole effort config as one map: every active label is a
+// key, its payload is the value, and {} declares a label with no payload.
+const formatEffortMap = (activeLabels: string[], payloads: ThinkingPayloadMap) => {
+  if (!activeLabels.length) return '';
+  const map: Record<string, unknown> = {};
+  for (const label of EFFORT_LABELS) {
+    if (activeLabels.includes(label)) map[label] = payloads[label] ?? {};
+  }
+  return JSON.stringify(map, null, 2);
+};
 
-const parseThinkingPayloads = (
+const parseEffortMap = (
   text: string
-): { ok: boolean; payloads?: ThinkingPayloadMap } => {
+): { ok: boolean; labels?: string[]; payloads?: ThinkingPayloadMap } => {
   const trimmed = text.trim();
-  if (!trimmed) return { ok: true, payloads: undefined };
+  if (!trimmed) return { ok: true, labels: [], payloads: undefined };
   try {
     const parsed: unknown = JSON.parse(trimmed);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { ok: false };
+    const labels: string[] = [];
     const out: ThinkingPayloadMap = {};
     for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
       const label = key.trim().toLowerCase();
       if (!THINKING_PAYLOAD_LABELS.has(label)) return { ok: false };
       if (!value || typeof value !== 'object' || Array.isArray(value)) return { ok: false };
+      if (!labels.includes(label)) labels.push(label);
       const patch = value as Record<string, unknown>;
       if (!Object.keys(patch).length) continue;
       out[label] = patch;
     }
-    return { ok: true, payloads: Object.keys(out).length ? out : undefined };
+    return { ok: true, labels, payloads: Object.keys(out).length ? out : undefined };
   } catch {
     return { ok: false };
   }
@@ -149,22 +206,23 @@ function PayloadRow({ label, value, disabled, onCommit }: PayloadRowProps) {
 }
 
 interface PayloadMapEditorProps {
-  payloads?: ThinkingPayloadMap;
+  serialized: string;
   disabled: boolean;
-  onCommit: (payloads: ThinkingPayloadMap | undefined) => void;
+  onCommit: (labels: string[], payloads: ThinkingPayloadMap | undefined) => void;
 }
 
-function PayloadMapEditor({ payloads, disabled, onCommit }: PayloadMapEditorProps) {
+function PayloadMapEditor({ serialized, disabled, onCommit }: PayloadMapEditorProps) {
   const { t } = useTranslation();
-  const serialized = formatThinkingPayloads(payloads);
   const [draft, setDraft] = useState(serialized);
   const [invalid, setInvalid] = useState(false);
   // Same resync pattern as PayloadRow, for the whole-map textarea.
   const [lastSerialized, setLastSerialized] = useState(serialized);
   if (serialized !== lastSerialized) {
     setLastSerialized(serialized);
-    const parsed = parseThinkingPayloads(draft);
-    if (!(parsed.ok && formatThinkingPayloads(parsed.payloads) === serialized)) {
+    const parsed = parseEffortMap(draft);
+    if (
+      !(parsed.ok && formatEffortMap(parsed.labels ?? [], parsed.payloads ?? {}) === serialized)
+    ) {
       setDraft(serialized);
       setInvalid(false);
     }
@@ -172,10 +230,10 @@ function PayloadMapEditor({ payloads, disabled, onCommit }: PayloadMapEditorProp
 
   const applyText = (text: string) => {
     setDraft(text);
-    const parsed = parseThinkingPayloads(text);
+    const parsed = parseEffortMap(text);
     setInvalid(!parsed.ok);
     if (parsed.ok) {
-      onCommit(parsed.payloads);
+      onCommit(parsed.labels ?? [], parsed.payloads);
     }
   };
 
@@ -188,7 +246,7 @@ function PayloadMapEditor({ payloads, disabled, onCommit }: PayloadMapEditorProp
         disabled={disabled}
         rows={8}
         spellCheck={false}
-        placeholder={'{\n  "high": { "thinking": { "type": "enabled" } }\n}'}
+        placeholder={'{\n  "high": {},\n  "max": { "thinking": { "type": "enabled" } }\n}'}
         aria-invalid={invalid}
         aria-label={t('ai_providers.thinking_payloads_toggle')}
       />
@@ -268,8 +326,18 @@ export function ModelEffortPayloadsEditor({ entry, disabled, updateEntry }: Mode
     });
   };
 
-  const commitPayloadMap = (nextPayloads: ThinkingPayloadMap | undefined) => {
-    updateEntry({ thinkingPayloads: nextPayloads });
+  // JSON mode commits the whole effort config: known-label keys become the
+  // active set (levels for the six efforts, stubs for none/auto without a
+  // payload) while custom levels outside the known labels are preserved.
+  const commitEffortMap = (labels: string[], nextPayloads: ThinkingPayloadMap | undefined) => {
+    const nextLevels = new Set([
+      ...labels.filter(isReasoningLevel),
+      ...levels.filter((level) => !THINKING_PAYLOAD_LABELS.has(level)),
+    ]);
+    setStubLabels(
+      labels.filter((label) => !isReasoningLevel(label) && !nextPayloads?.[label])
+    );
+    commit(nextLevels, nextPayloads ?? {});
   };
 
   const applyPreset = (preset: ThinkingPayloadMap) => {
@@ -343,9 +411,9 @@ export function ModelEffortPayloadsEditor({ entry, disabled, updateEntry }: Mode
           </div>
           {jsonMode ? (
             <PayloadMapEditor
-              payloads={entry.thinkingPayloads}
+              serialized={formatEffortMap(activeLabels, payloads)}
               disabled={disabled}
-              onCommit={commitPayloadMap}
+              onCommit={commitEffortMap}
             />
           ) : (
             activeLabels.length > 0 && (

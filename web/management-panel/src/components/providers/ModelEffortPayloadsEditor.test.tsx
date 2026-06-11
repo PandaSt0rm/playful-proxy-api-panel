@@ -208,6 +208,123 @@ describe('ModelEffortPayloadsEditor', () => {
     expect(screen.getByRole('button', { name: 'low' })).toHaveAttribute('aria-pressed', 'true');
   });
 
+  it('level chips stay effective in JSON mode and rewrite the JSON text', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await openEditor(user);
+    await user.click(screen.getByRole('button', { name: 'JSON' }));
+
+    await user.click(screen.getByRole('button', { name: 'high' }));
+
+    expect(probedEntry().thinkingLevels).toEqual(['high']);
+    expect(screen.getByRole('button', { name: 'high' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('textbox', { name: 'effort payloads' })).toHaveValue(
+      JSON.stringify({ high: {} }, null, 2)
+    );
+
+    await user.click(screen.getByRole('button', { name: 'high' }));
+
+    expect(probedEntry().thinkingLevels).toBeUndefined();
+    expect(screen.getByRole('textbox', { name: 'effort payloads' })).toHaveValue('');
+  });
+
+  it('JSON mode seeds bare levels as {} keys and round-trips them', async () => {
+    const user = userEvent.setup();
+    render(
+      <Harness initial={{ thinkingLevels: ['low', 'high'], thinking: { levels: ['low', 'high'] } }} />
+    );
+    await openEditor(user, 'effort payloads (2)');
+    await user.click(screen.getByRole('button', { name: 'JSON' }));
+
+    expect(screen.getByRole('textbox', { name: 'effort payloads' })).toHaveValue(
+      JSON.stringify({ low: {}, high: {} }, null, 2)
+    );
+  });
+
+  it('typing a bare {} level key in JSON mode declares the level without a payload', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await openEditor(user);
+    await user.click(screen.getByRole('button', { name: 'JSON' }));
+
+    const textarea = screen.getByRole('textbox', { name: 'effort payloads' });
+    await user.click(textarea);
+    await user.paste('{"xhigh": {}, "max": {"thinking": {"type": "enabled"}}}');
+
+    const entry = probedEntry();
+    expect(entry.thinkingLevels).toEqual(['xhigh', 'max']);
+    expect(entry.thinkingPayloads).toEqual({ max: { thinking: { type: 'enabled' } } });
+    expect(screen.getByRole('button', { name: 'xhigh' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('clearing the JSON text deactivates all labels', async () => {
+    const user = userEvent.setup();
+    render(
+      <Harness
+        initial={{
+          thinkingLevels: ['high'],
+          thinking: { levels: ['high'] },
+          thinkingPayloads: { high: { a: 1 } },
+        }}
+      />
+    );
+    await openEditor(user, 'effort payloads (1)');
+    await user.click(screen.getByRole('button', { name: 'JSON' }));
+
+    await user.clear(screen.getByRole('textbox', { name: 'effort payloads' }));
+
+    const entry = probedEntry();
+    expect(entry.thinkingLevels).toBeUndefined();
+    expect(entry.thinkingPayloads).toBeUndefined();
+    expect(screen.getByRole('button', { name: 'high' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('applies the DeepSeek template with thinking.type plus reasoning_effort', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await openEditor(user);
+
+    await user.click(screen.getByRole('button', { name: 'DeepSeek thinking' }));
+
+    expect(probedEntry().thinkingPayloads).toEqual({
+      none: { thinking: { type: 'disabled' } },
+      high: { thinking: { type: 'enabled' }, reasoning_effort: 'high' },
+      max: { thinking: { type: 'enabled' }, reasoning_effort: 'max' },
+    });
+  });
+
+  it('applies the vLLM template with chat_template_kwargs', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await openEditor(user);
+
+    await user.click(screen.getByRole('button', { name: 'vLLM enable_thinking' }));
+
+    expect(probedEntry().thinkingPayloads).toEqual({
+      none: { chat_template_kwargs: { enable_thinking: false } },
+      high: { chat_template_kwargs: { enable_thinking: true } },
+    });
+  });
+
+  it('renders the full template roster', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await openEditor(user);
+
+    for (const label of [
+      'GLM thinking.type',
+      'Qwen enable_thinking',
+      'OpenRouter reasoning',
+      'DeepSeek thinking',
+      'Doubao thinking',
+      'Kimi thinking',
+      'vLLM enable_thinking',
+      'Gemini thinking_config',
+    ]) {
+      expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
+    }
+  });
+
   it('JSON mode rejects maps with unknown labels without committing', async () => {
     const user = userEvent.setup();
     render(<Harness />);
