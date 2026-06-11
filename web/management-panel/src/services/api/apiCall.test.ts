@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { apiCallApi, getApiCallErrorMessage, type ApiCallResult } from './apiCall';
+import {
+  apiCallApi,
+  getApiCallErrorMessage,
+  getApiErrorDetail,
+  type ApiCallResult,
+} from './apiCall';
 import { apiClient } from './client';
 
 vi.mock('./client', () => ({
@@ -94,6 +99,53 @@ describe('getApiCallErrorMessage', () => {
     const message = getApiCallErrorMessage(result);
 
     expect(message).toBe('500 raw text');
+  });
+});
+
+describe('getApiErrorDetail', () => {
+  const makeApiError = (details: unknown): Error => {
+    const err = new Error('request failed') as Error & { details?: unknown };
+    err.details = details;
+    return err;
+  };
+
+  it('extracts the transport detail forwarded by the api-call proxy', () => {
+    const err = makeApiError({
+      error: 'request failed',
+      detail: 'Post "https://upstream/v1/chat/completions": dial tcp: connection refused',
+    });
+
+    expect(getApiErrorDetail(err)).toBe(
+      'Post "https://upstream/v1/chat/completions": dial tcp: connection refused'
+    );
+  });
+
+  it('trims surrounding whitespace from the detail', () => {
+    const err = makeApiError({ detail: '  context deadline exceeded  ' });
+
+    expect(getApiErrorDetail(err)).toBe('context deadline exceeded');
+  });
+
+  it('returns an empty string when the error body has no detail field', () => {
+    const err = makeApiError({ error: 'request failed' });
+
+    expect(getApiErrorDetail(err)).toBe('');
+  });
+
+  it('returns an empty string when the detail field is not a string', () => {
+    const err = makeApiError({ detail: 42 });
+
+    expect(getApiErrorDetail(err)).toBe('');
+  });
+
+  it('returns an empty string when the error carries no response body', () => {
+    expect(getApiErrorDetail(new Error('Network Error'))).toBe('');
+  });
+
+  it('returns an empty string for non-object errors', () => {
+    expect(getApiErrorDetail('boom')).toBe('');
+    expect(getApiErrorDetail(null)).toBe('');
+    expect(getApiErrorDetail(undefined)).toBe('');
   });
 });
 

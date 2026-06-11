@@ -2,13 +2,56 @@ package management
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/router-for-me/CLIProxyAPI/v7/internal/config"
 	coreauth "github.com/router-for-me/CLIProxyAPI/v7/sdk/cliproxy/auth"
 	sdkconfig "github.com/router-for-me/CLIProxyAPI/v7/sdk/config"
 )
+
+func TestAPICallForwardsTransportErrorDetail(t *testing.T) {
+	t.Parallel()
+
+	// Bind a port, then close it so the upstream request deterministically
+	// fails with a connection error instead of an HTTP response.
+	upstream := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	upstreamURL := upstream.URL
+	upstream.Close()
+
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(
+		http.MethodPost,
+		"/v0/management/api-call",
+		strings.NewReader(`{"method":"GET","url":"`+upstreamURL+`"}`),
+	)
+
+	h := &Handler{}
+	h.APICall(c)
+
+	if recorder.Code != http.StatusBadGateway {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadGateway)
+	}
+	var resp struct {
+		Error  string `json:"error"`
+		Detail string `json:"detail"`
+	}
+	if errUnmarshal := json.Unmarshal(recorder.Body.Bytes(), &resp); errUnmarshal != nil {
+		t.Fatalf("unmarshal response: %v", errUnmarshal)
+	}
+	if resp.Error != "request failed" {
+		t.Fatalf("error = %q, want %q", resp.Error, "request failed")
+	}
+	if resp.Detail == "" {
+		t.Fatal("expected detail to carry the underlying transport error")
+	}
+}
 
 func TestAPICallTransportDirectBypassesGlobalProxy(t *testing.T) {
 	t.Parallel()

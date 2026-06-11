@@ -10,7 +10,7 @@ import { ModelInputList } from '@/components/ui/ModelInputList';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
-import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
+import { apiCallApi, getApiCallErrorMessage, getApiErrorDetail } from '@/services/api';
 import { useConfigStore, useNotificationStore } from '@/stores';
 import { buildHeaderObject } from '@/utils/headers';
 import {
@@ -301,9 +301,10 @@ export function AiProvidersClaudeEditPage() {
       const resolvedMessage = isTimeout
         ? t('ai_providers.claude_test_timeout', { seconds: CLAUDE_TEST_TIMEOUT_MS / 1000 })
         : `${t('ai_providers.claude_test_failed')}: ${message || t('common.unknown_error')}`;
+      const errorDetail = getApiErrorDetail(err);
       setTestStatus('error');
       setTestMessage(resolvedMessage);
-      setTestResult({ durationMs, model: modelName });
+      setTestResult({ durationMs, model: modelName, detail: errorDetail || undefined });
       showNotification(resolvedMessage, 'error');
     } finally {
       setIsTesting(false);

@@ -18,6 +18,10 @@ const apiCallRequest = vi.fn();
 vi.mock('@/services/api', () => ({
   apiCallApi: { request: (...args: unknown[]) => apiCallRequest(...args) },
   getApiCallErrorMessage: (result: { statusCode: number }) => `api error ${result.statusCode}`,
+  getApiErrorDetail: (err: unknown) => {
+    const details = (err as { details?: { detail?: unknown } } | null)?.details;
+    return typeof details?.detail === 'string' ? details.detail : '';
+  },
 }));
 
 const showNotification = vi.fn();
@@ -318,6 +322,39 @@ describe('AiProvidersClaudeEditPage', () => {
       expect(showNotification).toHaveBeenCalledWith(
         'Test request timed out after 30 seconds.',
         'error'
+      )
+    );
+  });
+
+  it('stores the transport failure detail when the request rejects without a response', async () => {
+    const user = userEvent.setup();
+    const setTestResult = vi.fn();
+    apiCallRequest.mockRejectedValue(
+      Object.assign(new Error('request failed'), {
+        details: {
+          error: 'request failed',
+          detail: 'Post "https://api.anthropic.com/v1/messages": dial tcp: connection refused',
+        },
+      })
+    );
+    renderPage(
+      buildContext({
+        form: buildForm({ apiKey: 'sk-key', baseUrl: 'https://api.anthropic.com' }),
+        testModel: 'claude-3-5-sonnet',
+        availableModels: ['claude-3-5-sonnet'],
+        setTestResult,
+      })
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Test' }));
+
+    await waitFor(() =>
+      expect(setTestResult).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: 'Post "https://api.anthropic.com/v1/messages": dial tcp: connection refused',
+          model: 'claude-3-5-sonnet',
+          durationMs: expect.any(Number),
+        })
       )
     );
   });

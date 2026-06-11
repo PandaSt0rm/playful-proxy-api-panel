@@ -18,6 +18,10 @@ const apiCallRequest = vi.fn();
 vi.mock('@/services/api', () => ({
   apiCallApi: { request: (...args: unknown[]) => apiCallRequest(...args) },
   getApiCallErrorMessage: (result: { statusCode: number }) => `api error ${result.statusCode}`,
+  getApiErrorDetail: (err: unknown) => {
+    const details = (err as { details?: { detail?: unknown } } | null)?.details;
+    return typeof details?.detail === 'string' ? details.detail : '';
+  },
 }));
 
 const showNotification = vi.fn();
@@ -413,6 +417,34 @@ describe('AiProvidersOpenAIEditPage', () => {
           message: 'api error 400',
           detail: JSON.stringify(errorBody, null, 2),
           statusCode: 400,
+        })
+      )
+    );
+  });
+
+  it('stores the transport failure detail when a single-key test rejects without a response', async () => {
+    const user = userEvent.setup();
+    const setDraftKeyTestStatus = vi.fn();
+    apiCallRequest.mockRejectedValue(
+      Object.assign(new Error('request failed'), {
+        details: {
+          error: 'request failed',
+          detail: 'Post "https://bifrost.local/v1/chat/completions": dial tcp: connection refused',
+        },
+      })
+    );
+    renderPage(testableContext({ setDraftKeyTestStatus }));
+
+    await user.click(screen.getByRole('button', { name: 'Test', exact: true }));
+
+    await waitFor(() =>
+      expect(setDraftKeyTestStatus).toHaveBeenCalledWith(
+        0,
+        expect.objectContaining({
+          status: 'error',
+          detail: 'Post "https://bifrost.local/v1/chat/completions": dial tcp: connection refused',
+          model: 'gpt-4o',
+          durationMs: expect.any(Number),
         })
       )
     );

@@ -11,7 +11,7 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { useNotificationStore } from '@/stores';
-import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
+import { apiCallApi, getApiCallErrorMessage, getApiErrorDetail } from '@/services/api';
 import type { ApiKeyEntry } from '@/types';
 import { buildHeaderObject, hasHeader } from '@/utils/headers';
 import {
@@ -296,9 +296,11 @@ export function AiProvidersOpenAIEditPage() {
         const errorMessage = isTimeout
           ? t('ai_providers.openai_test_timeout', { seconds: OPENAI_TEST_TIMEOUT_MS / 1000 })
           : message;
+        const errorDetail = getApiErrorDetail(err);
         setDraftKeyTestStatus(keyIndex, {
           status: 'error',
           message: errorMessage,
+          detail: errorDetail || undefined,
           durationMs,
           model: modelName,
         });

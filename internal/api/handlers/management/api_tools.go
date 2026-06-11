@@ -105,6 +105,9 @@ type apiCallResponse struct {
 //   - header: Upstream response headers.
 //   - body: Upstream response body as string.
 //
+// Error responses use {"error": "...", "detail": "..."}; "detail", when present,
+// carries the underlying transport error (DNS, TLS, refused connection, timeout).
+//
 // Example:
 //
 //	curl -sS -X POST "http://127.0.0.1:8317/v0/management/api-call" \
@@ -223,7 +226,9 @@ func (h *Handler) APICall(c *gin.Context) {
 	resp, errDo := httpClient.Do(req)
 	if errDo != nil {
 		log.WithError(errDo).Debug("management APICall request failed")
-		c.JSON(http.StatusBadGateway, gin.H{"error": "request failed"})
+		// Surface the transport-level cause (DNS, TLS, refused connection,
+		// timeout) so the panel can show why the upstream call never completed.
+		c.JSON(http.StatusBadGateway, gin.H{"error": "request failed", "detail": errDo.Error()})
 		return
 	}
 	defer func() {
@@ -234,7 +239,7 @@ func (h *Handler) APICall(c *gin.Context) {
 
 	respBody, errReadAll := io.ReadAll(resp.Body)
 	if errReadAll != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "failed to read response"})
+		c.JSON(http.StatusBadGateway, gin.H{"error": "failed to read response", "detail": errReadAll.Error()})
 		return
 	}
 

@@ -95,6 +95,21 @@ export const getApiCallErrorMessage = (result: ApiCallResult): string => {
   return message || 'Request failed';
 };
 
+/**
+ * Extracts the transport-level failure detail from a rejected `/api-call`
+ * request. The management proxy returns `{"error": "request failed", "detail":
+ * "<underlying transport error>"}` when the upstream request never completed
+ * (DNS, TLS, refused connection, timeout); the ApiError thrown by the client
+ * keeps that body on `details`. Returns '' when no detail is available.
+ */
+export const getApiErrorDetail = (err: unknown): string => {
+  if (err === null || typeof err !== 'object') return '';
+  const details = (err as { details?: unknown }).details;
+  if (details === null || typeof details !== 'object') return '';
+  const detail = (details as Record<string, unknown>).detail;
+  return typeof detail === 'string' ? detail.trim() : '';
+};
+
 export const apiCallApi = {
   request: async (
     payload: ApiCallRequest,
