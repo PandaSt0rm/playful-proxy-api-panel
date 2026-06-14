@@ -38,7 +38,7 @@ if (typeof window.matchMedia !== 'function') {
     }) as unknown as MediaQueryList;
 }
 
-// ResizeObserver — used by useGridColumns, useSplashTitleFit, VisualConfigEditor.
+// ResizeObserver — used by useSplashTitleFit, VisualConfigEditor.
 if (typeof globalThis.ResizeObserver === 'undefined') {
   globalThis.ResizeObserver = class {
     observe() {}

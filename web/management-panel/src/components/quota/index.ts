@@ -2,9 +2,7 @@
  * Quota components barrel export.
  */
 
-export { QuotaSection } from './QuotaSection';
-export { QuotaCard } from './QuotaCard';
-export { useQuotaLoader } from './useQuotaLoader';
+export { QuotaProgressBar } from './QuotaProgressBar';
 export {
   ANTIGRAVITY_CONFIG,
   CLAUDE_CONFIG,
@@ -12,5 +10,6 @@ export {
   GEMINI_CLI_CONFIG,
   KIMI_CONFIG,
   ZAI_CONFIG,
+  QUOTA_CONFIGS,
 } from './quotaConfigs';
-export type { QuotaConfig } from './quotaConfigs';
+export type { QuotaConfig, QuotaConfigUnknown, QuotaType } from './quotaConfigs';

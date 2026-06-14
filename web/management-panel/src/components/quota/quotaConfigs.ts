@@ -84,12 +84,14 @@ import {
   isRuntimeOnlyAuthFile,
 } from '@/utils/quota';
 import { normalizeAuthIndex } from '@/utils/authIndex';
-import type { QuotaRenderHelpers } from './QuotaCard';
-import styles from '@/pages/QuotaPage.module.scss';
+import type { QuotaRenderHelpers, QuotaStatusState } from './QuotaProgressBar';
+import type { NormalizedExtra, NormalizedMeter, QuotaSummary } from './quotaSummary';
 
 type QuotaUpdater<T> = T | ((prev: T) => T);
 
-type QuotaType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi' | 'zai';
+export type QuotaType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi' | 'zai';
+
+const clampPercent = (value: number): number => Math.max(0, Math.min(100, value));
 
 const DEFAULT_ANTIGRAVITY_PROJECT_ID = 'bamboo-precept-lgxtn';
 const QUOTA_PROGRESS_HIGH_THRESHOLD = 70;
@@ -127,10 +129,8 @@ export interface QuotaConfig<TState, TData> {
   buildLoadingState: () => TState;
   buildSuccessState: (data: TData) => TState;
   buildErrorState: (message: string, status?: number) => TState;
-  cardClassName: string;
-  controlsClassName: string;
-  controlClassName: string;
-  gridClassName: string;
+  /** Normalize a success state into provider-agnostic meters + extras for the dashboard. */
+  getSummary: (state: TState, t: TFunction) => QuotaSummary;
   renderQuotaItems: (quota: TState, t: TFunction, helpers: QuotaRenderHelpers) => ReactNode;
 }
 
@@ -745,6 +745,23 @@ const renderAntigravityItems = (
 const PREMIUM_GEMINI_CLI_TIER_IDS = new Set(['g1-ultra-tier']);
 const PREMIUM_CODEX_PLAN_TYPES = new Set(['pro', 'prolite', 'pro-lite', 'pro_lite']);
 
+/** Resolve a Codex plan type into its display label, or null when unknown. */
+const resolveCodexPlanLabel = (t: TFunction, planType?: string | null): string | null => {
+  const normalized = normalizePlanType(planType);
+  if (!normalized) return null;
+  if (normalized === 'pro') return t('codex_quota.plan_pro');
+  if (PREMIUM_CODEX_PLAN_TYPES.has(normalized) && normalized !== 'pro') {
+    return t('codex_quota.plan_prolite');
+  }
+  if (normalized === 'plus') return t('codex_quota.plan_plus');
+  if (normalized === 'team') return t('codex_quota.plan_team');
+  if (normalized === 'free') return t('codex_quota.plan_free');
+  return planType || normalized;
+};
+
+const isPremiumCodexPlan = (planType?: string | null): boolean =>
+  PREMIUM_CODEX_PLAN_TYPES.has(normalizePlanType(planType) ?? '');
+
 const renderCodexItems = (
   quota: CodexQuotaState,
   t: TFunction,
@@ -755,21 +772,8 @@ const renderCodexItems = (
   const windows = quota.windows ?? [];
   const planType = quota.planType ?? null;
 
-  const getPlanLabel = (pt?: string | null): string | null => {
-    const normalized = normalizePlanType(pt);
-    if (!normalized) return null;
-    if (normalized === 'pro') return t('codex_quota.plan_pro');
-    if (PREMIUM_CODEX_PLAN_TYPES.has(normalized) && normalized !== 'pro') {
-      return t('codex_quota.plan_prolite');
-    }
-    if (normalized === 'plus') return t('codex_quota.plan_plus');
-    if (normalized === 'team') return t('codex_quota.plan_team');
-    if (normalized === 'free') return t('codex_quota.plan_free');
-    return pt || normalized;
-  };
-
-  const planLabel = getPlanLabel(planType);
-  const isPremiumPlan = PREMIUM_CODEX_PLAN_TYPES.has(normalizePlanType(planType) ?? '');
+  const planLabel = resolveCodexPlanLabel(t, planType);
+  const isPremiumPlan = isPremiumCodexPlan(planType);
   const nodes: ReactNode[] = [];
 
   if (planLabel) {
@@ -1125,6 +1129,35 @@ const renderClaudeItems = (
   return h(Fragment, null, ...nodes);
 };
 
+/** Map a "used %" window into a normalized "remaining %" meter. */
+const usedWindowToMeter = (
+  window: { id: string; label: string; labelKey?: string; usedPercent: number | null; resetLabel: string },
+  t: TFunction,
+  labelParams?: Record<string, string | number>
+): NormalizedMeter => {
+  const used = window.usedPercent === null ? null : clampPercent(window.usedPercent);
+  return {
+    id: window.id,
+    label: window.labelKey ? t(window.labelKey, labelParams) : window.label,
+    remainingPercent: used === null ? null : clampPercent(100 - used),
+    resetLabel: window.resetLabel,
+  };
+};
+
+const summarizeClaude = (state: ClaudeQuotaState, t: TFunction): QuotaSummary => {
+  const extras: NormalizedExtra[] = [];
+  if (state.planType) {
+    extras.push({ id: 'plan', label: t('claude_quota.plan_label'), value: t(`claude_quota.${state.planType}`) });
+  }
+  if (state.extraUsage && state.extraUsage.is_enabled) {
+    const used = (state.extraUsage.used_credits / 100).toFixed(2);
+    const limit = (state.extraUsage.monthly_limit / 100).toFixed(2);
+    extras.push({ id: 'extra', label: t('claude_quota.extra_usage_label'), value: `$${used} / $${limit}` });
+  }
+  const meters = (state.windows ?? []).map((window) => usedWindowToMeter(window, t));
+  return { meters, extras, emptyMessageKey: meters.length ? undefined : 'claude_quota.empty_windows' };
+};
+
 export const CLAUDE_CONFIG: QuotaConfig<
   ClaudeQuotaState,
   { windows: ClaudeQuotaWindow[]; extraUsage?: ClaudeExtraUsage | null; planType?: string | null }
@@ -1149,11 +1182,18 @@ export const CLAUDE_CONFIG: QuotaConfig<
     error: message,
     errorStatus: status,
   }),
-  cardClassName: styles.claudeCard,
-  controlsClassName: styles.claudeControls,
-  controlClassName: styles.claudeControl,
-  gridClassName: styles.claudeGrid,
+  getSummary: summarizeClaude,
   renderQuotaItems: renderClaudeItems,
+};
+
+const summarizeAntigravity = (state: AntigravityQuotaState): QuotaSummary => {
+  const meters: NormalizedMeter[] = (state.groups ?? []).map((group) => ({
+    id: group.id,
+    label: group.label,
+    remainingPercent: clampPercent(Math.max(0, Math.min(1, group.remainingFraction)) * 100),
+    resetLabel: formatQuotaResetTime(group.resetTime),
+  }));
+  return { meters, extras: [], emptyMessageKey: meters.length ? undefined : 'antigravity_quota.empty_models' };
 };
 
 export const ANTIGRAVITY_CONFIG: QuotaConfig<AntigravityQuotaState, AntigravityQuotaGroup[]> = {
@@ -1172,11 +1212,25 @@ export const ANTIGRAVITY_CONFIG: QuotaConfig<AntigravityQuotaState, AntigravityQ
     error: message,
     errorStatus: status,
   }),
-  cardClassName: styles.antigravityCard,
-  controlsClassName: styles.antigravityControls,
-  controlClassName: styles.antigravityControl,
-  gridClassName: styles.antigravityGrid,
+  getSummary: summarizeAntigravity,
   renderQuotaItems: renderAntigravityItems,
+};
+
+const summarizeCodex = (state: CodexQuotaState, t: TFunction): QuotaSummary => {
+  const extras: NormalizedExtra[] = [];
+  const planLabel = resolveCodexPlanLabel(t, state.planType);
+  if (planLabel) {
+    extras.push({
+      id: 'plan',
+      label: t('codex_quota.plan_label'),
+      value: planLabel,
+      premium: isPremiumCodexPlan(state.planType),
+    });
+  }
+  const meters = (state.windows ?? []).map((window) =>
+    usedWindowToMeter(window, t, window.labelParams as Record<string, string | number> | undefined)
+  );
+  return { meters, extras, emptyMessageKey: meters.length ? undefined : 'codex_quota.empty_windows' };
 };
 
 export const CODEX_CONFIG: QuotaConfig<
@@ -1202,11 +1256,44 @@ export const CODEX_CONFIG: QuotaConfig<
     error: message,
     errorStatus: status,
   }),
-  cardClassName: styles.codexCard,
-  controlsClassName: styles.codexControls,
-  controlClassName: styles.codexControl,
-  gridClassName: styles.codexGrid,
+  getSummary: summarizeCodex,
   renderQuotaItems: renderCodexItems,
+};
+
+const summarizeGeminiCli = (state: GeminiCliQuotaState, t: TFunction): QuotaSummary => {
+  const extras: NormalizedExtra[] = [];
+  if (state.tierLabel) {
+    extras.push({
+      id: 'tier',
+      label: t('gemini_cli_quota.tier_label'),
+      value: state.tierLabel,
+      premium: state.tierId != null && PREMIUM_GEMINI_CLI_TIER_IDS.has(state.tierId),
+    });
+  }
+  if (state.creditBalance !== null && state.creditBalance !== undefined) {
+    extras.push({
+      id: 'credits',
+      label: t('gemini_cli_quota.credit_label'),
+      value: t('gemini_cli_quota.credit_amount', { count: state.creditBalance }),
+    });
+  }
+  const meters: NormalizedMeter[] = (state.buckets ?? []).map((bucket) => {
+    const fraction = bucket.remainingFraction;
+    const remainingPercent =
+      fraction === null ? null : clampPercent(Math.max(0, Math.min(1, fraction)) * 100);
+    const amountLabel =
+      bucket.remainingAmount === null || bucket.remainingAmount === undefined
+        ? undefined
+        : t('gemini_cli_quota.remaining_amount', { count: bucket.remainingAmount });
+    return {
+      id: bucket.id,
+      label: bucket.label,
+      remainingPercent,
+      resetLabel: formatQuotaResetTime(bucket.resetTime),
+      amountLabel,
+    };
+  });
+  return { meters, extras, emptyMessageKey: meters.length ? undefined : 'gemini_cli_quota.empty_buckets' };
 };
 
 export const GEMINI_CLI_CONFIG: QuotaConfig<
@@ -1249,10 +1336,7 @@ export const GEMINI_CLI_CONFIG: QuotaConfig<
     error: message,
     errorStatus: status,
   }),
-  cardClassName: styles.geminiCliCard,
-  controlsClassName: styles.geminiCliControls,
-  controlClassName: styles.geminiCliControl,
-  gridClassName: styles.geminiCliGrid,
+  getSummary: summarizeGeminiCli,
   renderQuotaItems: renderGeminiCliItems,
 };
 
@@ -1341,6 +1425,25 @@ const renderZaiItems = (
   });
 };
 
+const summarizeZai = (state: ZaiQuotaState, t: TFunction): QuotaSummary => {
+  const meters: NormalizedMeter[] = (state.rows ?? []).map((row) => {
+    const amountLabel =
+      row.currentValue !== null && row.limit !== null
+        ? `${formatZaiAmount(row.currentValue)} / ${formatZaiAmount(row.limit)}`
+        : row.currentValue !== null
+          ? formatZaiAmount(row.currentValue)
+          : undefined;
+    return {
+      id: row.id,
+      label: row.labelKey ? t(row.labelKey) : row.label ?? '',
+      remainingPercent: row.remainingPercent === null ? null : clampPercent(row.remainingPercent),
+      resetLabel: formatZaiResetHint(t, row.resetHint) || undefined,
+      amountLabel,
+    };
+  });
+  return { meters, extras: [], emptyMessageKey: meters.length ? undefined : 'zai_quota.empty_data' };
+};
+
 export const ZAI_CONFIG: QuotaConfig<ZaiQuotaState, ZaiQuotaRow[]> = {
   type: 'zai',
   i18nPrefix: 'zai_quota',
@@ -1357,10 +1460,7 @@ export const ZAI_CONFIG: QuotaConfig<ZaiQuotaState, ZaiQuotaRow[]> = {
     error: message,
     errorStatus: status,
   }),
-  cardClassName: styles.zaiCard,
-  controlsClassName: styles.zaiControls,
-  controlClassName: styles.zaiControl,
-  gridClassName: styles.zaiGrid,
+  getSummary: summarizeZai,
   renderQuotaItems: renderZaiItems,
 };
 
@@ -1449,6 +1549,28 @@ const renderKimiItems = (
   });
 };
 
+const summarizeKimi = (state: KimiQuotaState, t: TFunction): QuotaSummary => {
+  const meters: NormalizedMeter[] = (state.rows ?? []).map((row) => {
+    const { used, limit } = row;
+    const remainingPercent =
+      limit > 0
+        ? clampPercent(((limit - used) / limit) * 100)
+        : used > 0
+          ? 0
+          : null;
+    return {
+      id: row.id,
+      label: row.labelKey
+        ? t(row.labelKey, (row.labelParams ?? {}) as Record<string, string | number>)
+        : row.label ?? '',
+      remainingPercent,
+      resetLabel: formatKimiResetHint(t, row.resetHint) || undefined,
+      amountLabel: limit > 0 ? `${used} / ${limit}` : undefined,
+    };
+  });
+  return { meters, extras: [], emptyMessageKey: meters.length ? undefined : 'kimi_quota.empty_data' };
+};
+
 export const KIMI_CONFIG: QuotaConfig<KimiQuotaState, KimiQuotaRow[]> = {
   type: 'kimi',
   i18nPrefix: 'kimi_quota',
@@ -1465,9 +1587,28 @@ export const KIMI_CONFIG: QuotaConfig<KimiQuotaState, KimiQuotaRow[]> = {
     error: message,
     errorStatus: status,
   }),
-  cardClassName: styles.kimiCard,
-  controlsClassName: styles.kimiControls,
-  controlClassName: styles.kimiControl,
-  gridClassName: styles.kimiGrid,
+  getSummary: summarizeKimi,
   renderQuotaItems: renderKimiItems,
 };
+
+/**
+ * Type-erased view of a provider config for orchestration code that iterates
+ * every provider uniformly (the quota dashboard). Each provider's functions stay
+ * internally type-safe via their own QuotaConfig<TState, TData> definitions above;
+ * only the orchestration layer treats them as a homogeneous list.
+ */
+export type QuotaConfigUnknown = QuotaConfig<QuotaStatusState, unknown>;
+
+/**
+ * All provider configs in display order. The `as unknown` cast erases the per-provider
+ * state/data generics so the array is homogeneous; values flow from each config's own
+ * fetchQuota straight into the same config's builders, so runtime types stay consistent.
+ */
+export const QUOTA_CONFIGS: readonly QuotaConfigUnknown[] = [
+  CLAUDE_CONFIG,
+  ANTIGRAVITY_CONFIG,
+  CODEX_CONFIG,
+  GEMINI_CLI_CONFIG,
+  KIMI_CONFIG,
+  ZAI_CONFIG,
+] as unknown as readonly QuotaConfigUnknown[];
