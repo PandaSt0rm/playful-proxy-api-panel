@@ -12,6 +12,7 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { useNotificationStore } from '@/stores';
 import { configFileApi } from '@/services/api/configFile';
 import { pluginsApi } from '@/services/api/plugins';
+import { PluginStore } from '@/components/plugins/PluginStore';
 import type {
   PluginConfigField,
   PluginInstanceConfig,
@@ -144,6 +145,7 @@ export function PluginsPage() {
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<ConfigDraft | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -209,6 +211,45 @@ export function PluginsPage() {
       }
     },
     [showNotification, t]
+  );
+
+  const handleDelete = useCallback(
+    async (plugin: PluginListEntry) => {
+      const confirmed = window.confirm(
+        t('plugins.delete_confirm', {
+          defaultValue:
+            'Delete plugin "{{id}}"? This removes its library file from the plugins directory.',
+          id: plugin.id,
+        })
+      );
+      if (!confirmed) return;
+      setDeletingId(plugin.id);
+      try {
+        const result = await pluginsApi.remove(plugin.id);
+        showNotification(
+          result.restart_required
+            ? t('plugins.delete_restart', {
+                defaultValue: 'Plugin "{{id}}" deleted. Restart the server to fully unload it.',
+                id: plugin.id,
+              })
+            : t('plugins.delete_success', {
+                defaultValue: 'Plugin "{{id}}" deleted.',
+                id: plugin.id,
+              }),
+          'success'
+        );
+        await load();
+      } catch (err: unknown) {
+        showNotification(
+          getErrorMessage(err) ||
+            t('plugins.delete_failed', { defaultValue: 'Failed to delete plugin.' }),
+          'error'
+        );
+      } finally {
+        setDeletingId(null);
+      }
+    },
+    [load, showNotification, t]
   );
 
   const openConfigEditor = useCallback(
@@ -400,6 +441,14 @@ export function PluginsPage() {
                   <Button variant="secondary" size="sm" onClick={() => openConfigEditor(plugin)}>
                     {t('plugins.edit_config', { defaultValue: 'Edit configuration' })}
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void handleDelete(plugin)}
+                    loading={deletingId === plugin.id}
+                  >
+                    {t('common.delete', { defaultValue: 'Delete' })}
+                  </Button>
                   {meta?.github_repository ? (
                     <a
                       className={styles.repoLink}
@@ -416,6 +465,8 @@ export function PluginsPage() {
           })}
         </div>
       )}
+
+      <PluginStore onChanged={() => void load()} />
 
       <Modal
         open={draft !== null}

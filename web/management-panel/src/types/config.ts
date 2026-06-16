@@ -23,7 +23,7 @@ export interface PprofConfig {
   addr?: string;
 }
 
-export type DisableImageGenerationConfig = false | true | 'chat';
+export type DisableImageGenerationConfig = false | true | 'chat' | 'passthrough';
 
 export interface PluginsConfig {
   enabled?: boolean;

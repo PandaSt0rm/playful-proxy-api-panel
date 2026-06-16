@@ -185,6 +185,7 @@ function parseDisableImageGenerationMode(
   const normalized = String(raw).trim().toLowerCase();
   if (normalized === 'true') return 'true';
   if (normalized === 'chat') return 'chat';
+  if (normalized === 'passthrough') return 'passthrough';
   return 'false';
 }
 
@@ -1421,8 +1422,11 @@ export function useVisualConfig() {
             'disableImageGeneration'
           )
         ) {
-          if (values.disableImageGeneration === 'chat') {
-            doc.setIn(['disable-image-generation'], 'chat');
+          if (
+            values.disableImageGeneration === 'chat' ||
+            values.disableImageGeneration === 'passthrough'
+          ) {
+            doc.setIn(['disable-image-generation'], values.disableImageGeneration);
           } else {
             doc.setIn(['disable-image-generation'], values.disableImageGeneration === 'true');
           }

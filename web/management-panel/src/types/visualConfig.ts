@@ -64,7 +64,7 @@ export interface StreamingConfig {
   nonstreamKeepaliveInterval: string;
 }
 
-export type DisableImageGenerationMode = 'false' | 'true' | 'chat';
+export type DisableImageGenerationMode = 'false' | 'true' | 'chat' | 'passthrough';
 
 export interface UpstreamConcurrencyVisualConfig {
   defaultLimit: string;

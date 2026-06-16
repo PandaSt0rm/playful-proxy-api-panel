@@ -3,20 +3,26 @@ import { renderWithRouter, screen, waitFor, userEvent } from '@/test/utils';
 import { PluginsPage } from './PluginsPage';
 import { pluginsApi } from '@/services/api/plugins';
 import { configFileApi } from '@/services/api/configFile';
+import { pluginStoreApi } from '@/services/api/pluginStore';
 import { useNotificationStore } from '@/stores';
 import type { PluginListEntry, PluginListResponse } from '@/types/plugins';
 
 vi.mock('@/services/api/plugins', () => ({
-  pluginsApi: { list: vi.fn(), setEnabled: vi.fn(), putConfig: vi.fn() },
+  pluginsApi: { list: vi.fn(), setEnabled: vi.fn(), putConfig: vi.fn(), remove: vi.fn() },
 }));
 vi.mock('@/services/api/configFile', () => ({
   configFileApi: { fetchConfigYaml: vi.fn() },
+}));
+vi.mock('@/services/api/pluginStore', () => ({
+  pluginStoreApi: { list: vi.fn(), install: vi.fn() },
 }));
 
 const mockedList = vi.mocked(pluginsApi.list);
 const mockedSetEnabled = vi.mocked(pluginsApi.setEnabled);
 const mockedPutConfig = vi.mocked(pluginsApi.putConfig);
+const mockedRemove = vi.mocked(pluginsApi.remove);
 const mockedFetchConfigYaml = vi.mocked(configFileApi.fetchConfigYaml);
+const mockedStoreList = vi.mocked(pluginStoreApi.list);
 
 const entry = (overrides: Partial<PluginListEntry> = {}): PluginListEntry => ({
   id: 'example',
@@ -51,9 +57,18 @@ beforeEach(() => {
   mockedList.mockReset();
   mockedSetEnabled.mockReset();
   mockedPutConfig.mockReset();
+  mockedRemove.mockReset();
   mockedFetchConfigYaml.mockReset();
+  mockedStoreList.mockReset();
   mockedList.mockResolvedValue(listResponse());
   mockedFetchConfigYaml.mockResolvedValue('plugins:\n  enabled: true\n');
+  mockedStoreList.mockResolvedValue({
+    plugins_enabled: true,
+    plugins_dir: 'plugins',
+    sources: [],
+    source_errors: [],
+    plugins: [],
+  });
   useNotificationStore.setState({ notifications: [] });
 });
 
@@ -123,6 +138,36 @@ describe('PluginsPage toggle', () => {
         useNotificationStore.getState().notifications.some((n) => n.type === 'error')
       ).toBe(true);
     });
+  });
+});
+
+describe('PluginsPage delete', () => {
+  it('deletes a plugin after confirmation', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    mockedRemove.mockResolvedValue({ status: 'deleted', restart_required: false });
+    const user = userEvent.setup();
+
+    renderWithRouter(<PluginsPage />);
+    await user.click(await screen.findByRole('button', { name: 'Delete' }));
+
+    await waitFor(() => {
+      expect(mockedRemove).toHaveBeenCalledWith('example');
+    });
+    expect(useNotificationStore.getState().notifications.some((n) => n.type === 'success')).toBe(
+      true
+    );
+    confirmSpy.mockRestore();
+  });
+
+  it('does not delete when confirmation is cancelled', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const user = userEvent.setup();
+
+    renderWithRouter(<PluginsPage />);
+    await user.click(await screen.findByRole('button', { name: 'Delete' }));
+
+    expect(mockedRemove).not.toHaveBeenCalled();
+    confirmSpy.mockRestore();
   });
 });
 

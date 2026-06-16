@@ -1319,7 +1319,7 @@ export function VisualConfigEditor({
                     'config_management.visual.sections.network.disable_image_generation_hint',
                     {
                       defaultValue:
-                        'false keeps image tools enabled, true disables them everywhere, chat disables injection outside image endpoints.',
+                        'false keeps image tools enabled, true disables them everywhere, chat disables injection outside image endpoints, passthrough forwards the client payload unchanged.',
                     }
                   )}
                 >
@@ -1339,6 +1339,13 @@ export function VisualConfigEditor({
                         label: t('config_management.visual.sections.network.disable_image_chat', {
                           defaultValue: 'Chat only',
                         }),
+                      },
+                      {
+                        value: 'passthrough',
+                        label: t(
+                          'config_management.visual.sections.network.disable_image_passthrough',
+                          { defaultValue: 'Passthrough' }
+                        ),
                       },
                     ]}
                     disabled={disabled}

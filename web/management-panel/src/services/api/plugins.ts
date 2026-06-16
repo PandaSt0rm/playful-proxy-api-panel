@@ -86,4 +86,13 @@ export const pluginsApi = {
   async putConfig(id: string, config: PluginInstanceConfig): Promise<void> {
     await apiClient.put(`/plugins/${encodeURIComponent(id)}/config`, config);
   },
+
+  async remove(id: string): Promise<{ status: string; restart_required: boolean }> {
+    const data = await apiClient.delete(`/plugins/${encodeURIComponent(id)}`);
+    const value = isRecord(data) ? data : {};
+    return {
+      status: typeof value.status === 'string' ? value.status : '',
+      restart_required: Boolean(value.restart_required),
+    };
+  },
 };

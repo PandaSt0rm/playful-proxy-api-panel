@@ -462,15 +462,17 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
   if (
     disableImageGeneration === true ||
     disableImageGeneration === false ||
-    disableImageGeneration === 'chat'
+    disableImageGeneration === 'chat' ||
+    disableImageGeneration === 'passthrough'
   ) {
     config.disableImageGeneration = disableImageGeneration;
-  } else if (
-    String(disableImageGeneration ?? '')
+  } else {
+    const normalized = String(disableImageGeneration ?? '')
       .trim()
-      .toLowerCase() === 'chat'
-  ) {
-    config.disableImageGeneration = 'chat';
+      .toLowerCase();
+    if (normalized === 'chat' || normalized === 'passthrough') {
+      config.disableImageGeneration = normalized;
+    }
   }
   config.enableGeminiCliEndpoint = normalizeBoolean(
     raw['enable-gemini-cli-endpoint'] ?? raw.enableGeminiCliEndpoint

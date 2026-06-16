@@ -151,7 +151,28 @@
     "no_fields": "This plugin does not declare configuration fields. Edit advanced settings in the config source editor.",
     "invalid_field": "Invalid value for \"{{field}}\".",
     "config_saved": "Plugin configuration saved.",
-    "config_save_failed": "Failed to save plugin configuration."
+    "config_save_failed": "Failed to save plugin configuration.",
+    "delete_confirm": "Delete plugin \"{{id}}\"? This removes its library file from the plugins directory.",
+    "delete_success": "Plugin \"{{id}}\" deleted.",
+    "delete_restart": "Plugin \"{{id}}\" deleted. Restart the server to fully unload it.",
+    "delete_failed": "Failed to delete plugin.",
+    "store": {
+      "title": "Plugin store",
+      "subtitle": "Browse and install plugins from configured registries.",
+      "load_failed": "Failed to load the plugin store.",
+      "search_placeholder": "Search plugins…",
+      "install": "Install",
+      "update": "Update",
+      "installed": "Installed",
+      "installed_version": "v{{version}} installed",
+      "install_success": "Plugin \"{{id}}\" installed.",
+      "install_restart": "Plugin \"{{id}}\" installed. Restart the server to load it.",
+      "install_failed": "Failed to install plugin.",
+      "source_error": "{{name}}: {{message}}",
+      "empty_title": "No plugins available",
+      "empty_desc": "No plugins were found in the configured registries. Add a registry via plugins.store-sources in the config editor.",
+      "no_matches": "No matching plugins"
+    }
   },
   "dashboard": {
     "title": "Dashboard",
