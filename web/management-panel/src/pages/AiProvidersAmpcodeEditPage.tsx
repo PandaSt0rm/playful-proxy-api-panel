@@ -20,6 +20,7 @@ import {
   entriesToAmpcodeUpstreamApiKeys,
 } from '@/components/providers/utils';
 import type { AmpcodeFormState } from '@/components/providers';
+import styles from './AiProvidersPage.module.scss';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
 
 type LocationState = { fromAiProviders?: boolean } | null;
@@ -575,6 +576,7 @@ export function AiProvidersAmpcodeEditPage() {
             removeButtonTitle={t('common.delete')}
             removeButtonAriaLabel={t('common.delete')}
             disabled={loading || saving || disableControls}
+            rowClassName={styles.modelInputRowWithChips}
             renderRowExtras={renderMappingExtras}
           />
           <div className="hint">{t('ai_providers.ampcode_model_mappings_hint')}</div>
