@@ -49,7 +49,6 @@ vi.mock('@/components/providers', () => {
     CodexSection: makeStub('codex-section'),
     ClaudeSection: makeStub('claude-section'),
     VertexSection: makeStub('vertex-section'),
-    AmpcodeSection: makeStub('ampcode-section'),
     ZaiSection: makeStub('zai-section'),
     OpenRouterSection: makeStub('openrouter-section'),
     OpenAISection: makeStub('openai-section'),
@@ -63,16 +62,12 @@ vi.mock('@/components/providers', () => {
 });
 
 const getVertexConfigs = vi.fn(async () => []);
-const getAmpcode = vi.fn(async () => undefined);
 const getOpenAIProviders = vi.fn(async () => []);
 
 vi.mock('@/services/api', () => ({
   providersApi: {
     getVertexConfigs: (...args: unknown[]) => getVertexConfigs(...args),
     getOpenAIProviders: (...args: unknown[]) => getOpenAIProviders(...args),
-  },
-  ampcodeApi: {
-    getAmpcode: (...args: unknown[]) => getAmpcode(...args),
   },
 }));
 
@@ -131,7 +126,6 @@ describe('AiProvidersPage', () => {
     expect(screen.getByTestId('codex-section')).toBeInTheDocument();
     expect(screen.getByTestId('claude-section')).toBeInTheDocument();
     expect(screen.getByTestId('vertex-section')).toBeInTheDocument();
-    expect(screen.getByTestId('ampcode-section')).toBeInTheDocument();
     expect(screen.getByTestId('zai-section')).toBeInTheDocument();
     expect(screen.getByTestId('openrouter-section')).toBeInTheDocument();
     expect(screen.getByTestId('openai-section')).toBeInTheDocument();
@@ -190,19 +184,6 @@ describe('AiProvidersPage', () => {
     });
   });
 
-  it('navigates to the ampcode editor with no index for the ampcode edit button', async () => {
-    const user = userEvent.setup();
-    seedValidCache(baseConfig);
-    renderWithRouter(<AiProvidersPage />);
-    await screen.findByTestId('ampcode-section');
-
-    await user.click(screen.getByRole('button', { name: 'edit-ampcode-section' }));
-
-    expect(navigateSpy).toHaveBeenCalledWith('/ai-providers/ampcode', {
-      state: { fromAiProviders: true },
-    });
-  });
-
   it('registers the recent-requests refresh handler with useHeaderRefresh', async () => {
     seedValidCache(baseConfig);
 
@@ -253,13 +234,12 @@ describe('AiProvidersPage', () => {
     );
   });
 
-  it('refreshes vertex, ampcode and openai providers from their dedicated endpoints', async () => {
+  it('refreshes vertex and openai providers from their dedicated endpoints', async () => {
     seedValidCache(baseConfig);
 
     renderWithRouter(<AiProvidersPage />);
 
     await waitFor(() => expect(getVertexConfigs).toHaveBeenCalledTimes(1));
-    expect(getAmpcode).toHaveBeenCalledTimes(1);
     expect(getOpenAIProviders).toHaveBeenCalledTimes(1);
   });
 });

@@ -8,7 +8,6 @@ const PROVIDER_IDS = [
   'codex',
   'claude',
   'vertex',
-  'ampcode',
   'zai',
   'openrouter',
   'openai',

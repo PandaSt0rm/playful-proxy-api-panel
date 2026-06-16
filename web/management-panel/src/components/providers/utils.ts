@@ -1,7 +1,4 @@
 import type {
-  AmpcodeConfig,
-  AmpcodeModelMapping,
-  AmpcodeUpstreamApiKeyMapping,
   ApiKeyEntry,
   OpenAIProviderConfig,
 } from '@/types';
@@ -16,7 +13,6 @@ import {
   type RecentRequestUsageEntry,
   type StatusBarData,
 } from '@/utils/recentRequests';
-import type { AmpcodeFormState, AmpcodeUpstreamApiKeyEntry, ModelEntry } from './types';
 
 export const DISABLE_ALL_MODELS_RULE = '*';
 
@@ -286,76 +282,3 @@ export const buildApiKeyEntry = (input?: Partial<ApiKeyEntry>): ApiKeyEntry => (
   headers: input?.headers ?? {},
 });
 
-export const ampcodeMappingsToEntries = (mappings?: AmpcodeModelMapping[]): ModelEntry[] => {
-  if (!Array.isArray(mappings) || mappings.length === 0) {
-    return [{ name: '', alias: '' }];
-  }
-  return mappings.map((mapping) => ({
-    name: mapping.from ?? '',
-    alias: mapping.to ?? '',
-    regex: Boolean(mapping.regex),
-  }));
-};
-
-export const entriesToAmpcodeMappings = (entries: ModelEntry[]): AmpcodeModelMapping[] => {
-  const seen = new Set<string>();
-  const mappings: AmpcodeModelMapping[] = [];
-
-  entries.forEach((entry) => {
-    const from = entry.name.trim();
-    const to = entry.alias.trim();
-    if (!from || !to) return;
-    const key = from.toLowerCase();
-    if (seen.has(key)) return;
-    seen.add(key);
-    const mapping: AmpcodeModelMapping = { from, to };
-    if (entry.regex) {
-      mapping.regex = true;
-    }
-    mappings.push(mapping);
-  });
-
-  return mappings;
-};
-
-export const ampcodeUpstreamApiKeysToEntries = (
-  mappings?: AmpcodeUpstreamApiKeyMapping[]
-): AmpcodeUpstreamApiKeyEntry[] => {
-  if (!Array.isArray(mappings) || mappings.length === 0) {
-    return [{ upstreamApiKey: '', clientApiKeysText: '' }];
-  }
-
-  return mappings.map((mapping) => ({
-    upstreamApiKey: mapping.upstreamApiKey ?? '',
-    clientApiKeysText: Array.isArray(mapping.apiKeys) ? mapping.apiKeys.join('\n') : '',
-  }));
-};
-
-export const entriesToAmpcodeUpstreamApiKeys = (
-  entries: AmpcodeUpstreamApiKeyEntry[]
-): AmpcodeUpstreamApiKeyMapping[] => {
-  const seen = new Set<string>();
-  const mappings: AmpcodeUpstreamApiKeyMapping[] = [];
-
-  entries.forEach((entry) => {
-    const upstreamApiKey = String(entry?.upstreamApiKey ?? '').trim();
-    if (!upstreamApiKey || seen.has(upstreamApiKey)) return;
-
-    const apiKeys = Array.from(new Set(parseTextList(String(entry?.clientApiKeysText ?? ''))));
-    if (!apiKeys.length) return;
-
-    seen.add(upstreamApiKey);
-    mappings.push({ upstreamApiKey, apiKeys });
-  });
-
-  return mappings;
-};
-
-export const buildAmpcodeFormState = (ampcode?: AmpcodeConfig | null): AmpcodeFormState => ({
-  upstreamUrl: ampcode?.upstreamUrl ?? '',
-  upstreamApiKey: '',
-  restrictManagementToLocalhost: Boolean(ampcode?.restrictManagementToLocalhost),
-  forceModelMappings: ampcode?.forceModelMappings ?? false,
-  mappingEntries: ampcodeMappingsToEntries(ampcode?.modelMappings),
-  upstreamApiKeyEntries: ampcodeUpstreamApiKeysToEntries(ampcode?.upstreamApiKeys),
-});

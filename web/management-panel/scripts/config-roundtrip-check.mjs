@@ -219,19 +219,6 @@ function assertProviderRoundTrip(transformers, providers, providerUtils) {
     dynamic_allowed: false,
     levels: ['low', 'high'],
   });
-
-  const ampcode = transformers.normalizeAmpcodeConfig({
-    'restrict-management-to-localhost': true,
-    'model-mappings': [{ from: '^gpt-(.*)$', to: 'openai:$1', regex: true }],
-  });
-  assert.equal(ampcode.restrictManagementToLocalhost, true);
-  assert.deepEqual(ampcode.modelMappings, [{ from: '^gpt-(.*)$', to: 'openai:$1', regex: true }]);
-  assert.deepEqual(
-    providerUtils.entriesToAmpcodeMappings(
-      providerUtils.ampcodeMappingsToEntries(ampcode.modelMappings)
-    ),
-    [{ from: '^gpt-(.*)$', to: 'openai:$1', regex: true }]
-  );
 }
 
 function assertProviderConcurrencyHelpers(concurrency) {

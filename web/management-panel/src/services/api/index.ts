@@ -5,7 +5,6 @@ export * from './usage';
 export * from './config';
 export * from './configFile';
 export * from './apiKeys';
-export * from './ampcode';
 export * from './providers';
 export * from './providerConcurrency';
 export * from './authFiles';

@@ -4,7 +4,6 @@
  */
 
 import type { GeminiKeyConfig, ProviderKeyConfig, OpenAIProviderConfig } from './provider';
-import type { AmpcodeConfig } from './ampcode';
 import type { SyncProfile } from './sync';
 
 export interface QuotaExceededConfig {
@@ -61,7 +60,6 @@ export interface Config {
   antigravitySignatureCacheEnabled?: boolean;
   antigravitySignatureBypassStrict?: boolean;
   apiKeys?: string[];
-  ampcode?: AmpcodeConfig;
   geminiApiKeys?: GeminiKeyConfig[];
   codexApiKeys?: ProviderKeyConfig[];
   claudeApiKeys?: ProviderKeyConfig[];
@@ -88,7 +86,6 @@ export type RawConfigSection =
   | 'max-retry-interval'
   | 'upstream-concurrency'
   | 'api-keys'
-  | 'ampcode'
   | 'gemini-api-key'
   | 'codex-api-key'
   | 'claude-api-key'

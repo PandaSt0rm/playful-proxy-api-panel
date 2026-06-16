@@ -31,7 +31,6 @@ const makeConfig = (overrides: Partial<Config> = {}): Config => ({
   maxRetryInterval: 42,
   upstreamConcurrency: { default: 5 },
   apiKeys: ['key-a', 'key-b'],
-  ampcode: { enabled: true } as Config['ampcode'],
   geminiApiKeys: [{ apiKey: 'g-1' }] as Config['geminiApiKeys'],
   codexApiKeys: [{ apiKey: 'c-1' }] as Config['codexApiKeys'],
   claudeApiKeys: [{ apiKey: 'cl-1' }] as Config['claudeApiKeys'],
