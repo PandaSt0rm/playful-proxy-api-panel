@@ -467,6 +467,8 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
   ) {
     config.disableImageGeneration = disableImageGeneration;
   } else {
+    // Only chat/passthrough need string recovery here; the on/off states arrive
+    // as real booleans (handled above), not quoted strings.
     const normalized = String(disableImageGeneration ?? '')
       .trim()
       .toLowerCase();

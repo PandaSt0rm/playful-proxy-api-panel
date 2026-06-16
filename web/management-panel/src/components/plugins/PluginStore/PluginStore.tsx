@@ -6,7 +6,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useNotificationStore } from '@/stores';
-import { pluginStoreApi } from '@/services/api/pluginStore';
+import { isRestartRequiredError, pluginStoreApi } from '@/services/api/pluginStore';
 import type { PluginStoreEntry, PluginStoreListResponse } from '@/types/pluginStore';
 import styles from './PluginStore.module.scss';
 
@@ -14,6 +14,16 @@ const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) return error.message;
   if (typeof error === 'string') return error;
   return '';
+};
+
+/** Registry logos are third-party data; only render http(s) URLs as an <img> source. */
+const isSafeHttpUrl = (value: string): boolean => {
+  try {
+    const { protocol } = new URL(value);
+    return protocol === 'http:' || protocol === 'https:';
+  } catch {
+    return false;
+  }
 };
 
 interface PluginStoreProps {
@@ -52,34 +62,41 @@ export function PluginStore({ onChanged }: PluginStoreProps) {
 
   const handleInstall = useCallback(
     async (entry: PluginStoreEntry) => {
+      if (installingId) return;
       setInstallingId(entry.store_id || entry.id);
       try {
-        const result = await pluginStoreApi.install(entry.id, entry.source_id);
+        await pluginStoreApi.install(entry.id, entry.source_id);
         showNotification(
-          result.restart_required
-            ? t('plugins.store.install_restart', {
-                defaultValue: 'Plugin "{{id}}" installed. Restart the server to load it.',
-                id: entry.id,
-              })
-            : t('plugins.store.install_success', {
-                defaultValue: 'Plugin "{{id}}" installed.',
-                id: entry.id,
-              }),
+          t('plugins.store.install_success', {
+            defaultValue: 'Plugin "{{id}}" installed.',
+            id: entry.id,
+          }),
           'success'
         );
         await load();
         onChanged?.();
       } catch (err: unknown) {
-        showNotification(
-          getErrorMessage(err) ||
-            t('plugins.store.install_failed', { defaultValue: 'Failed to install plugin.' }),
-          'error'
-        );
+        if (isRestartRequiredError(err)) {
+          showNotification(
+            t('plugins.store.install_restart', {
+              defaultValue:
+                'Plugin "{{id}}" is currently loaded. Restart the server to apply the update.',
+              id: entry.id,
+            }),
+            'warning'
+          );
+        } else {
+          showNotification(
+            getErrorMessage(err) ||
+              t('plugins.store.install_failed', { defaultValue: 'Failed to install plugin.' }),
+            'error'
+          );
+        }
       } finally {
         setInstallingId(null);
       }
     },
-    [load, onChanged, showNotification, t]
+    [installingId, load, onChanged, showNotification, t]
   );
 
   const entries = useMemo(() => data?.plugins ?? [], [data]);
@@ -98,6 +115,7 @@ export function PluginStore({ onChanged }: PluginStoreProps) {
 
   const renderAction = (entry: PluginStoreEntry) => {
     const busy = installingId === (entry.store_id || entry.id);
+    const otherBusy = Boolean(installingId) && !busy;
     if (!entry.installed) {
       return (
         <Button
@@ -105,6 +123,7 @@ export function PluginStore({ onChanged }: PluginStoreProps) {
           size="sm"
           onClick={() => void handleInstall(entry)}
           loading={busy}
+          disabled={otherBusy}
         >
           {t('plugins.store.install', { defaultValue: 'Install' })}
         </Button>
@@ -119,7 +138,12 @@ export function PluginStore({ onChanged }: PluginStoreProps) {
               version: entry.installed_version || '?',
             })}
           </span>
-          <Button size="sm" onClick={() => void handleInstall(entry)} loading={busy}>
+          <Button
+            size="sm"
+            onClick={() => void handleInstall(entry)}
+            loading={busy}
+            disabled={otherBusy}
+          >
             {t('plugins.store.update', { defaultValue: 'Update' })}
           </Button>
         </>
@@ -200,7 +224,7 @@ export function PluginStore({ onChanged }: PluginStoreProps) {
           {filtered.map((entry) => (
             <div key={entry.store_id || entry.id} className={styles.row}>
               <div className={styles.identity}>
-                {entry.logo ? (
+                {entry.logo && isSafeHttpUrl(entry.logo) ? (
                   <img className={styles.logo} src={entry.logo} alt="" aria-hidden />
                 ) : (
                   <div className={styles.logoFallback} aria-hidden>

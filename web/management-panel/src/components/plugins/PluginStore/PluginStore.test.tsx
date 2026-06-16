@@ -9,9 +9,13 @@ import type {
   PluginStoreListResponse,
 } from '@/types/pluginStore';
 
-vi.mock('@/services/api/pluginStore', () => ({
-  pluginStoreApi: { list: vi.fn(), install: vi.fn() },
-}));
+vi.mock('@/services/api/pluginStore', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/api/pluginStore')>();
+  return {
+    ...actual,
+    pluginStoreApi: { list: vi.fn(), install: vi.fn() },
+  };
+});
 
 const mockedList = vi.mocked(pluginStoreApi.list);
 const mockedInstall = vi.mocked(pluginStoreApi.install);
@@ -101,8 +105,10 @@ describe('PluginStore', () => {
     );
   });
 
-  it('reports a restart requirement after install', async () => {
-    mockedInstall.mockResolvedValue(installResult({ restart_required: true }));
+  it('shows a restart notice when the target plugin is loaded (409)', async () => {
+    mockedInstall.mockRejectedValue(
+      Object.assign(new Error('loaded'), { status: 409, data: { restart_required: true } })
+    );
     const user = userEvent.setup();
 
     renderWithRouter(<PluginStore />);
@@ -184,5 +190,14 @@ describe('PluginStore', () => {
     renderWithRouter(<PluginStore />);
 
     expect(await screen.findByText('No plugins available')).toBeInTheDocument();
+  });
+
+  it('does not render a logo from an unsafe (non-http) URL', async () => {
+    mockedList.mockResolvedValue(storeResponse([storeEntry({ logo: 'javascript:alert(1)' })]));
+
+    renderWithRouter(<PluginStore />);
+    await screen.findByText('Example Plugin');
+
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });
 });

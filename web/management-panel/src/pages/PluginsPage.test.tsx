@@ -13,9 +13,13 @@ vi.mock('@/services/api/plugins', () => ({
 vi.mock('@/services/api/configFile', () => ({
   configFileApi: { fetchConfigYaml: vi.fn() },
 }));
-vi.mock('@/services/api/pluginStore', () => ({
-  pluginStoreApi: { list: vi.fn(), install: vi.fn() },
-}));
+vi.mock('@/services/api/pluginStore', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/api/pluginStore')>();
+  return {
+    ...actual,
+    pluginStoreApi: { list: vi.fn(), install: vi.fn() },
+  };
+});
 
 const mockedList = vi.mocked(pluginsApi.list);
 const mockedSetEnabled = vi.mocked(pluginsApi.setEnabled);
@@ -167,6 +171,26 @@ describe('PluginsPage delete', () => {
     await user.click(await screen.findByRole('button', { name: 'Delete' }));
 
     expect(mockedRemove).not.toHaveBeenCalled();
+    confirmSpy.mockRestore();
+  });
+
+  it('shows a restart notice when deleting a loaded plugin (409)', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    mockedRemove.mockRejectedValue(
+      Object.assign(new Error('loaded'), { status: 409, data: { restart_required: true } })
+    );
+    const user = userEvent.setup();
+
+    renderWithRouter(<PluginsPage />);
+    await user.click(await screen.findByRole('button', { name: 'Delete' }));
+
+    await waitFor(() => {
+      expect(
+        useNotificationStore.getState().notifications.some((n) =>
+          n.message.toLowerCase().includes('restart')
+        )
+      ).toBe(true);
+    });
     confirmSpy.mockRestore();
   });
 });

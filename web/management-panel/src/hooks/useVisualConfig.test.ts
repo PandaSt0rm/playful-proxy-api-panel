@@ -438,6 +438,16 @@ describe('useVisualConfig loadVisualValuesFromYaml', () => {
     expect(result.current.visualValues.disableImageGeneration).toBe('chat');
   });
 
+  it('maps disable-image-generation "passthrough" to the passthrough mode', () => {
+    const { result } = renderHook(() => useVisualConfig());
+
+    act(() => {
+      result.current.loadVisualValuesFromYaml('disable-image-generation: passthrough\n');
+    });
+
+    expect(result.current.visualValues.disableImageGeneration).toBe('passthrough');
+  });
+
   it('maps disable-image-generation true boolean to the "true" mode', () => {
     const { result } = renderHook(() => useVisualConfig());
 
@@ -820,6 +830,20 @@ describe('useVisualConfig applyVisualChangesToYaml', () => {
     });
 
     expect(parseYaml(output)['disable-image-generation']).toBe('chat');
+  });
+
+  it('writes disable-image-generation "passthrough" as the passthrough string', () => {
+    const { result } = renderHook(() => useVisualConfig());
+
+    act(() => {
+      result.current.setVisualValues({ disableImageGeneration: 'passthrough' });
+    });
+    let output = '';
+    act(() => {
+      output = result.current.applyVisualChangesToYaml('');
+    });
+
+    expect(parseYaml(output)['disable-image-generation']).toBe('passthrough');
   });
 
   it('writes disable-image-generation "true" as a boolean true', () => {

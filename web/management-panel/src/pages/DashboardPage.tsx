@@ -253,7 +253,9 @@ export function DashboardPage() {
       ? t('dashboard.image_generation_off', { defaultValue: 'Off' })
       : config?.disableImageGeneration === 'chat'
         ? t('dashboard.image_generation_chat', { defaultValue: 'Chat only' })
-        : t('dashboard.image_generation_on', { defaultValue: 'On' });
+        : config?.disableImageGeneration === 'passthrough'
+          ? t('dashboard.image_generation_passthrough', { defaultValue: 'Passthrough' })
+          : t('dashboard.image_generation_on', { defaultValue: 'On' });
 
   // Derived time-based values
   const greetingKey = `dashboard.greeting_${timeOfDay}`;

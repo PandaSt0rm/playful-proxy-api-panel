@@ -13,6 +13,7 @@ import { useNotificationStore } from '@/stores';
 import { configFileApi } from '@/services/api/configFile';
 import { pluginsApi } from '@/services/api/plugins';
 import { PluginStore } from '@/components/plugins/PluginStore';
+import { isRestartRequiredError } from '@/services/api/pluginStore';
 import type {
   PluginConfigField,
   PluginInstanceConfig,
@@ -225,26 +226,32 @@ export function PluginsPage() {
       if (!confirmed) return;
       setDeletingId(plugin.id);
       try {
-        const result = await pluginsApi.remove(plugin.id);
+        await pluginsApi.remove(plugin.id);
         showNotification(
-          result.restart_required
-            ? t('plugins.delete_restart', {
-                defaultValue: 'Plugin "{{id}}" deleted. Restart the server to fully unload it.',
-                id: plugin.id,
-              })
-            : t('plugins.delete_success', {
-                defaultValue: 'Plugin "{{id}}" deleted.',
-                id: plugin.id,
-              }),
+          t('plugins.delete_success', {
+            defaultValue: 'Plugin "{{id}}" deleted.',
+            id: plugin.id,
+          }),
           'success'
         );
         await load();
       } catch (err: unknown) {
-        showNotification(
-          getErrorMessage(err) ||
-            t('plugins.delete_failed', { defaultValue: 'Failed to delete plugin.' }),
-          'error'
-        );
+        if (isRestartRequiredError(err)) {
+          showNotification(
+            t('plugins.delete_restart', {
+              defaultValue:
+                'Plugin "{{id}}" is currently loaded. Restart the server to remove it.',
+              id: plugin.id,
+            }),
+            'warning'
+          );
+        } else {
+          showNotification(
+            getErrorMessage(err) ||
+              t('plugins.delete_failed', { defaultValue: 'Failed to delete plugin.' }),
+            'error'
+          );
+        }
       } finally {
         setDeletingId(null);
       }

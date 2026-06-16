@@ -95,6 +95,16 @@ const asInstallResult = (data: unknown): PluginInstallResult => {
   };
 };
 
+/**
+ * True when an install/delete failure means the target plugin is currently loaded
+ * and the server must be restarted to apply the change. The backend signals this
+ * with HTTP 409 and `restart_required: true`; a successful 200 never carries it.
+ */
+export const isRestartRequiredError = (error: unknown): boolean => {
+  if (!isRecord(error) || error.status !== 409) return false;
+  return isRecord(error.data) && error.data.restart_required === true;
+};
+
 export const pluginStoreApi = {
   async list(): Promise<PluginStoreListResponse> {
     return asListResponse(await apiClient.get('/plugin-store'));

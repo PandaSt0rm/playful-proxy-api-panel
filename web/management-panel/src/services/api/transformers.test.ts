@@ -833,6 +833,12 @@ describe('normalizeConfigResponse', () => {
     expect(result.disableImageGeneration).toBe('chat');
   });
 
+  it('keeps the passthrough mode for disable image generation', () => {
+    const result = normalizeConfigResponse({ 'disable-image-generation': 'passthrough' });
+
+    expect(result.disableImageGeneration).toBe('passthrough');
+  });
+
   it('leaves disable image generation unset for an unrelated string', () => {
     const result = normalizeConfigResponse({ 'disable-image-generation': 'maybe' });
 
