@@ -165,6 +165,8 @@
       "update": "Update",
       "installed": "Installed",
       "installed_version": "v{{version}} installed",
+      "auth_required": "auth required",
+      "auth_configured": "auth configured",
       "install_success": "Plugin \"{{id}}\" installed.",
       "install_restart": "Plugin \"{{id}}\" is currently loaded. Restart the server to apply the update.",
       "install_failed": "Failed to install plugin.",

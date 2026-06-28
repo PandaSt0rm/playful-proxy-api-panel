@@ -21,10 +21,17 @@ import (
 )
 
 func resetAntigravityCreditsRetryState() {
-	antigravityCreditsFailureByAuth = sync.Map{}
-	antigravityShortCooldownByAuth = sync.Map{}
-	antigravityCreditsBalanceByAuth = sync.Map{}
-	antigravityCreditsHintRefreshByID = sync.Map{}
+	clearSyncMap(&antigravityCreditsFailureByAuth)
+	clearSyncMap(&antigravityShortCooldownByAuth)
+	clearSyncMap(&antigravityCreditsBalanceByAuth)
+	clearSyncMap(&antigravityCreditsHintRefreshByID)
+}
+
+func clearSyncMap(m *sync.Map) {
+	m.Range(func(key, _ any) bool {
+		m.Delete(key)
+		return true
+	})
 }
 
 type fakeAntigravityKVClient struct {
@@ -547,7 +554,7 @@ func TestAntigravityShortCooldownRequiredHomeKV(t *testing.T) {
 	if client.setCount != 1 || client.lastSetTTL != duration+5*time.Second {
 		t.Fatalf("KVSet count/ttl = %d/%v, want 1/%v", client.setCount, client.lastSetTTL, duration+5*time.Second)
 	}
-	antigravityShortCooldownByAuth = sync.Map{}
+	clearSyncMap(&antigravityShortCooldownByAuth)
 	inCooldown, remaining, errRead := antigravityIsInShortCooldownRequired(context.Background(), auth, "claude-sonnet-4-5", now.Add(5*time.Second))
 	if errRead != nil {
 		t.Fatalf("antigravityIsInShortCooldownRequired() error = %v", errRead)

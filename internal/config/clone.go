@@ -14,7 +14,9 @@ func (cfg *Config) CloneForRuntime() *Config {
 		return nil
 	}
 	cloned := cloneRuntimeValue(reflect.ValueOf(cfg))
-	return cloned.Interface().(*Config)
+	out := cloned.Interface().(*Config)
+	out.legacyMigrationPending = cfg.legacyMigrationPending
+	return out
 }
 
 func cloneRuntimeValue(v reflect.Value) reflect.Value {
@@ -45,7 +47,7 @@ func cloneRuntimeValue(v reflect.Value) reflect.Value {
 		for i := 0; i < v.NumField(); i++ {
 			dst := out.Field(i)
 			if !dst.CanSet() {
-				return v
+				continue
 			}
 			dst.Set(cloneRuntimeValue(v.Field(i)))
 		}

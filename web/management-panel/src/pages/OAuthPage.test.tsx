@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderWithRouter, screen, waitFor, userEvent } from '@/test/utils';
+import { fireEvent, renderWithRouter, screen, waitFor, userEvent } from '@/test/utils';
 import { useNotificationStore } from '@/stores';
 import type { OAuthProvider } from '@/services/api/oauth';
 import type { VertexImportResponse } from '@/services/api/vertex';
@@ -18,8 +18,7 @@ const submitCallback = vi.fn();
 
 vi.mock('@/services/api/oauth', () => ({
   oauthApi: {
-    startAuth: (provider: OAuthProvider, options?: { projectId?: string }) =>
-      startAuth(provider, options),
+    startAuth: (provider: OAuthProvider) => startAuth(provider),
     getAuthStatus: (state: string) => getAuthStatus(state),
     submitCallback: (provider: OAuthProvider, redirectUrl: string, state?: string) =>
       submitCallback(provider, redirectUrl, state),
@@ -53,6 +52,7 @@ const renderPage = () => renderWithRouter(<OAuthPage />);
 // The Codex card is the first provider; use it as the canonical single-provider
 // case so we are not coupled to other providers' positions.
 const getCodexLoginButton = () => screen.getByRole('button', { name: 'Start Codex Login' });
+const clickCodexLoginButton = () => fireEvent.click(getCodexLoginButton());
 
 beforeEach(() => {
   startAuth.mockReset();
@@ -83,12 +83,12 @@ describe('OAuthPage initial render', () => {
     expect(screen.getByRole('button', { name: 'Import Vertex Credential' })).toBeInTheDocument();
   });
 
-  it('shows the Gemini project id input only for the gemini-cli provider', () => {
+  it('does not render the removed Gemini CLI OAuth login', () => {
     renderPage();
 
     expect(
-      screen.getByPlaceholderText('Leave blank to auto-select first available project')
-    ).toBeInTheDocument();
+      screen.queryByRole('button', { name: 'Start Gemini CLI Login' })
+    ).not.toBeInTheDocument();
   });
 
   it('does not show any authorization URL box before a login attempt', () => {
@@ -100,34 +100,31 @@ describe('OAuthPage initial render', () => {
 
 describe('OAuthPage startAuth happy path', () => {
   it('calls startAuth with the provider id when the login button is clicked', async () => {
-    const user = userEvent.setup();
     startAuth.mockResolvedValue({ url: 'https://auth.example/codex', state: 'st-1' });
     getAuthStatus.mockResolvedValue({ status: 'wait' });
     renderPage();
 
-    await user.click(getCodexLoginButton());
+    clickCodexLoginButton();
 
-    await waitFor(() => expect(startAuth).toHaveBeenCalledWith('codex', undefined));
+    await waitFor(() => expect(startAuth).toHaveBeenCalledWith('codex'));
   });
 
   it('renders the returned authorization URL after a successful start', async () => {
-    const user = userEvent.setup();
     startAuth.mockResolvedValue({ url: 'https://auth.example/codex', state: 'st-1' });
     getAuthStatus.mockResolvedValue({ status: 'wait' });
     renderPage();
 
-    await user.click(getCodexLoginButton());
+    clickCodexLoginButton();
 
     expect(await screen.findByText('https://auth.example/codex')).toBeInTheDocument();
   });
 
   it('shows the waiting status badge after a successful start', async () => {
-    const user = userEvent.setup();
     startAuth.mockResolvedValue({ url: 'https://auth.example/codex', state: 'st-1' });
     getAuthStatus.mockResolvedValue({ status: 'wait' });
     renderPage();
 
-    await user.click(getCodexLoginButton());
+    clickCodexLoginButton();
 
     expect(await screen.findByText('Waiting for authentication...')).toBeInTheDocument();
   });
@@ -135,11 +132,10 @@ describe('OAuthPage startAuth happy path', () => {
 
 describe('OAuthPage startAuth error paths', () => {
   it('shows an error badge and notification when startAuth rejects', async () => {
-    const user = userEvent.setup();
     startAuth.mockRejectedValue(new Error('network down'));
     renderPage();
 
-    await user.click(getCodexLoginButton());
+    clickCodexLoginButton();
 
     expect(await screen.findByText('Authentication failed: network down')).toBeInTheDocument();
     await waitFor(() =>
@@ -150,11 +146,10 @@ describe('OAuthPage startAuth error paths', () => {
   });
 
   it('reports a missing-state error when startAuth resolves without a state', async () => {
-    const user = userEvent.setup();
     startAuth.mockResolvedValue({ url: 'https://auth.example/codex' });
     renderPage();
 
-    await user.click(getCodexLoginButton());
+    clickCodexLoginButton();
 
     expect(
       await screen.findByText(
@@ -164,67 +159,17 @@ describe('OAuthPage startAuth error paths', () => {
   });
 
   it('does not start polling when startAuth resolves without a state', async () => {
-    const user = userEvent.setup();
     startAuth.mockResolvedValue({ url: 'https://auth.example/codex' });
     renderPage();
 
-    await user.click(getCodexLoginButton());
+    clickCodexLoginButton();
 
     await waitFor(() =>
       expect(
-        screen.getByText(
-          'Authentication failed: Unable to retrieve authentication state parameter'
-        )
+        screen.getByText('Authentication failed: Unable to retrieve authentication state parameter')
       ).toBeInTheDocument()
     );
     expect(getAuthStatus).not.toHaveBeenCalled();
-  });
-});
-
-describe('OAuthPage gemini-cli project id handling', () => {
-  it('passes the trimmed project id when one is entered', async () => {
-    const user = userEvent.setup();
-    startAuth.mockResolvedValue({ url: 'https://auth.example/gemini', state: 'st-g' });
-    getAuthStatus.mockResolvedValue({ status: 'wait' });
-    renderPage();
-
-    await user.type(
-      screen.getByPlaceholderText('Leave blank to auto-select first available project'),
-      'my-project'
-    );
-    await user.click(screen.getByRole('button', { name: 'Start Gemini CLI Login' }));
-
-    await waitFor(() =>
-      expect(startAuth).toHaveBeenCalledWith('gemini-cli', { projectId: 'my-project' })
-    );
-  });
-
-  it('uppercases the project id when the user enters "all"', async () => {
-    const user = userEvent.setup();
-    startAuth.mockResolvedValue({ url: 'https://auth.example/gemini', state: 'st-g' });
-    getAuthStatus.mockResolvedValue({ status: 'wait' });
-    renderPage();
-
-    await user.type(
-      screen.getByPlaceholderText('Leave blank to auto-select first available project'),
-      'all'
-    );
-    await user.click(screen.getByRole('button', { name: 'Start Gemini CLI Login' }));
-
-    await waitFor(() => expect(startAuth).toHaveBeenCalledWith('gemini-cli', { projectId: 'ALL' }));
-  });
-
-  it('omits the project id when the gemini-cli field is left blank', async () => {
-    const user = userEvent.setup();
-    startAuth.mockResolvedValue({ url: 'https://auth.example/gemini', state: 'st-g' });
-    getAuthStatus.mockResolvedValue({ status: 'wait' });
-    renderPage();
-
-    await user.click(screen.getByRole('button', { name: 'Start Gemini CLI Login' }));
-
-    await waitFor(() =>
-      expect(startAuth).toHaveBeenCalledWith('gemini-cli', { projectId: undefined })
-    );
   });
 });
 
@@ -278,7 +223,7 @@ describe('OAuthPage copy link', () => {
     copyToClipboard.mockResolvedValue(true);
     renderPage();
 
-    await user.click(getCodexLoginButton());
+    clickCodexLoginButton();
     await user.click(await screen.findByRole('button', { name: 'Copy Link' }));
 
     await waitFor(() =>
@@ -295,7 +240,7 @@ describe('OAuthPage copy link', () => {
     copyToClipboard.mockResolvedValue(false);
     renderPage();
 
-    await user.click(getCodexLoginButton());
+    clickCodexLoginButton();
     await user.click(await screen.findByRole('button', { name: 'Copy Link' }));
 
     await waitFor(() =>
@@ -307,10 +252,10 @@ describe('OAuthPage copy link', () => {
 });
 
 describe('OAuthPage callback submission', () => {
-  const startCodexWaiting = async (user: ReturnType<typeof userEvent.setup>) => {
+  const startCodexWaiting = async () => {
     startAuth.mockResolvedValue({ url: 'https://auth.example/codex', state: 'st-1' });
     getAuthStatus.mockResolvedValue({ status: 'wait' });
-    await user.click(getCodexLoginButton());
+    clickCodexLoginButton();
     await screen.findByText('https://auth.example/codex');
   };
 
@@ -318,7 +263,7 @@ describe('OAuthPage callback submission', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await startCodexWaiting(user);
+    await startCodexWaiting();
     await user.click(screen.getByRole('button', { name: 'Submit Callback' }));
 
     expect(submitCallback).not.toHaveBeenCalled();
@@ -334,11 +279,8 @@ describe('OAuthPage callback submission', () => {
     submitCallback.mockResolvedValue({ status: 'ok' });
     renderPage();
 
-    await startCodexWaiting(user);
-    await user.type(
-      screen.getByPlaceholderText(/paste/i),
-      'https://callback.example/?code=abc'
-    );
+    await startCodexWaiting();
+    await user.type(screen.getByPlaceholderText(/paste/i), 'https://callback.example/?code=abc');
     await user.click(screen.getByRole('button', { name: 'Submit Callback' }));
 
     await waitFor(() =>
@@ -355,7 +297,7 @@ describe('OAuthPage callback submission', () => {
     submitCallback.mockResolvedValue({ status: 'ok' });
     renderPage();
 
-    await startCodexWaiting(user);
+    await startCodexWaiting();
     await user.type(screen.getByPlaceholderText(/paste/i), 'code-123');
     await user.click(screen.getByRole('button', { name: 'Submit Callback' }));
 
@@ -369,7 +311,7 @@ describe('OAuthPage callback submission', () => {
     submitCallback.mockRejectedValue({ status: 404 });
     renderPage();
 
-    await startCodexWaiting(user);
+    await startCodexWaiting();
     await user.type(screen.getByPlaceholderText(/paste/i), 'code-123');
     await user.click(screen.getByRole('button', { name: 'Submit Callback' }));
 

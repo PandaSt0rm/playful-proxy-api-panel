@@ -26,6 +26,9 @@ const isSafeHttpUrl = (value: string): boolean => {
   }
 };
 
+const installTypeLabel = (installType: string): string =>
+  installType.split('-').filter(Boolean).join(' ');
+
 interface PluginStoreProps {
   /** Called after a successful install so the parent can refresh its installed-plugin list. */
   onChanged?: () => void;
@@ -65,7 +68,7 @@ export function PluginStore({ onChanged }: PluginStoreProps) {
       if (installingId) return;
       setInstallingId(entry.store_id || entry.id);
       try {
-        await pluginStoreApi.install(entry.id, entry.source_id);
+        await pluginStoreApi.install(entry.id, entry.source_id, entry.version || undefined);
         showNotification(
           t('plugins.store.install_success', {
             defaultValue: 'Plugin "{{id}}" installed.',
@@ -218,7 +221,9 @@ export function PluginStore({ onChanged }: PluginStoreProps) {
           })}
         />
       ) : filtered.length === 0 ? (
-        <EmptyState title={t('plugins.store.no_matches', { defaultValue: 'No matching plugins' })} />
+        <EmptyState
+          title={t('plugins.store.no_matches', { defaultValue: 'No matching plugins' })}
+        />
       ) : (
         <div className={styles.list} data-testid="plugin-store-list">
           {filtered.map((entry) => (
@@ -234,7 +239,9 @@ export function PluginStore({ onChanged }: PluginStoreProps) {
                 <div className={styles.identityText}>
                   <div className={styles.name}>
                     {entry.name || entry.id}
-                    {entry.version ? <span className={styles.version}>v{entry.version}</span> : null}
+                    {entry.version ? (
+                      <span className={styles.version}>v{entry.version}</span>
+                    ) : null}
                   </div>
                   {entry.description ? (
                     <div className={styles.description}>{entry.description}</div>
@@ -242,6 +249,22 @@ export function PluginStore({ onChanged }: PluginStoreProps) {
                   <div className={styles.meta}>
                     <code>{entry.id}</code>
                     {entry.source_name ? <span>{entry.source_name}</span> : null}
+                    {entry.install_type ? (
+                      <span className={styles.installType}>
+                        {installTypeLabel(entry.install_type)}
+                      </span>
+                    ) : null}
+                    {entry.auth_required ? (
+                      <span
+                        className={
+                          entry.auth_configured ? styles.authConfigured : styles.authRequired
+                        }
+                      >
+                        {entry.auth_configured
+                          ? t('plugins.store.auth_configured', { defaultValue: 'auth configured' })
+                          : t('plugins.store.auth_required', { defaultValue: 'auth required' })}
+                      </span>
+                    ) : null}
                     {entry.author ? <span>{entry.author}</span> : null}
                     {entry.tags.map((tag) => (
                       <span key={tag} className={styles.tag}>

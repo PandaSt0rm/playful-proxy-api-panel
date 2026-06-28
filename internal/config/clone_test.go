@@ -49,6 +49,9 @@ func TestCloneForRuntimeDeepCopiesConfig(t *testing.T) {
 	if got := clone.Payload.Default[0].Params["object"].(map[string]any)["key"]; got != "value" {
 		t.Fatalf("clone payload object key = %#v, want value", got)
 	}
+	if !clone.legacyMigrationPending {
+		t.Fatal("clone legacyMigrationPending = false, want true")
+	}
 
 	clone.APIKeys[0] = "clone-client-key"
 	clone.OAuthExcludedModels["codex"][0] = "clone-hidden-model"
@@ -93,6 +96,7 @@ func sampleCloneRuntimeConfig() *Config {
 	cacheUserID := true
 
 	return &Config{
+		legacyMigrationPending: true,
 		SDKConfig: SDKConfig{
 			APIKeys: []string{"client-key"},
 			Streaming: StreamingConfig{

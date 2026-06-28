@@ -20,7 +20,7 @@ import (
 
 func TestGeminiExecutorRecordsSuccessfulZeroUsage(t *testing.T) {
 	model := fmt.Sprintf("gemini-2.5-flash-zero-usage-%d", time.Now().UnixNano())
-	source := fmt.Sprintf("zero-usage-%d@example.com", time.Now().UnixNano())
+	source := fmt.Sprintf("zero-usage-key-%d", time.Now().UnixNano())
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		wantPath := "/v1beta/models/" + model + ":generateContent"
@@ -36,11 +36,8 @@ func TestGeminiExecutorRecordsSuccessfulZeroUsage(t *testing.T) {
 	auth := &cliproxyauth.Auth{
 		Provider: "gemini",
 		Attributes: map[string]string{
-			"api_key":  "test-upstream-key",
+			"api_key":  source,
 			"base_url": server.URL,
-		},
-		Metadata: map[string]any{
-			"email": source,
 		},
 	}
 

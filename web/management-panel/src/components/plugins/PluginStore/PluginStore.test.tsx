@@ -31,6 +31,9 @@ const storeEntry = (overrides: Partial<PluginStoreEntry> = {}): PluginStoreEntry
   author: 'Author',
   version: '1.2.0',
   repository: '',
+  install_type: 'github-release',
+  auth_required: false,
+  auth_configured: false,
   logo: '',
   homepage: '',
   license: '',
@@ -65,6 +68,7 @@ const installResult = (overrides: Partial<PluginInstallResult> = {}): PluginInst
   source_url: 'https://example.com/registry.json',
   id: 'example',
   version: '1.2.0',
+  install_type: 'github-release',
   path: 'plugins/example.so',
   plugins_enabled: true,
   restart_required: false,
@@ -95,7 +99,7 @@ describe('PluginStore', () => {
     await user.click(await screen.findByRole('button', { name: 'Install' }));
 
     await waitFor(() => {
-      expect(mockedInstall).toHaveBeenCalledWith('example', 'official');
+      expect(mockedInstall).toHaveBeenCalledWith('example', 'official', '1.2.0');
     });
     await waitFor(() => {
       expect(onChanged).toHaveBeenCalled();
@@ -199,5 +203,22 @@ describe('PluginStore', () => {
     await screen.findByText('Example Plugin');
 
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
+
+  it('shows direct install and auth status metadata', async () => {
+    mockedList.mockResolvedValue(
+      storeResponse([
+        storeEntry({
+          install_type: 'direct',
+          auth_required: true,
+          auth_configured: false,
+        }),
+      ])
+    );
+
+    renderWithRouter(<PluginStore />);
+
+    expect(await screen.findByText('direct')).toBeInTheDocument();
+    expect(screen.getByText('auth required')).toBeInTheDocument();
   });
 });

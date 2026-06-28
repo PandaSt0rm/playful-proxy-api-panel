@@ -25,6 +25,9 @@ export interface PluginStoreEntry {
   author: string;
   version: string;
   repository: string;
+  install_type: string;
+  auth_required: boolean;
+  auth_configured: boolean;
   logo: string;
   homepage: string;
   license: string;
@@ -54,6 +57,7 @@ export interface PluginInstallResult {
   source_url: string;
   id: string;
   version: string;
+  install_type: string;
   path: string;
   plugins_enabled: boolean;
   restart_required: boolean;

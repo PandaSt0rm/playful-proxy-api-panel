@@ -43,6 +43,9 @@ const asEntry = (value: unknown): PluginStoreEntry | null => {
     author: asString(value.author),
     version: asString(value.version),
     repository: asString(value.repository),
+    install_type: asString(value.install_type),
+    auth_required: Boolean(value.auth_required),
+    auth_configured: Boolean(value.auth_configured),
     logo: asString(value.logo),
     homepage: asString(value.homepage),
     license: asString(value.license),
@@ -64,9 +67,7 @@ const asListResponse = (data: unknown): PluginStoreListResponse => {
     ? value.sources.map(asSource).filter((s): s is PluginStoreSource => s !== null)
     : [];
   const sourceErrors = Array.isArray(value.source_errors)
-    ? value.source_errors
-        .map(asSourceError)
-        .filter((e): e is PluginStoreSourceError => e !== null)
+    ? value.source_errors.map(asSourceError).filter((e): e is PluginStoreSourceError => e !== null)
     : [];
   const plugins = Array.isArray(value.plugins)
     ? value.plugins.map(asEntry).filter((p): p is PluginStoreEntry => p !== null)
@@ -89,6 +90,7 @@ const asInstallResult = (data: unknown): PluginInstallResult => {
     source_url: asString(value.source_url),
     id: asString(value.id),
     version: asString(value.version),
+    install_type: asString(value.install_type),
     path: asString(value.path),
     plugins_enabled: Boolean(value.plugins_enabled),
     restart_required: Boolean(value.restart_required),
@@ -110,10 +112,16 @@ export const pluginStoreApi = {
     return asListResponse(await apiClient.get('/plugin-store'));
   },
 
-  async install(id: string, sourceId?: string): Promise<PluginInstallResult> {
-    const query = sourceId ? `?source=${encodeURIComponent(sourceId)}` : '';
+  async install(id: string, sourceId?: string, version?: string): Promise<PluginInstallResult> {
+    const params = new URLSearchParams();
+    if (sourceId) params.set('source', sourceId);
+    const requestedVersion = version?.trim();
+    const query = params.toString() ? `?${params.toString()}` : '';
     return asInstallResult(
-      await apiClient.post(`/plugin-store/${encodeURIComponent(id)}/install${query}`)
+      await apiClient.post(
+        `/plugin-store/${encodeURIComponent(id)}/install${query}`,
+        requestedVersion ? { version: requestedVersion } : undefined
+      )
     );
   },
 };

@@ -152,6 +152,31 @@
   color: var(--text-secondary);
 }
 
+.installType,
+.authConfigured,
+.authRequired {
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.installType {
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  color: var(--primary-color);
+}
+
+.authConfigured {
+  background: color-mix(in srgb, var(--success-color, #22a06b) 12%, transparent);
+  color: var(--success-color, #22a06b);
+}
+
+.authRequired {
+  background: color-mix(in srgb, var(--warning-color, #d9822b) 14%, transparent);
+  color: var(--warning-color, #d9822b);
+}
+
 .actions {
   display: flex;
   align-items: center;

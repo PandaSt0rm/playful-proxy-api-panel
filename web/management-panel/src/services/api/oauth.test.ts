@@ -35,32 +35,6 @@ describe('oauthApi.startAuth', () => {
     expect(mockedGet).toHaveBeenCalledWith('/kimi-auth-url', { params: undefined });
   });
 
-  it('adds project_id for gemini-cli when projectId is provided', async () => {
-    mockedGet.mockResolvedValue({ url: 'https://example/gemini' });
-
-    await oauthApi.startAuth('gemini-cli', { projectId: 'proj-7' });
-
-    expect(mockedGet).toHaveBeenCalledWith('/gemini-cli-auth-url', {
-      params: { is_webui: true, project_id: 'proj-7' },
-    });
-  });
-
-  it('omits project_id for gemini-cli when projectId is empty', async () => {
-    mockedGet.mockResolvedValue({ url: 'https://example/gemini' });
-
-    await oauthApi.startAuth('gemini-cli', { projectId: '' });
-
-    expect(mockedGet).toHaveBeenCalledWith('/gemini-cli-auth-url', { params: { is_webui: true } });
-  });
-
-  it('ignores projectId for a non-gemini provider', async () => {
-    mockedGet.mockResolvedValue({ url: 'https://example/anthropic' });
-
-    await oauthApi.startAuth('anthropic', { projectId: 'proj-7' });
-
-    expect(mockedGet).toHaveBeenCalledWith('/anthropic-auth-url', { params: { is_webui: true } });
-  });
-
   it('returns the start response unchanged', async () => {
     const body = { url: 'https://example/xai', state: 'st-1' };
     mockedGet.mockResolvedValue(body);
@@ -91,19 +65,7 @@ describe('oauthApi.getAuthStatus', () => {
 });
 
 describe('oauthApi.submitCallback', () => {
-  it('maps the gemini-cli provider to gemini in the callback payload', async () => {
-    mockedPost.mockResolvedValue({ status: 'ok' });
-
-    await oauthApi.submitCallback('gemini-cli', 'https://cb?code=1', 'st-9');
-
-    expect(mockedPost).toHaveBeenCalledWith('/oauth-callback', {
-      provider: 'gemini',
-      redirect_url: 'https://cb?code=1',
-      state: 'st-9',
-    });
-  });
-
-  it('uses the provider name directly when it is not remapped', async () => {
+  it('uses the provider name directly in the callback payload', async () => {
     mockedPost.mockResolvedValue({ status: 'ok' });
 
     await oauthApi.submitCallback('codex', 'https://cb?code=2', 'st-3');

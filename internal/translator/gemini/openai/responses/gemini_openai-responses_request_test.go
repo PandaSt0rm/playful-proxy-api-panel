@@ -38,6 +38,30 @@ func TestConvertOpenAIResponsesRequestToGemini_StripsTrailingAssistantPrefill(t 
 	}
 }
 
+func TestConvertOpenAIResponsesRequestToGemini_KeepsTrailingFunctionCallTurn(t *testing.T) {
+	inputJSON := `{
+		"model": "gpt-5.4",
+		"input": [
+			{
+				"type": "function_call",
+				"call_id": "call_1",
+				"name": "lookup",
+				"arguments": "{\"query\":\"latest\"}"
+			}
+		]
+	}`
+
+	result := ConvertOpenAIResponsesRequestToGemini("gemini-3.1-pro-high", []byte(inputJSON), false)
+	functionCall := gjson.GetBytes(result, "contents.0.parts.0.functionCall")
+
+	if !functionCall.Exists() {
+		t.Fatalf("trailing functionCall was stripped. Output: %s", result)
+	}
+	if got := functionCall.Get("name").String(); got != "lookup" {
+		t.Fatalf("functionCall.name = %q, want lookup. Output: %s", got, result)
+	}
+}
+
 func TestConvertOpenAIResponsesRequestToGemini_TextFormatJSONSchema(t *testing.T) {
 	inputJSON := `{
 		"model": "gemini-flash-lite",
