@@ -11,6 +11,7 @@ import iconClaude from '@/assets/icons/claude.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
 import iconGlm from '@/assets/icons/glm.svg';
 import iconOpenRouter from '@/assets/icons/openrouter.svg';
+import iconOllama from '@/assets/icons/ollama.svg';
 import styles from './ProviderNav.module.scss';
 
 export type ProviderId =
@@ -20,6 +21,7 @@ export type ProviderId =
   | 'vertex'
   | 'zai'
   | 'openrouter'
+  | 'ollama'
   | 'openai';
 
 interface ProviderNavItem {
@@ -35,6 +37,7 @@ const PROVIDERS: ProviderNavItem[] = [
   { id: 'vertex', label: 'Vertex', getIcon: () => iconVertex },
   { id: 'zai', label: 'Z.AI', getIcon: () => iconGlm },
   { id: 'openrouter', label: 'OpenRouter', getIcon: () => iconOpenRouter },
+  { id: 'ollama', label: 'Ollama Cloud', getIcon: () => iconOllama },
   { id: 'openai', label: 'OpenAI', getIcon: (theme) => (theme === 'dark' ? iconOpenaiDark : iconOpenaiLight) },
 ];
 
@@ -57,6 +60,7 @@ export function ProviderNav() {
     vertex: null,
     zai: null,
     openrouter: null,
+    ollama: null,
     openai: null,
   });
   const [indicatorRect, setIndicatorRect] = useState<{

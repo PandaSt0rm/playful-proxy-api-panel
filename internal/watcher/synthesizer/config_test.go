@@ -441,6 +441,54 @@ func TestConfigSynthesizer_OpenAICompat_UsesNamespacedProviderKey(t *testing.T) 
 	}
 }
 
+func TestConfigSynthesizer_OpenAICompat_OllamaCloud(t *testing.T) {
+	synth := NewConfigSynthesizer()
+	ctx := &SynthesisContext{
+		Config: &config.Config{
+			OpenAICompatibility: []config.OpenAICompatibility{
+				{
+					Name:    "Ollama Cloud",
+					Prefix:  "ollama",
+					BaseURL: "https://ollama.com/v1",
+					Models: []config.OpenAICompatibilityModel{
+						{Name: "gpt-oss:120b"},
+						{Name: "qwen3.5:397b"},
+					},
+					APIKeyEntries: []config.OpenAICompatibilityAPIKey{
+						{APIKey: "ollama-key"},
+					},
+				},
+			},
+		},
+		Now:         time.Now(),
+		IDGenerator: NewStableIDGenerator(),
+	}
+
+	auths, err := synth.Synthesize(ctx)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(auths) != 1 {
+		t.Fatalf("expected 1 auth, got %d", len(auths))
+	}
+	auth := auths[0]
+	if auth.Provider != "openai-compatible-ollama-cloud" {
+		t.Fatalf("provider = %q, want openai-compatible-ollama-cloud", auth.Provider)
+	}
+	if auth.Prefix != "ollama" {
+		t.Fatalf("prefix = %q, want ollama", auth.Prefix)
+	}
+	if auth.Attributes["base_url"] != "https://ollama.com/v1" {
+		t.Fatalf("base_url = %q, want https://ollama.com/v1", auth.Attributes["base_url"])
+	}
+	if auth.Attributes["api_key"] != "ollama-key" {
+		t.Fatalf("api_key = %q, want ollama-key", auth.Attributes["api_key"])
+	}
+	if _, ok := auth.Attributes["models_hash"]; !ok {
+		t.Fatal("expected models_hash in attributes")
+	}
+}
+
 func TestConfigSynthesizer_VertexCompat(t *testing.T) {
 	synth := NewConfigSynthesizer()
 	ctx := &SynthesisContext{

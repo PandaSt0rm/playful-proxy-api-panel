@@ -142,6 +142,12 @@ describe('AiProvidersOpenAIEditPage', () => {
     expect(screen.getByText('Add OpenRouter Provider')).toBeInTheDocument();
   });
 
+  it('shows the Ollama Cloud add-modal title when provider mode is ollama', () => {
+    renderPage(buildContext({ providerMode: 'ollama', hasIndexParam: false }));
+
+    expect(screen.getByText('Add Ollama Cloud Provider')).toBeInTheDocument();
+  });
+
   it('renders the invalid-index hint instead of the form when invalidIndexParam is set', () => {
     renderPage(buildContext({ invalidIndexParam: true }));
 

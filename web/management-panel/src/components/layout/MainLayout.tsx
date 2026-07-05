@@ -426,7 +426,9 @@ export function MainLayout() {
         if (normalizedPath.startsWith('/ai-providers/claude')) return aiProvidersIndex + 0.3;
         if (normalizedPath.startsWith('/ai-providers/vertex')) return aiProvidersIndex + 0.4;
         if (normalizedPath.startsWith('/ai-providers/zai')) return aiProvidersIndex + 0.6;
-        if (normalizedPath.startsWith('/ai-providers/openai')) return aiProvidersIndex + 0.7;
+        if (normalizedPath.startsWith('/ai-providers/openrouter')) return aiProvidersIndex + 0.7;
+        if (normalizedPath.startsWith('/ai-providers/ollama')) return aiProvidersIndex + 0.8;
+        if (normalizedPath.startsWith('/ai-providers/openai')) return aiProvidersIndex + 0.9;
         return aiProvidersIndex + 0.05;
       }
     }

@@ -2,6 +2,7 @@ export { ClaudeSection } from './ClaudeSection';
 export { CodexSection } from './CodexSection';
 export { GeminiSection } from './GeminiSection';
 export { OpenAISection } from './OpenAISection';
+export { OllamaCloudSection } from './OllamaCloudSection';
 export { OpenRouterSection } from './OpenRouterSection';
 export { VertexSection } from './VertexSection';
 export { ZaiSection } from './ZaiSection';

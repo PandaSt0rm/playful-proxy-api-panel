@@ -21,6 +21,10 @@ import {
   buildDefaultOpenRouterProvider,
   isOpenRouterOpenAIProvider,
 } from '@/utils/openrouterProvider';
+import {
+  buildDefaultOllamaCloudProvider,
+  isOllamaCloudOpenAIProvider,
+} from '@/utils/ollamaCloudProvider';
 import type { ModelEntry, OpenAIFormState } from '@/components/providers/types';
 import type { KeyTestStatus, OpenAIEditBaseline } from '@/stores/useOpenAIEditDraftStore';
 import {
@@ -30,7 +34,7 @@ import {
 } from '@/utils/upstreamConcurrency';
 
 type LocationState = { fromAiProviders?: boolean } | null;
-export type OpenAIProviderEditorMode = 'openai' | 'zai' | 'openrouter';
+export type OpenAIProviderEditorMode = 'openai' | 'zai' | 'openrouter' | 'ollama';
 
 export type OpenAIEditOutletContext = {
   providerMode: OpenAIProviderEditorMode;
@@ -79,6 +83,9 @@ const buildEmptyForm = (providerMode: OpenAIProviderEditorMode): OpenAIFormState
   }
   if (providerMode === 'openrouter') {
     return providerToForm(buildDefaultOpenRouterProvider());
+  }
+  if (providerMode === 'ollama') {
+    return providerToForm(buildDefaultOllamaCloudProvider());
   }
   return {
     name: '',
@@ -312,6 +319,10 @@ export function AiProvidersOpenAIEditLayout({
     }
     if (isOpenRouterOpenAIProvider(initialData)) {
       navigate(`/ai-providers/openrouter/${editIndex}`, { replace: true, state: location.state });
+      return;
+    }
+    if (isOllamaCloudOpenAIProvider(initialData)) {
+      navigate(`/ai-providers/ollama/${editIndex}`, { replace: true, state: location.state });
     }
   }, [editIndex, initialData, location.state, navigate, providerListReady, providerMode]);
 

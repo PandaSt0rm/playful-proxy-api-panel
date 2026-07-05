@@ -51,6 +51,7 @@ vi.mock('@/components/providers', () => {
     VertexSection: makeStub('vertex-section'),
     ZaiSection: makeStub('zai-section'),
     OpenRouterSection: makeStub('openrouter-section'),
+    OllamaCloudSection: makeStub('ollama-section'),
     OpenAISection: makeStub('openai-section'),
     ProviderNav: () => <nav data-testid="provider-nav" />,
     useProviderRecentRequests: () => ({
@@ -128,6 +129,7 @@ describe('AiProvidersPage', () => {
     expect(screen.getByTestId('vertex-section')).toBeInTheDocument();
     expect(screen.getByTestId('zai-section')).toBeInTheDocument();
     expect(screen.getByTestId('openrouter-section')).toBeInTheDocument();
+    expect(screen.getByTestId('ollama-section')).toBeInTheDocument();
     expect(screen.getByTestId('openai-section')).toBeInTheDocument();
     expect(screen.getByTestId('provider-nav')).toBeInTheDocument();
   });
@@ -180,6 +182,19 @@ describe('AiProvidersPage', () => {
     await user.click(screen.getByRole('button', { name: 'add-openrouter-section' }));
 
     expect(navigateSpy).toHaveBeenCalledWith('/ai-providers/openrouter/new', {
+      state: { fromAiProviders: true },
+    });
+  });
+
+  it('navigates to the ollama add route from the Ollama Cloud section add button', async () => {
+    const user = userEvent.setup();
+    seedValidCache(baseConfig);
+    renderWithRouter(<AiProvidersPage />);
+    await screen.findByTestId('ollama-section');
+
+    await user.click(screen.getByRole('button', { name: 'add-ollama-section' }));
+
+    expect(navigateSpy).toHaveBeenCalledWith('/ai-providers/ollama/new', {
       state: { fromAiProviders: true },
     });
   });

@@ -50,12 +50,15 @@ describe('fetchModelsProxyPreference.read', () => {
 
   it('namespaces storage keys per provider', () => {
     localStorage.setItem('ppap.fetchModelsUseKeyProxy.openai', 'true');
+    localStorage.setItem('ppap.fetchModelsUseKeyProxy.ollama', 'true');
 
     const openaiResult = fetchModelsProxyPreference.read('openai', false);
     const zaiResult = fetchModelsProxyPreference.read('zai', false);
+    const ollamaResult = fetchModelsProxyPreference.read('ollama', false);
 
     expect(openaiResult).toBe(true);
     expect(zaiResult).toBe(false);
+    expect(ollamaResult).toBe(true);
   });
 
   it('returns the fallback when localStorage.getItem throws', () => {

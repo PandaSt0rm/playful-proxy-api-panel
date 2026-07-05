@@ -6,6 +6,7 @@ import {
   CodexSection,
   GeminiSection,
   OpenAISection,
+  OllamaCloudSection,
   OpenRouterSection,
   VertexSection,
   ZaiSection,
@@ -23,7 +24,10 @@ import { useAuthStore, useConfigStore, useNotificationStore, useThemeStore } fro
 import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 import { isZaiOpenAIProvider } from '@/utils/zaiProvider';
 import { isOpenRouterOpenAIProvider } from '@/utils/openrouterProvider';
+import { isOllamaCloudOpenAIProvider } from '@/utils/ollamaCloudProvider';
 import styles from './AiProvidersPage.module.scss';
+
+type OpenAIProviderKind = 'openai' | 'zai' | 'openrouter' | 'ollama';
 
 export function AiProvidersPage() {
   const { t } = useTranslation();
@@ -88,9 +92,24 @@ export function AiProvidersPage() {
     [openaiProviders]
   );
 
+  const ollamaCloudProviders = useMemo(
+    () =>
+      openaiProviders
+        .map((config, originalIndex) => ({ config, originalIndex }))
+        .filter(
+          ({ config }) =>
+            !isZaiOpenAIProvider(config) &&
+            !isOpenRouterOpenAIProvider(config) &&
+            isOllamaCloudOpenAIProvider(config)
+        ),
+    [openaiProviders]
+  );
+
   const isGenericOpenAIProvider = useCallback(
     (provider: OpenAIProviderConfig) =>
-      !isZaiOpenAIProvider(provider) && !isOpenRouterOpenAIProvider(provider),
+      !isZaiOpenAIProvider(provider) &&
+      !isOpenRouterOpenAIProvider(provider) &&
+      !isOllamaCloudOpenAIProvider(provider),
     []
   );
 
@@ -402,16 +421,14 @@ export function AiProvidersPage() {
     });
   };
 
-  const deleteOpenai = async (
-    index: number,
-    providerKind: 'openai' | 'zai' | 'openrouter' = 'openai'
-  ) => {
+  const deleteOpenai = async (index: number, providerKind: OpenAIProviderKind = 'openai') => {
     const entry = openaiProviders[index];
     if (!entry) return;
-    const deleteTitleDefaults: Record<typeof providerKind, string> = {
+    const deleteTitleDefaults: Record<OpenAIProviderKind, string> = {
       openai: 'Delete OpenAI Provider',
       zai: 'Delete Z.AI Provider',
       openrouter: 'Delete OpenRouter Provider',
+      ollama: 'Delete Ollama Cloud Provider',
     };
     showConfirmation({
       title: t(`ai_providers.${providerKind}_delete_title`, {
@@ -528,6 +545,21 @@ export function AiProvidersPage() {
             onAdd={() => openEditor('/ai-providers/openrouter/new')}
             onEdit={(index) => openEditor(`/ai-providers/openrouter/${index}`)}
             onDelete={(index) => void deleteOpenai(index, 'openrouter')}
+            onToggle={(index, enabled) => void setOpenAIProviderEnabled(index, enabled)}
+          />
+        </div>
+
+        <div id="provider-ollama">
+          <OllamaCloudSection
+            providers={ollamaCloudProviders}
+            upstreamConcurrency={config?.upstreamConcurrency}
+            usageByProvider={usageByProvider}
+            loading={loading}
+            disableControls={disableControls}
+            isSwitching={isSwitching}
+            onAdd={() => openEditor('/ai-providers/ollama/new')}
+            onEdit={(index) => openEditor(`/ai-providers/ollama/${index}`)}
+            onDelete={(index) => void deleteOpenai(index, 'ollama')}
             onToggle={(index, enabled) => void setOpenAIProviderEnabled(index, enabled)}
           />
         </div>

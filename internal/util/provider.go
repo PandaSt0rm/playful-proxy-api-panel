@@ -16,7 +16,7 @@ const openAICompatibleProviderPrefix = "openai-compatible-"
 
 // OpenAICompatibleProviderKey returns the internal provider key for an OpenAI-compatible provider.
 func OpenAICompatibleProviderKey(name string) string {
-	name = strings.ToLower(strings.TrimSpace(name))
+	name = strings.Join(strings.Fields(strings.ToLower(strings.TrimSpace(name))), "-")
 	if name == "" || name == "openai-compatibility" || strings.HasPrefix(name, openAICompatibleProviderPrefix) {
 		if name == "" {
 			return "openai-compatibility"

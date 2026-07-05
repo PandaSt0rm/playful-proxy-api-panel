@@ -130,8 +130,7 @@ export function AiProvidersOpenAIEditPage() {
     handleSave,
   } = useOutletContext<OpenAIEditOutletContext>();
 
-  const providerI18nPrefix =
-    providerMode === 'zai' ? 'zai' : providerMode === 'openrouter' ? 'openrouter' : 'openai';
+  const providerI18nPrefix = providerMode;
   const title = hasIndexParam
     ? t(`ai_providers.${providerI18nPrefix}_edit_modal_title`)
     : t(`ai_providers.${providerI18nPrefix}_add_modal_title`);

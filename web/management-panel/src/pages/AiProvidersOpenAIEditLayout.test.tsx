@@ -7,7 +7,10 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useOpenAIEditDraftStore } from '@/stores/useOpenAIEditDraftStore';
 import type { OpenAIProviderConfig } from '@/types';
 import type { OpenAIEditOutletContext } from './AiProvidersOpenAIEditLayout';
-import { AiProvidersOpenAIEditLayout } from './AiProvidersOpenAIEditLayout';
+import {
+  AiProvidersOpenAIEditLayout,
+  type OpenAIProviderEditorMode,
+} from './AiProvidersOpenAIEditLayout';
 
 // --- Boundary mocks -------------------------------------------------------
 
@@ -44,16 +47,29 @@ function ContextProbe() {
   return <div data-testid="probe">probe</div>;
 }
 
-const renderLayout = (route: string, childPath: string) =>
-  render(
+const renderLayout = (
+  route: string,
+  childPath: string,
+  providerMode: OpenAIProviderEditorMode = 'openai'
+) => {
+  const rootPath = `/ai-providers/${providerMode}`;
+  const element =
+    providerMode === 'openai' ? (
+      <AiProvidersOpenAIEditLayout />
+    ) : (
+      <AiProvidersOpenAIEditLayout providerMode={providerMode} />
+    );
+
+  return render(
     <MemoryRouter initialEntries={[route]}>
       <Routes>
-        <Route path="/ai-providers/openai" element={<AiProvidersOpenAIEditLayout />}>
+        <Route path={rootPath} element={element}>
           <Route path={childPath} element={<ContextProbe />} />
         </Route>
       </Routes>
     </MemoryRouter>
   );
+};
 
 const seedConfig = (openaiCompatibility: OpenAIProviderConfig[]) => {
   const now = Date.now();
@@ -90,6 +106,23 @@ describe('AiProvidersOpenAIEditLayout', () => {
     expect(captured?.editIndex).toBeNull();
     expect(captured?.hasIndexParam).toBe(false);
     expect(captured?.providerMode).toBe('openai');
+  });
+
+  it('provides Ollama Cloud defaults for the ollama "new" route', async () => {
+    seedConfig([]);
+
+    renderLayout('/ai-providers/ollama/new', 'new', 'ollama');
+
+    await waitFor(() => expect(captured?.loading).toBe(false));
+    expect(captured?.providerMode).toBe('ollama');
+    expect(captured?.form.name).toBe('Ollama Cloud');
+    expect(captured?.form.prefix).toBe('ollama');
+    expect(captured?.form.baseUrl).toBe('https://ollama.com/v1');
+    expect(captured?.form.modelEntries.map((entry) => entry.name)).toEqual([
+      'gpt-oss:120b',
+      'gpt-oss:20b',
+      'qwen3.5:397b',
+    ]);
   });
 
   it('loads the form from the provider entry at the edit index', async () => {

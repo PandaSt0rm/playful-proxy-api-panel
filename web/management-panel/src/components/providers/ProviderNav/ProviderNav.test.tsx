@@ -10,6 +10,7 @@ const PROVIDER_IDS = [
   'vertex',
   'zai',
   'openrouter',
+  'ollama',
   'openai',
 ] as const;
 
@@ -55,6 +56,12 @@ describe('ProviderNav', () => {
     renderWithRouter(<ProviderNav />, { route: '/ai-providers' });
 
     expect(screen.getByRole('button', { name: 'Z.AI' })).toBeInTheDocument();
+  });
+
+  it('renders the Ollama Cloud provider button with its display label', () => {
+    renderWithRouter(<ProviderNav />, { route: '/ai-providers' });
+
+    expect(screen.getByRole('button', { name: 'Ollama Cloud' })).toBeInTheDocument();
   });
 
   it('still shows the nav when the route has a trailing slash', () => {

@@ -376,6 +376,15 @@ nonstream-keepalive-interval: 0
 #         alias: "claude-opus-4.66"
 #       - name: "kimi-k2.5"
 #         alias: "claude-opus-4.66"
+#   - name: "Ollama Cloud"
+#     prefix: "ollama"
+#     base-url: "https://ollama.com/v1" # Direct Ollama Cloud OpenAI-compatible API.
+#     api-key-entries:
+#       - api-key: "your-ollama-api-key" # Create an Ollama API key at https://ollama.com/settings/keys.
+#     models:
+#       - name: "gpt-oss:120b"
+#       - name: "gpt-oss:20b"
+#       - name: "qwen3.5:397b"
 
 # Vertex API keys (Vertex-compatible endpoints, base-url is optional)
 # vertex-api-key:

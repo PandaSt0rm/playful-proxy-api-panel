@@ -318,6 +318,45 @@ func TestGetSyncAvailableConfigs_ModelAliases(t *testing.T) {
 	}
 }
 
+func TestGetSyncAvailableConfigs_OllamaCloudOpenAICompatibility(t *testing.T) {
+	cfg := &config.Config{
+		OpenAICompatibility: []config.OpenAICompatibility{
+			{
+				Name:    "Ollama Cloud",
+				BaseURL: "https://ollama.com/v1",
+				Models: []config.OpenAICompatibilityModel{
+					{Name: "gpt-oss:120b"},
+					{Name: "qwen3.5:397b"},
+				},
+			},
+		},
+	}
+
+	h, _ := setupSyncTest(t, cfg)
+	w := performSyncRequest(h)
+	resp := parseSyncResponse(t, w.Body.Bytes())
+
+	if len(resp.Providers) != 1 {
+		t.Fatalf("expected 1 provider, got %d", len(resp.Providers))
+	}
+	provider := resp.Providers[0]
+	if provider.Type != "openai-compatibility" {
+		t.Fatalf("provider type = %q, want openai-compatibility", provider.Type)
+	}
+	if provider.Name != "Ollama Cloud" {
+		t.Fatalf("provider name = %q, want Ollama Cloud", provider.Name)
+	}
+	wantModels := []string{"gpt-oss:120b", "qwen3.5:397b"}
+	if len(provider.Models) != len(wantModels) {
+		t.Fatalf("models = %v, want %v", provider.Models, wantModels)
+	}
+	for i, want := range wantModels {
+		if provider.Models[i] != want {
+			t.Fatalf("models[%d] = %q, want %q", i, provider.Models[i], want)
+		}
+	}
+}
+
 // TestGetSyncAvailableConfigs_DisabledProvidersExcluded verifies VAL-SRV-056:
 // Disabled providers excluded from response.
 func TestGetSyncAvailableConfigs_DisabledProvidersExcluded(t *testing.T) {

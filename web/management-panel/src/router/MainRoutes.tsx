@@ -97,6 +97,22 @@ const mainRoutes = [
       { path: 'models', element: <AiProvidersOpenAIModelsPage /> },
     ],
   },
+  {
+    path: '/ai-providers/ollama/new',
+    element: <AiProvidersOpenAIEditLayout providerMode="ollama" />,
+    children: [
+      { index: true, element: <AiProvidersOpenAIEditPage /> },
+      { path: 'models', element: <AiProvidersOpenAIModelsPage /> },
+    ],
+  },
+  {
+    path: '/ai-providers/ollama/:index',
+    element: <AiProvidersOpenAIEditLayout providerMode="ollama" />,
+    children: [
+      { index: true, element: <AiProvidersOpenAIEditPage /> },
+      { path: 'models', element: <AiProvidersOpenAIModelsPage /> },
+    ],
+  },
   { path: '/ai-providers', element: <AiProvidersPage /> },
   { path: '/ai-providers/*', element: <AiProvidersPage /> },
   { path: '/auth-files', element: <AuthFilesPage /> },
