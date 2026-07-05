@@ -36,6 +36,7 @@ const entry = (overrides: Partial<PluginListEntry> = {}): PluginListEntry => ({
   enabled: true,
   effective_enabled: true,
   supports_oauth: false,
+  oauth_provider: '',
   logo: '',
   config_fields: [],
   menus: [],
@@ -90,6 +91,18 @@ describe('PluginsPage rendering', () => {
 
     const badge = await screen.findByTestId('plugins-global-state');
     expect(badge).toHaveTextContent('enabled');
+  });
+
+  it('shows OAuth provider names when available', async () => {
+    mockedList.mockResolvedValue(
+      listResponse({
+        plugins: [entry({ supports_oauth: true, oauth_provider: 'anthropic' })],
+      })
+    );
+
+    renderWithRouter(<PluginsPage />);
+
+    expect(await screen.findByText('OAuth: anthropic')).toBeInTheDocument();
   });
 
   it('shows an empty state when no plugins exist', async () => {

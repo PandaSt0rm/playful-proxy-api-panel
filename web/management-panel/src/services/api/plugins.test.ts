@@ -34,6 +34,7 @@ describe('pluginsApi.list', () => {
           enabled: true,
           effective_enabled: true,
           supports_oauth: true,
+          oauth_provider: 'anthropic',
           logo: 'data:image/png;base64,xyz',
           config_fields: [
             { name: 'mode', type: 'enum', enum_values: ['safe', 'fast'], description: 'Mode' },
@@ -58,6 +59,7 @@ describe('pluginsApi.list', () => {
     expect(result.plugins_dir).toBe('plugins');
     expect(result.plugins).toHaveLength(1);
     expect(result.plugins[0].id).toBe('example');
+    expect(result.plugins[0].oauth_provider).toBe('anthropic');
     expect(result.plugins[0].config_fields[0].enum_values).toEqual(['safe', 'fast']);
     expect(result.plugins[0].metadata?.name).toBe('Example');
   });
@@ -83,6 +85,7 @@ describe('pluginsApi.list', () => {
 
     expect(result.plugins).toHaveLength(1);
     expect(result.plugins[0].id).toBe('kept');
+    expect(result.plugins[0].oauth_provider).toBe('');
     expect(result.plugins[0].config_fields).toEqual([]);
     expect(result.plugins[0].menus).toEqual([]);
     expect(result.plugins[0].metadata).toBeNull();

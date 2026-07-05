@@ -37,6 +37,7 @@ export interface PluginListEntry {
   enabled: boolean;
   effective_enabled: boolean;
   supports_oauth: boolean;
+  oauth_provider: string;
   logo: string;
   config_fields: PluginConfigField[];
   menus: PluginMenu[];

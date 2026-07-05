@@ -420,7 +420,12 @@ export function PluginsPage() {
                   </span>
                   {plugin.supports_oauth ? (
                     <span className={styles.badgeNeutral}>
-                      {t('plugins.badge_oauth', { defaultValue: 'OAuth provider' })}
+                      {plugin.oauth_provider
+                        ? t('plugins.badge_oauth_provider', {
+                            defaultValue: 'OAuth: {{provider}}',
+                            provider: plugin.oauth_provider,
+                          })
+                        : t('plugins.badge_oauth', { defaultValue: 'OAuth provider' })}
                     </span>
                   ) : null}
                   {plugin.configured ? (

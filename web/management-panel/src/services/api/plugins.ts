@@ -55,6 +55,7 @@ const asPluginEntry = (value: unknown): PluginListEntry | null => {
     enabled: Boolean(value.enabled),
     effective_enabled: Boolean(value.effective_enabled),
     supports_oauth: Boolean(value.supports_oauth),
+    oauth_provider: typeof value.oauth_provider === 'string' ? value.oauth_provider : '',
     logo: typeof value.logo === 'string' ? value.logo : '',
     config_fields: asConfigFields(value.config_fields),
     menus: asMenus(value.menus),
