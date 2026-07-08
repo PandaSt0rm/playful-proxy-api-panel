@@ -51,6 +51,7 @@ const resetQuota = () => {
     geminiCliQuota: {},
     kimiQuota: {},
     zaiQuota: {},
+    xaiQuota: {},
   });
 };
 

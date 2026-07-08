@@ -10,6 +10,7 @@ export {
   GEMINI_CLI_CONFIG,
   KIMI_CONFIG,
   ZAI_CONFIG,
+  XAI_CONFIG,
   QUOTA_CONFIGS,
 } from './quotaConfigs';
 export type { QuotaConfig, QuotaConfigUnknown, QuotaType } from './quotaConfigs';

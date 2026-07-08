@@ -9,6 +9,7 @@ import type {
   CodexQuotaState,
   GeminiCliQuotaState,
   KimiQuotaState,
+  XaiQuotaState,
   ZaiQuotaState,
 } from '@/types';
 
@@ -21,6 +22,7 @@ interface QuotaStoreState {
   geminiCliQuota: Record<string, GeminiCliQuotaState>;
   kimiQuota: Record<string, KimiQuotaState>;
   zaiQuota: Record<string, ZaiQuotaState>;
+  xaiQuota: Record<string, XaiQuotaState>;
   /** Epoch-ms of the last completed fetch per credential, keyed by `${type}:${name}`. */
   quotaUpdatedAt: Record<string, number>;
   setAntigravityQuota: (updater: QuotaUpdater<Record<string, AntigravityQuotaState>>) => void;
@@ -29,6 +31,7 @@ interface QuotaStoreState {
   setGeminiCliQuota: (updater: QuotaUpdater<Record<string, GeminiCliQuotaState>>) => void;
   setKimiQuota: (updater: QuotaUpdater<Record<string, KimiQuotaState>>) => void;
   setZaiQuota: (updater: QuotaUpdater<Record<string, ZaiQuotaState>>) => void;
+  setXaiQuota: (updater: QuotaUpdater<Record<string, XaiQuotaState>>) => void;
   setQuotaUpdatedAt: (updater: QuotaUpdater<Record<string, number>>) => void;
   clearQuotaCache: () => void;
 }
@@ -47,6 +50,7 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
   geminiCliQuota: {},
   kimiQuota: {},
   zaiQuota: {},
+  xaiQuota: {},
   quotaUpdatedAt: {},
   setAntigravityQuota: (updater) =>
     set((state) => ({
@@ -72,6 +76,10 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
     set((state) => ({
       zaiQuota: resolveUpdater(updater, state.zaiQuota)
     })),
+  setXaiQuota: (updater) =>
+    set((state) => ({
+      xaiQuota: resolveUpdater(updater, state.xaiQuota)
+    })),
   setQuotaUpdatedAt: (updater) =>
     set((state) => ({
       quotaUpdatedAt: resolveUpdater(updater, state.quotaUpdatedAt)
@@ -84,6 +92,7 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
       geminiCliQuota: {},
       kimiQuota: {},
       zaiQuota: {},
+      xaiQuota: {},
       quotaUpdatedAt: {}
     })
 }));

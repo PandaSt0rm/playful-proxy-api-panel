@@ -6,6 +6,7 @@ import {
   CODEX_CONFIG,
   GEMINI_CLI_CONFIG,
   KIMI_CONFIG,
+  XAI_CONFIG,
   ZAI_CONFIG,
 } from './quotaConfigs';
 import type {
@@ -14,6 +15,7 @@ import type {
   CodexQuotaState,
   GeminiCliQuotaState,
   KimiQuotaState,
+  XaiQuotaState,
   ZaiQuotaState,
 } from '@/types';
 
@@ -88,6 +90,22 @@ describe('getSummary normalizers', () => {
     };
     const summary = KIMI_CONFIG.getSummary(state, t);
     expect(summary.meters[0]).toMatchObject({ remainingPercent: 70, amountLabel: '30 / 100' });
+  });
+
+  it('xai converts used/limit rows to remaining and surfaces plan type', () => {
+    const state: XaiQuotaState = {
+      status: 'success',
+      rows: [{ id: 'monthly-credits', label: 'Monthly', used: 25, limit: 100, resetHint: '04/01' }],
+      planType: 'SuperGrok',
+    };
+    const summary = XAI_CONFIG.getSummary(state, t);
+    expect(summary.meters[0]).toMatchObject({
+      remainingPercent: 75,
+      amountLabel: '25 / 100',
+    });
+    expect(summary.extras).toEqual([
+      { id: 'plan', label: 'xai_quota.plan_label', value: 'SuperGrok' },
+    ]);
   });
 
   it('zai keeps remaining percent and pairs current/limit amounts', () => {

@@ -8,6 +8,7 @@ import type {
   GeminiCliCodeAssistPayload,
   GeminiCliQuotaPayload,
   KimiUsagePayload,
+  XaiBillingPayload,
   ZaiQuotaPayload,
 } from '@/types';
 import { normalizeAuthIndex } from '@/utils/authIndex';
@@ -247,4 +248,37 @@ export function parseZaiQuotaPayload(payload: unknown): ZaiQuotaPayload | null {
     return payload as ZaiQuotaPayload;
   }
   return null;
+}
+
+/**
+ * Parse Grok CLI billing JSON. Accepts string body or object; empty/malformed
+ * input returns null so fetchQuota can surface empty_data rather than success.
+ */
+export function parseXaiBillingPayload(payload: unknown): XaiBillingPayload | null {
+  if (payload === undefined || payload === null) return null;
+  if (typeof payload === 'string') {
+    const trimmed = payload.trim();
+    if (!trimmed) return null;
+    try {
+      return JSON.parse(trimmed) as XaiBillingPayload;
+    } catch {
+      return null;
+    }
+  }
+  if (typeof payload === 'object') {
+    return payload as XaiBillingPayload;
+  }
+  return null;
+}
+
+/**
+ * Unwrap a Grok billing amount that may be a plain number/string or `{ val }` / `{ value }`.
+ */
+export function unwrapXaiBillingAmount(value: unknown): number | null {
+  if (value === undefined || value === null) return null;
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    const record = value as Record<string, unknown>;
+    return normalizeNumberValue(record.val ?? record.value);
+  }
+  return normalizeNumberValue(value);
 }

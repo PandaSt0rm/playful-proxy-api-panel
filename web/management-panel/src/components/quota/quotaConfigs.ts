@@ -28,6 +28,8 @@ import type {
   GeminiCliUserTier,
   KimiQuotaRow,
   KimiQuotaState,
+  XaiQuotaRow,
+  XaiQuotaState,
   ZaiQuotaRow,
   ZaiQuotaState,
 } from '@/types';
@@ -47,6 +49,9 @@ import {
   GEMINI_CLI_REQUEST_HEADERS,
   KIMI_USAGE_URL,
   KIMI_REQUEST_HEADERS,
+  XAI_BILLING_URL,
+  XAI_SETTINGS_URL,
+  XAI_REQUEST_HEADERS,
   ZAI_QUOTA_URL,
   ZAI_REQUEST_HEADERS,
   normalizeGeminiCliModelId,
@@ -60,6 +65,7 @@ import {
   parseGeminiCliQuotaPayload,
   parseGeminiCliCodeAssistPayload,
   parseKimiUsagePayload,
+  parseXaiBillingPayload,
   parseZaiQuotaPayload,
   resolveCodexChatgptAccountId,
   resolveCodexPlanType,
@@ -67,11 +73,14 @@ import {
   formatCodexResetLabel,
   formatQuotaResetTime,
   formatKimiResetHint,
+  formatXaiResetHint,
   formatZaiResetHint,
   buildAntigravityQuotaGroups,
   buildGeminiCliQuotaBuckets,
   buildKimiQuotaRows,
+  buildXaiQuotaRows,
   buildZaiQuotaRows,
+  resolveXaiPlanType,
   createStatusError,
   getStatusFromError,
   isAntigravityFile,
@@ -80,6 +89,7 @@ import {
   isDisabledAuthFile,
   isGeminiCliFile,
   isKimiFile,
+  isXaiFile,
   isZaiFile,
   isRuntimeOnlyAuthFile,
 } from '@/utils/quota';
@@ -89,7 +99,14 @@ import type { NormalizedExtra, NormalizedMeter, QuotaSummary } from './quotaSumm
 
 type QuotaUpdater<T> = T | ((prev: T) => T);
 
-export type QuotaType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi' | 'zai';
+export type QuotaType =
+  | 'antigravity'
+  | 'claude'
+  | 'codex'
+  | 'gemini-cli'
+  | 'kimi'
+  | 'zai'
+  | 'xai';
 
 const clampPercent = (value: number): number => Math.max(0, Math.min(100, value));
 
@@ -109,12 +126,14 @@ export interface QuotaStore {
   geminiCliQuota: Record<string, GeminiCliQuotaState>;
   kimiQuota: Record<string, KimiQuotaState>;
   zaiQuota: Record<string, ZaiQuotaState>;
+  xaiQuota: Record<string, XaiQuotaState>;
   setAntigravityQuota: (updater: QuotaUpdater<Record<string, AntigravityQuotaState>>) => void;
   setClaudeQuota: (updater: QuotaUpdater<Record<string, ClaudeQuotaState>>) => void;
   setCodexQuota: (updater: QuotaUpdater<Record<string, CodexQuotaState>>) => void;
   setGeminiCliQuota: (updater: QuotaUpdater<Record<string, GeminiCliQuotaState>>) => void;
   setKimiQuota: (updater: QuotaUpdater<Record<string, KimiQuotaState>>) => void;
   setZaiQuota: (updater: QuotaUpdater<Record<string, ZaiQuotaState>>) => void;
+  setXaiQuota: (updater: QuotaUpdater<Record<string, XaiQuotaState>>) => void;
   clearQuotaCache: () => void;
 }
 
@@ -1591,6 +1610,184 @@ export const KIMI_CONFIG: QuotaConfig<KimiQuotaState, KimiQuotaRow[]> = {
   renderQuotaItems: renderKimiItems,
 };
 
+type XaiQuotaFetchResult = { rows: XaiQuotaRow[]; planType?: string | null };
+
+const fetchXaiQuota = async (
+  file: AuthFileItem,
+  t: TFunction
+): Promise<XaiQuotaFetchResult> => {
+  const rawAuthIndex = file['auth_index'] ?? file.authIndex;
+  const authIndex = normalizeAuthIndex(rawAuthIndex);
+  if (!authIndex) {
+    throw new Error(t('xai_quota.missing_auth_index'));
+  }
+
+  const headers = { ...XAI_REQUEST_HEADERS };
+
+  // Billing is required; settings is best-effort for subscription_tier_display.
+  const [billingResult, settingsResult] = await Promise.all([
+    apiCallApi.request({
+      authIndex,
+      method: 'GET',
+      url: XAI_BILLING_URL,
+      header: headers,
+    }),
+    apiCallApi
+      .request({
+        authIndex,
+        method: 'GET',
+        url: XAI_SETTINGS_URL,
+        header: headers,
+      })
+      .catch(() => null),
+  ]);
+
+  if (billingResult.statusCode < 200 || billingResult.statusCode >= 300) {
+    throw createStatusError(getApiCallErrorMessage(billingResult), billingResult.statusCode);
+  }
+
+  const payload = parseXaiBillingPayload(billingResult.body ?? billingResult.bodyText);
+  if (!payload) {
+    throw new Error(t('xai_quota.empty_data'));
+  }
+
+  const rows = buildXaiQuotaRows(payload);
+  if (rows.length === 0) {
+    throw new Error(t('xai_quota.empty_data'));
+  }
+
+  let planType = resolveXaiPlanType(payload);
+  if (
+    !planType &&
+    settingsResult &&
+    settingsResult.statusCode >= 200 &&
+    settingsResult.statusCode < 300
+  ) {
+    const settingsPayload = parseXaiBillingPayload(
+      settingsResult.body ?? settingsResult.bodyText
+    );
+    if (settingsPayload) {
+      planType = resolveXaiPlanType(settingsPayload);
+    }
+  }
+
+  return { rows, planType };
+};
+
+const renderXaiItems = (
+  quota: XaiQuotaState,
+  t: TFunction,
+  helpers: QuotaRenderHelpers
+): ReactNode => {
+  const { styles: styleMap, QuotaProgressBar } = helpers;
+  const { createElement: h } = React;
+  const rows = quota.rows ?? [];
+
+  if (rows.length === 0) {
+    return h('div', { className: styleMap.quotaMessage }, t('xai_quota.empty_data'));
+  }
+
+  return rows.map((row) => {
+    const limit = row.limit;
+    const used = row.used;
+    const remaining =
+      limit > 0
+        ? Math.max(0, Math.min(100, Math.round(((limit - used) / limit) * 100)))
+        : used > 0
+          ? 0
+          : null;
+    const percentLabel = remaining === null ? '--' : `${remaining}%`;
+    const rowLabel = row.labelKey
+      ? t(row.labelKey, (row.labelParams ?? {}) as Record<string, string | number>)
+      : row.label ?? '';
+    const resetLabel = formatXaiResetHint(t, row.resetHint);
+
+    return h(
+      'div',
+      { key: row.id, className: styleMap.quotaRow },
+      h(
+        'div',
+        { className: styleMap.quotaRowHeader },
+        h('span', { className: styleMap.quotaModel }, rowLabel),
+        h(
+          'div',
+          { className: styleMap.quotaMeta },
+          h('span', { className: styleMap.quotaPercent }, percentLabel),
+          limit > 0
+            ? h('span', { className: styleMap.quotaAmount }, `${used} / ${limit}`)
+            : null,
+          resetLabel
+            ? h('span', { className: styleMap.quotaReset }, resetLabel)
+            : null
+        )
+      ),
+      h(QuotaProgressBar, {
+        percent: remaining,
+        highThreshold: QUOTA_PROGRESS_HIGH_THRESHOLD,
+        mediumThreshold: QUOTA_PROGRESS_MEDIUM_THRESHOLD,
+      })
+    );
+  });
+};
+
+const summarizeXai = (state: XaiQuotaState, t: TFunction): QuotaSummary => {
+  const meters: NormalizedMeter[] = (state.rows ?? []).map((row) => {
+    const { used, limit } = row;
+    const remainingPercent =
+      limit > 0
+        ? clampPercent(((limit - used) / limit) * 100)
+        : used > 0
+          ? 0
+          : null;
+    return {
+      id: row.id,
+      label: row.labelKey
+        ? t(row.labelKey, (row.labelParams ?? {}) as Record<string, string | number>)
+        : row.label ?? '',
+      remainingPercent,
+      resetLabel: formatXaiResetHint(t, row.resetHint) || undefined,
+      amountLabel: limit > 0 ? `${used} / ${limit}` : undefined,
+    };
+  });
+  const extras: NormalizedExtra[] = [];
+  if (state.planType) {
+    extras.push({
+      id: 'plan',
+      label: t('xai_quota.plan_label'),
+      value: state.planType,
+    });
+  }
+  return {
+    meters,
+    extras,
+    emptyMessageKey: meters.length ? undefined : 'xai_quota.empty_data',
+  };
+};
+
+export const XAI_CONFIG: QuotaConfig<XaiQuotaState, XaiQuotaFetchResult> = {
+  type: 'xai',
+  i18nPrefix: 'xai_quota',
+  cardIdleMessageKey: 'quota_management.card_idle_hint',
+  filterFn: (file) => isXaiFile(file) && !isDisabledAuthFile(file),
+  fetchQuota: fetchXaiQuota,
+  storeSelector: (state) => state.xaiQuota,
+  storeSetter: 'setXaiQuota',
+  buildLoadingState: () => ({ status: 'loading', rows: [] }),
+  buildSuccessState: (data) => ({
+    status: 'success',
+    rows: data.rows,
+    planType: data.planType ?? null,
+  }),
+  buildErrorState: (message, status) => ({
+    status: 'error',
+    rows: [],
+    error: message,
+    errorStatus: status,
+  }),
+  getSummary: summarizeXai,
+  renderQuotaItems: renderXaiItems,
+};
+
 /**
  * Type-erased view of a provider config for orchestration code that iterates
  * every provider uniformly (the quota dashboard). Each provider's functions stay
@@ -1611,4 +1808,5 @@ export const QUOTA_CONFIGS: readonly QuotaConfigUnknown[] = [
   GEMINI_CLI_CONFIG,
   KIMI_CONFIG,
   ZAI_CONFIG,
+  XAI_CONFIG,
 ] as unknown as readonly QuotaConfigUnknown[];

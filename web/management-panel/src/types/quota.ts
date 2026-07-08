@@ -360,3 +360,64 @@ export interface ZaiQuotaState {
   error?: string;
   errorStatus?: number;
 }
+
+// xAI / Grok SuperGrok billing payload types
+/** Unit wrapper used by Grok CLI billing (`{ val: N }` or plain number/string). */
+export interface XaiBillingUnit {
+  val?: number | string;
+  value?: number | string;
+}
+
+export type XaiBillingAmount = number | string | XaiBillingUnit | null | undefined;
+
+export interface XaiBillingConfig {
+  used?: XaiBillingAmount;
+  /** CLI billing schema field; window length comes from billingPeriodStart/End. */
+  monthlyLimit?: XaiBillingAmount;
+  monthly_limit?: XaiBillingAmount;
+  weeklyLimit?: XaiBillingAmount;
+  weekly_limit?: XaiBillingAmount;
+  limit?: XaiBillingAmount;
+  onDemandCap?: XaiBillingAmount;
+  on_demand_cap?: XaiBillingAmount;
+  billingPeriodEnd?: string | number | null;
+  billing_period_end?: string | number | null;
+  billingPeriodStart?: string | number | null;
+  billing_period_start?: string | number | null;
+}
+
+export interface XaiBillingPayload {
+  config?: XaiBillingConfig | null;
+  used?: XaiBillingAmount;
+  monthlyLimit?: XaiBillingAmount;
+  monthly_limit?: XaiBillingAmount;
+  weeklyLimit?: XaiBillingAmount;
+  weekly_limit?: XaiBillingAmount;
+  limit?: XaiBillingAmount;
+  onDemandCap?: XaiBillingAmount;
+  on_demand_cap?: XaiBillingAmount;
+  billingPeriodEnd?: string | number | null;
+  billing_period_end?: string | number | null;
+  billingPeriodStart?: string | number | null;
+  billing_period_start?: string | number | null;
+  subscription_tier_display?: string | null;
+  subscriptionTierDisplay?: string | null;
+}
+
+export interface XaiQuotaRow {
+  id: string;
+  label?: string;
+  labelKey?: string;
+  labelParams?: Record<string, string | number>;
+  used: number;
+  limit: number;
+  resetHint?: string;
+}
+
+export interface XaiQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  rows: XaiQuotaRow[];
+  planType?: string | null;
+  error?: string;
+  errorStatus?: number;
+}

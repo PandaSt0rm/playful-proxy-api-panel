@@ -7,7 +7,10 @@ import {
   findAntigravityModel,
   buildAntigravityQuotaGroups,
   buildKimiQuotaRows,
+  buildXaiQuotaRows,
   buildZaiQuotaRows,
+  resolveXaiCreditsLabelKey,
+  resolveXaiPlanType,
 } from './builders';
 import type {
   AntigravityModelsPayload,
@@ -1091,5 +1094,129 @@ describe('buildZaiQuotaRows', () => {
     const rows = buildZaiQuotaRows(payload);
 
     expect(rows.map((r) => r.id)).toEqual(['tokens-limit', 'time-limit']);
+  });
+});
+
+describe('buildXaiQuotaRows', () => {
+  it('returns empty rows for an empty payload', () => {
+    expect(buildXaiQuotaRows({})).toEqual([]);
+  });
+
+  it('builds an included-credits row from config.used / config.monthlyLimit unit objects', () => {
+    const rows = buildXaiQuotaRows({
+      config: {
+        used: { val: 120 },
+        monthlyLimit: { val: 1000 },
+        billingPeriodStart: '2030-03-01T00:00:00.000Z',
+        billingPeriodEnd: '2030-04-01T00:00:00.000Z',
+      },
+    });
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      id: 'included-credits',
+      labelKey: 'xai_quota.monthly_credits',
+      used: 120,
+      limit: 1000,
+    });
+    expect(rows[0].resetHint).toBeTruthy();
+  });
+
+  it('labels a ~7 day window as weekly credits', () => {
+    const rows = buildXaiQuotaRows({
+      config: {
+        used: { val: 10 },
+        monthlyLimit: { val: 100 },
+        billingPeriodStart: '2030-03-01T00:00:00.000Z',
+        billingPeriodEnd: '2030-03-08T00:00:00.000Z',
+      },
+    });
+
+    expect(rows[0].labelKey).toBe('xai_quota.weekly_credits');
+  });
+
+  it('accepts snake_case monthly_limit and plain number amounts', () => {
+    const rows = buildXaiQuotaRows({
+      config: {
+        used: 50,
+        monthly_limit: 200,
+      },
+    });
+
+    expect(rows[0]).toMatchObject({
+      used: 50,
+      limit: 200,
+      labelKey: 'xai_quota.included_credits',
+    });
+  });
+
+  it('adds an on-demand cap row when onDemandCap is positive', () => {
+    const rows = buildXaiQuotaRows({
+      config: {
+        used: { val: 10 },
+        monthlyLimit: { val: 100 },
+        onDemandCap: { val: 500 },
+      },
+    });
+
+    expect(rows.map((r) => r.id)).toEqual(['included-credits', 'on-demand-cap']);
+    expect(rows[1]).toMatchObject({
+      labelKey: 'xai_quota.on_demand_cap',
+      used: 0,
+      limit: 500,
+    });
+  });
+
+  it('skips on-demand when cap is zero or missing', () => {
+    const rows = buildXaiQuotaRows({
+      config: {
+        used: { val: 1 },
+        monthlyLimit: { val: 10 },
+        onDemandCap: { val: 0 },
+      },
+    });
+
+    expect(rows).toHaveLength(1);
+  });
+
+  it('falls back to top-level used/limit when config is absent', () => {
+    const rows = buildXaiQuotaRows({
+      used: { val: 3 },
+      monthlyLimit: { val: 30 },
+    });
+
+    expect(rows[0]).toMatchObject({ used: 3, limit: 30 });
+  });
+
+  it('returns empty when config has no usable used/limit fields', () => {
+    expect(buildXaiQuotaRows({ config: { onDemandCap: { val: 0 } } })).toEqual([]);
+  });
+});
+
+describe('resolveXaiCreditsLabelKey', () => {
+  it('returns weekly for a 7-day window', () => {
+    expect(
+      resolveXaiCreditsLabelKey('2030-01-01T00:00:00Z', '2030-01-08T00:00:00Z')
+    ).toBe('xai_quota.weekly_credits');
+  });
+
+  it('returns monthly for a calendar-month window', () => {
+    expect(
+      resolveXaiCreditsLabelKey('2030-07-01T00:00:00Z', '2030-08-01T00:00:00Z')
+    ).toBe('xai_quota.monthly_credits');
+  });
+
+  it('returns included when period metadata is missing', () => {
+    expect(resolveXaiCreditsLabelKey(undefined, undefined)).toBe('xai_quota.included_credits');
+  });
+});
+
+describe('resolveXaiPlanType', () => {
+  it('reads subscription_tier_display', () => {
+    expect(resolveXaiPlanType({ subscription_tier_display: 'SuperGrok' })).toBe('SuperGrok');
+  });
+
+  it('returns null when absent', () => {
+    expect(resolveXaiPlanType({})).toBeNull();
   });
 });

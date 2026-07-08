@@ -50,6 +50,7 @@ function resetStores() {
     geminiCliQuota: {},
     kimiQuota: {},
     zaiQuota: {},
+    xaiQuota: {},
     quotaUpdatedAt: {},
   });
 }

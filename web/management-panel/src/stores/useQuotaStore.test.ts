@@ -6,6 +6,7 @@ import type {
   CodexQuotaState,
   GeminiCliQuotaState,
   KimiQuotaState,
+  XaiQuotaState,
   ZaiQuotaState,
 } from '@/types';
 
@@ -16,6 +17,7 @@ const emptyState = {
   geminiCliQuota: {},
   kimiQuota: {},
   zaiQuota: {},
+  xaiQuota: {},
 };
 
 const claudeState: ClaudeQuotaState = { status: 'success', windows: [] };
@@ -24,6 +26,7 @@ const codexState: CodexQuotaState = { status: 'success' } as CodexQuotaState;
 const geminiState: GeminiCliQuotaState = { status: 'success' } as GeminiCliQuotaState;
 const kimiState: KimiQuotaState = { status: 'success' } as KimiQuotaState;
 const zaiState: ZaiQuotaState = { status: 'success' } as ZaiQuotaState;
+const xaiState: XaiQuotaState = { status: 'success', rows: [] };
 
 describe('useQuotaStore', () => {
   beforeEach(() => {
@@ -78,6 +81,14 @@ describe('useQuotaStore', () => {
 
       expect(useQuotaStore.getState().zaiQuota).toEqual(next);
     });
+
+    it('replaces xaiQuota with the provided record', () => {
+      const next = { 'acct-1': xaiState };
+
+      useQuotaStore.getState().setXaiQuota(next);
+
+      expect(useQuotaStore.getState().xaiQuota).toEqual(next);
+    });
   });
 
   describe('functional updates', () => {
@@ -124,6 +135,7 @@ describe('useQuotaStore', () => {
         geminiCliQuota: { a: geminiState },
         kimiQuota: { a: kimiState },
         zaiQuota: { a: zaiState },
+        xaiQuota: { a: xaiState },
       });
 
       useQuotaStore.getState().clearQuotaCache();

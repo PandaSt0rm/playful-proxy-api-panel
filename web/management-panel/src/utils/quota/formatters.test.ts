@@ -8,6 +8,7 @@ import {
   createStatusError,
   getStatusFromError,
   formatKimiResetHint,
+  formatXaiResetHint,
   formatZaiResetHint,
 } from './formatters';
 
@@ -282,6 +283,26 @@ describe('formatKimiResetHint', () => {
 
   it('returns an empty string for an empty hint', () => {
     const result = formatKimiResetHint(i18n.t, '');
+
+    expect(result).toBe('');
+  });
+});
+
+describe('formatXaiResetHint', () => {
+  it('returns the localized hint string when a hint is given', () => {
+    const result = formatXaiResetHint(i18n.t, '04/01 00:00');
+
+    expect(result).toBe('resets 04/01 00:00');
+  });
+
+  it('returns an empty string when the hint is undefined', () => {
+    const result = formatXaiResetHint(i18n.t, undefined);
+
+    expect(result).toBe('');
+  });
+
+  it('returns an empty string for an empty hint', () => {
+    const result = formatXaiResetHint(i18n.t, '');
 
     expect(result).toBe('');
   });

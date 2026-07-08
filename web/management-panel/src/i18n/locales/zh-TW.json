@@ -834,6 +834,24 @@
     "used_percent": "已用 {{percent}}%",
     "reset_hint": "{{hint}} 後重置"
   },
+  "xai_quota": {
+    "title": "xAI / Grok 配額",
+    "empty_title": "暫無 xAI 驗證",
+    "empty_desc": "上傳 xAI（Grok）OAuth 憑證後即可查看 SuperGrok 積分用量。",
+    "idle": "點擊此處重新整理配額",
+    "loading": "正在載入配額...",
+    "load_failed": "配額取得失敗：{{message}}",
+    "missing_auth_index": "驗證檔案缺少 auth_index",
+    "empty_data": "暫無配額資料",
+    "refresh_button": "重新整理配額",
+    "fetch_all": "取得全部",
+    "included_credits": "包含積分",
+    "weekly_credits": "週積分",
+    "monthly_credits": "月度積分",
+    "on_demand_cap": "額外 / 按需積分",
+    "plan_label": "方案",
+    "reset_hint": "重置時間 {{hint}}"
+  },
   "vertex_import": {
     "title": "Vertex JSON 登入",
     "description": "上傳 Google 服務帳號 JSON，使用 CLI vertex-import 同步規則寫入 auth-dir/vertex-<project>.json。",

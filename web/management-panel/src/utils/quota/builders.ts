@@ -14,6 +14,8 @@ import type {
   KimiLimitItem,
   KimiLimitWindow,
   KimiQuotaRow,
+  XaiBillingPayload,
+  XaiQuotaRow,
   ZaiQuotaLimit,
   ZaiQuotaPayload,
   ZaiQuotaRow,
@@ -23,7 +25,12 @@ import {
   GEMINI_CLI_GROUP_LOOKUP,
   GEMINI_CLI_GROUP_ORDER,
 } from './constants';
-import { normalizeNumberValue, normalizeQuotaFraction, normalizeStringValue } from './parsers';
+import {
+  normalizeNumberValue,
+  normalizeQuotaFraction,
+  normalizeStringValue,
+  unwrapXaiBillingAmount,
+} from './parsers';
 import { isIgnoredGeminiCliModel } from './validators';
 
 export function pickEarlierResetTime(current?: string, next?: string): string | undefined {
@@ -551,4 +558,142 @@ export function buildZaiQuotaRows(payload: ZaiQuotaPayload): ZaiQuotaRow[] {
   return limits
     .map((item, index) => toZaiQuotaRow(item, index))
     .filter((row): row is ZaiQuotaRow => row !== null);
+}
+
+/**
+ * Parse billing period timestamps. Accepts ISO strings, unix seconds, or ms.
+ */
+function xaiBillingPeriodMs(value: unknown): number | null {
+  if (value === undefined || value === null) return null;
+
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    const ms = value > 1e12 ? value : value * 1000;
+    return Number.isNaN(new Date(ms).getTime()) ? null : ms;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const asNumber = Number(trimmed);
+    if (Number.isFinite(asNumber) && asNumber > 0 && /^\d+(\.\d+)?$/.test(trimmed)) {
+      return xaiBillingPeriodMs(asNumber);
+    }
+    const parsed = new Date(trimmed).getTime();
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+
+  return null;
+}
+
+/**
+ * Format a billing-period end into a short absolute hint for meters.
+ */
+function xaiBillingPeriodHint(value: unknown): string | undefined {
+  const ms = xaiBillingPeriodMs(value);
+  if (ms === null) return undefined;
+  return new Date(ms).toLocaleString(undefined, {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+}
+
+/**
+ * Label the included-credit meter from the actual billing window.
+ *
+ * Grok consumer Settings → Usage is a *weekly* shared pool (docs.x.ai/grok/faq),
+ * but the CLI billing surface (`cli-chat-proxy.../v1/billing`) exposes
+ * `monthlyLimit` over `billingPeriodStart`/`billingPeriodEnd`. Live SuperGrok
+ * Heavy accounts currently return a calendar-month window; if that window is
+ * ~7 days we label weekly, ~1 month we label monthly, otherwise generic.
+ */
+export function resolveXaiCreditsLabelKey(
+  periodStart: unknown,
+  periodEnd: unknown
+): string {
+  const startMs = xaiBillingPeriodMs(periodStart);
+  const endMs = xaiBillingPeriodMs(periodEnd);
+  if (startMs !== null && endMs !== null && endMs > startMs) {
+    const days = (endMs - startMs) / 86_400_000;
+    if (days >= 5 && days <= 9) return 'xai_quota.weekly_credits';
+    if (days >= 25 && days <= 35) return 'xai_quota.monthly_credits';
+  }
+  // API field is still named monthlyLimit even when period metadata is missing.
+  return 'xai_quota.included_credits';
+}
+
+/**
+ * Build meter rows from Grok CLI billing payload.
+ * Primary row: included credits (used / monthlyLimit field).
+ * Optional second row when onDemandCap is present and > 0 (extra/on-demand).
+ * Returns [] when neither used nor limit can be resolved (caller treats as empty_data).
+ */
+export function buildXaiQuotaRows(payload: XaiBillingPayload): XaiQuotaRow[] {
+  const config =
+    payload.config && typeof payload.config === 'object' ? payload.config : null;
+  const source = (config ?? payload) as Record<string, unknown>;
+
+  const used = unwrapXaiBillingAmount(
+    source.used ?? (config ? undefined : payload.used)
+  );
+  // Field name is monthlyLimit in the CLI billing schema; product UX may call
+  // the consumer pool "weekly" — we only have this CLI meter via OAuth.
+  const limit = unwrapXaiBillingAmount(
+    source.monthlyLimit ??
+      source.monthly_limit ??
+      source.weeklyLimit ??
+      source.weekly_limit ??
+      source.limit ??
+      (config ? undefined : payload.monthlyLimit ?? payload.monthly_limit)
+  );
+  const onDemandCap = unwrapXaiBillingAmount(
+    source.onDemandCap ??
+      source.on_demand_cap ??
+      (config ? undefined : payload.onDemandCap ?? payload.on_demand_cap)
+  );
+  const periodStart =
+    source.billingPeriodStart ??
+    source.billing_period_start ??
+    (config ? undefined : payload.billingPeriodStart ?? payload.billing_period_start);
+  const periodEnd =
+    source.billingPeriodEnd ??
+    source.billing_period_end ??
+    (config ? undefined : payload.billingPeriodEnd ?? payload.billing_period_end);
+  const resetHint = xaiBillingPeriodHint(periodEnd);
+  const creditsLabelKey = resolveXaiCreditsLabelKey(periodStart, periodEnd);
+
+  const rows: XaiQuotaRow[] = [];
+
+  // Require at least one of used/limit so empty configs don't look like success.
+  if (used !== null || limit !== null) {
+    rows.push({
+      id: 'included-credits',
+      labelKey: creditsLabelKey,
+      used: used ?? 0,
+      limit: limit ?? 0,
+      resetHint,
+    });
+  }
+
+  if (onDemandCap !== null && onDemandCap > 0) {
+    rows.push({
+      id: 'on-demand-cap',
+      labelKey: 'xai_quota.on_demand_cap',
+      used: 0,
+      limit: onDemandCap,
+      resetHint,
+    });
+  }
+
+  return rows;
+}
+
+/** Extract optional plan/tier display from billing or settings-shaped payloads. */
+export function resolveXaiPlanType(payload: XaiBillingPayload): string | null {
+  const tier =
+    normalizeStringValue(payload.subscription_tier_display) ??
+    normalizeStringValue(payload.subscriptionTierDisplay);
+  return tier;
 }

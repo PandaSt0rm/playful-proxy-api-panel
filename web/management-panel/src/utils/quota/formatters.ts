@@ -77,3 +77,8 @@ export function formatZaiResetHint(t: TFunction, hint?: string): string {
   if (!hint) return '';
   return t('zai_quota.reset_hint', { hint });
 }
+
+export function formatXaiResetHint(t: TFunction, hint?: string): string {
+  if (!hint) return '';
+  return t('xai_quota.reset_hint', { hint });
+}

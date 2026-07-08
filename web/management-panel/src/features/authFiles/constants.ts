@@ -24,7 +24,14 @@ export type AuthFileModelItem = {
 };
 export type AuthFileIconAsset = string | { light: string; dark: string };
 
-export type QuotaProviderType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi' | 'zai';
+export type QuotaProviderType =
+  | 'antigravity'
+  | 'claude'
+  | 'codex'
+  | 'gemini-cli'
+  | 'kimi'
+  | 'zai'
+  | 'xai';
 
 export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
   'antigravity',
@@ -33,6 +40,7 @@ export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
   'gemini-cli',
   'kimi',
   'zai',
+  'xai',
 ]);
 
 export const MIN_CARD_PAGE_SIZE = 3;

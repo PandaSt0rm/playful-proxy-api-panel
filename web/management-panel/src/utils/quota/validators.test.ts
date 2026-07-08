@@ -8,6 +8,7 @@ import {
   isCodexFile,
   isGeminiCliFile,
   isKimiFile,
+  isXaiFile,
   isZaiFile,
   isRuntimeOnlyAuthFile,
   isDisabledAuthFile,
@@ -180,6 +181,26 @@ describe('isKimiFile', () => {
 
   it('returns false for a different provider', () => {
     const result = isKimiFile(makeFile({ provider: 'zai' }));
+
+    expect(result).toBe(false);
+  });
+});
+
+describe('isXaiFile', () => {
+  it('returns true for an xai provider', () => {
+    const result = isXaiFile(makeFile({ provider: 'xai' }));
+
+    expect(result).toBe(true);
+  });
+
+  it('returns true when type is xai and provider is absent', () => {
+    const result = isXaiFile(makeFile({ provider: undefined, type: 'xai' }));
+
+    expect(result).toBe(true);
+  });
+
+  it('returns false for a non-xai provider', () => {
+    const result = isXaiFile(makeFile({ provider: 'kimi' }));
 
     expect(result).toBe(false);
   });

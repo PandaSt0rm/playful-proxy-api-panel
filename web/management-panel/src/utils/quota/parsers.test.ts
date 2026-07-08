@@ -14,7 +14,9 @@ import {
   parseGeminiCliQuotaPayload,
   parseGeminiCliCodeAssistPayload,
   parseKimiUsagePayload,
+  parseXaiBillingPayload,
   parseZaiQuotaPayload,
+  unwrapXaiBillingAmount,
 } from './parsers';
 
 // Builds a base64url-encoded string (no padding, +/ -> -_) the way a JWT segment
@@ -510,6 +512,7 @@ describe.each([
   ['parseGeminiCliCodeAssistPayload', parseGeminiCliCodeAssistPayload],
   ['parseKimiUsagePayload', parseKimiUsagePayload],
   ['parseZaiQuotaPayload', parseZaiQuotaPayload],
+  ['parseXaiBillingPayload', parseXaiBillingPayload],
 ] as const)('%s', (_name, parse) => {
   it('returns an object payload as-is', () => {
     const payload = { quota: 1 };
@@ -553,6 +556,31 @@ describe.each([
     const result = parse(5);
 
     expect(result).toBeNull();
+  });
+});
+
+describe('unwrapXaiBillingAmount', () => {
+  it('reads val from a unit object', () => {
+    expect(unwrapXaiBillingAmount({ val: 42 })).toBe(42);
+  });
+
+  it('reads value from a unit object', () => {
+    expect(unwrapXaiBillingAmount({ value: '7.5' })).toBe(7.5);
+  });
+
+  it('accepts a plain number', () => {
+    expect(unwrapXaiBillingAmount(100)).toBe(100);
+  });
+
+  it('accepts a numeric string', () => {
+    expect(unwrapXaiBillingAmount('250')).toBe(250);
+  });
+
+  it('returns null for empty or non-numeric input', () => {
+    expect(unwrapXaiBillingAmount(null)).toBeNull();
+    expect(unwrapXaiBillingAmount(undefined)).toBeNull();
+    expect(unwrapXaiBillingAmount({})).toBeNull();
+    expect(unwrapXaiBillingAmount('nope')).toBeNull();
   });
 });
 

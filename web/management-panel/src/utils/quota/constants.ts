@@ -42,6 +42,11 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
     light: { bg: '#e5f4ff', text: '#075a9f' },
     dark: { bg: '#073763', text: '#8fd0ff' },
   },
+  // xAI / Grok: monochromatic slate matching the xAI brand mark.
+  xai: {
+    light: { bg: '#e9ecef', text: '#1f2933' },
+    dark: { bg: '#1f2933', text: '#cbd5e1' },
+  },
   antigravity: {
     light: { bg: '#e0f7fa', text: '#006064' },
     dark: { bg: '#004d40', text: '#80deea' },
@@ -210,4 +215,18 @@ export const ZAI_REQUEST_HEADERS = {
   Authorization: '$TOKEN$',
   'Accept-Language': 'en-US,en',
   'Content-Type': 'application/json',
+};
+
+// xAI / Grok SuperGrok CLI billing
+export const XAI_BILLING_URL = 'https://cli-chat-proxy.grok.com/v1/billing';
+
+/** Optional plan/tier surface (subscription_tier_display). Not required for meters. */
+export const XAI_SETTINGS_URL = 'https://cli-chat-proxy.grok.com/v1/settings';
+
+export const XAI_TOKEN_AUTH_HEADER = 'xai-grok-cli';
+
+export const XAI_REQUEST_HEADERS = {
+  Authorization: 'Bearer $TOKEN$',
+  'X-XAI-Token-Auth': XAI_TOKEN_AUTH_HEADER,
+  Accept: 'application/json',
 };

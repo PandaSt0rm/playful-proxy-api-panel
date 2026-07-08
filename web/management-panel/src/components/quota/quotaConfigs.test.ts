@@ -23,8 +23,9 @@ vi.mock('@/services/api', async () => {
 
 // Imported after the mock factory is registered so the config closures capture
 // the mocked apiCallApi.
-import { CLAUDE_CONFIG, CODEX_CONFIG } from './quotaConfigs';
+import { CLAUDE_CONFIG, CODEX_CONFIG, XAI_CONFIG } from './quotaConfigs';
 import { useQuotaStore } from '@/stores';
+import { XAI_BILLING_URL, XAI_REQUEST_HEADERS } from '@/utils/quota';
 
 // Deterministic English translator (test setup pins i18n to 'en').
 const t = i18n.getFixedT('en') as unknown as TFunction;
@@ -51,6 +52,7 @@ beforeEach(() => {
     geminiCliQuota: {},
     kimiQuota: {},
     zaiQuota: {},
+    xaiQuota: {},
   });
 });
 
@@ -617,5 +619,155 @@ describe('CODEX_CONFIG / CLAUDE_CONFIG filterFn', () => {
 
   it('CLAUDE_CONFIG rejects a disabled claude auth file', () => {
     expect(CLAUDE_CONFIG.filterFn(makeFile({ provider: 'claude', disabled: true }))).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// XAI: state builders, filter, fetchQuota guards + happy path
+// ---------------------------------------------------------------------------
+
+describe('XAI_CONFIG state builders', () => {
+  it('buildLoadingState produces a loading state with no rows', () => {
+    expect(XAI_CONFIG.buildLoadingState()).toEqual({ status: 'loading', rows: [] });
+  });
+
+  it('buildSuccessState carries through rows and plan type', () => {
+    const rows = [{ id: 'included-credits', used: 10, limit: 100, labelKey: 'xai_quota.monthly_credits' }];
+    expect(XAI_CONFIG.buildSuccessState({ rows, planType: 'SuperGrok' })).toEqual({
+      status: 'success',
+      rows,
+      planType: 'SuperGrok',
+    });
+  });
+
+  it('buildErrorState records the message and status code', () => {
+    expect(XAI_CONFIG.buildErrorState('boom', 401)).toEqual({
+      status: 'error',
+      rows: [],
+      error: 'boom',
+      errorStatus: 401,
+    });
+  });
+});
+
+describe('XAI_CONFIG filterFn', () => {
+  it('accepts an enabled xai auth file', () => {
+    expect(XAI_CONFIG.filterFn(makeFile({ provider: 'xai' }))).toBe(true);
+  });
+
+  it('rejects a disabled xai auth file', () => {
+    expect(XAI_CONFIG.filterFn(makeFile({ provider: 'xai', disabled: true }))).toBe(false);
+  });
+
+  it('rejects a non-xai provider', () => {
+    expect(XAI_CONFIG.filterFn(makeFile({ provider: 'kimi' }))).toBe(false);
+  });
+});
+
+describe('XAI_CONFIG.fetchQuota guards', () => {
+  it('throws the missing auth_index message when no auth index resolves', async () => {
+    const file = makeFile({ auth_index: undefined, authIndex: undefined });
+
+    await expect(XAI_CONFIG.fetchQuota(file, t)).rejects.toThrow('Auth file missing auth_index');
+    expect(requestMock).not.toHaveBeenCalled();
+  });
+
+  it('throws empty_data when the billing body is empty', async () => {
+    requestMock.mockResolvedValue(okResult(''));
+
+    await expect(XAI_CONFIG.fetchQuota(makeFile({ provider: 'xai' }), t)).rejects.toThrow(
+      'No quota data available'
+    );
+  });
+
+  it('throws empty_data when the billing body has no usable config fields', async () => {
+    requestMock.mockResolvedValue(okResult({ config: {} }));
+
+    await expect(XAI_CONFIG.fetchQuota(makeFile({ provider: 'xai' }), t)).rejects.toThrow(
+      'No quota data available'
+    );
+  });
+
+  it('propagates non-2xx status via createStatusError', async () => {
+    requestMock.mockResolvedValue({
+      statusCode: 403,
+      header: {},
+      bodyText: 'forbidden',
+      body: null,
+    });
+
+    await expect(XAI_CONFIG.fetchQuota(makeFile({ provider: 'xai' }), t)).rejects.toMatchObject({
+      status: 403,
+    });
+  });
+});
+
+describe('XAI_CONFIG.fetchQuota happy path', () => {
+  it('calls the Grok CLI billing endpoint with X-XAI-Token-Auth and returns rows', async () => {
+    requestMock
+      .mockResolvedValueOnce(
+        okResult({
+          config: {
+            used: { val: 42 },
+            monthlyLimit: { val: 500 },
+            onDemandCap: { val: 1000 },
+            billingPeriodEnd: '2030-06-01T00:00:00.000Z',
+          },
+          subscription_tier_display: 'SuperGrok',
+        })
+      )
+      .mockResolvedValueOnce(okResult({ subscription_tier_display: 'SuperGrok Heavy' }));
+
+    const result = await XAI_CONFIG.fetchQuota(makeFile({ provider: 'xai', auth_index: '9' }), t);
+
+    expect(requestMock).toHaveBeenCalledWith({
+      authIndex: '9',
+      method: 'GET',
+      url: XAI_BILLING_URL,
+      header: { ...XAI_REQUEST_HEADERS },
+    });
+    expect(result.rows).toHaveLength(2);
+    expect(result.rows[0]).toMatchObject({
+      id: 'included-credits',
+      used: 42,
+      limit: 500,
+    });
+    expect(result.rows[1]).toMatchObject({ id: 'on-demand-cap', limit: 1000 });
+    // Billing-side plan wins when present.
+    expect(result.planType).toBe('SuperGrok');
+  });
+
+  it('falls back to settings subscription_tier_display when billing has no plan', async () => {
+    requestMock
+      .mockResolvedValueOnce(
+        okResult({
+          config: {
+            used: { val: 1750 },
+            monthlyLimit: { val: 150000 },
+            onDemandCap: { val: 0 },
+          },
+        })
+      )
+      .mockResolvedValueOnce(okResult({ subscription_tier_display: 'SuperGrok Heavy' }));
+
+    const result = await XAI_CONFIG.fetchQuota(makeFile({ provider: 'xai' }), t);
+
+    expect(result.rows[0]).toMatchObject({ used: 1750, limit: 150000 });
+    expect(result.planType).toBe('SuperGrok Heavy');
+  });
+
+  it('still succeeds when the optional settings request fails', async () => {
+    requestMock
+      .mockResolvedValueOnce(
+        okResult({
+          config: { used: { val: 1 }, monthlyLimit: { val: 10 } },
+        })
+      )
+      .mockRejectedValueOnce(new Error('network down'));
+
+    const result = await XAI_CONFIG.fetchQuota(makeFile({ provider: 'xai' }), t);
+
+    expect(result.rows).toHaveLength(1);
+    expect(result.planType).toBeNull();
   });
 });

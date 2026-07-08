@@ -44,6 +44,10 @@ export function isKimiFile(file: AuthFileItem): boolean {
   return resolveAuthProvider(file) === 'kimi';
 }
 
+export function isXaiFile(file: AuthFileItem): boolean {
+  return resolveAuthProvider(file) === 'xai';
+}
+
 export function isZaiFile(file: AuthFileItem): boolean {
   const providerKeys = [
     resolveAuthProvider(file),
