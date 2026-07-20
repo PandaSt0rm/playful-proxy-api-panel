@@ -96,12 +96,38 @@ const normalizeModelAliases = (models: unknown): ModelAlias[] => {
         (typeof item.id === 'string' && item.id.trim()) ||
         (typeof item.model === 'string' && item.model.trim());
       if (!name) return null;
-      const alias = item.alias || item.display_name || item.displayName;
-      const priority = item.priority ?? item['priority'];
+      const alias = item.alias ?? item.display_name;
+      const displayName = item['display-name'] ?? item.displayName;
+      const forceMapping = normalizeBoolean(
+        item['force-mapping'] ?? item.force_mapping ?? item.forceMapping
+      );
+      const image = normalizeBoolean(item.image);
+      const inputModalities = normalizeExcludedModels(
+        item['input-modalities'] ?? item.input_modalities ?? item.inputModalities
+      );
+      const outputModalities = normalizeExcludedModels(
+        item['output-modalities'] ?? item.output_modalities ?? item.outputModalities
+      );
       const testModel = item['test-model'] ?? item.testModel;
+      const priority = item.priority;
       const entry: ModelAlias = { name: String(name), raw: cloneRecord(item) };
       if (alias && alias !== name) {
         entry.alias = String(alias);
+      }
+      if (displayName) {
+        entry.displayName = String(displayName);
+      }
+      if (forceMapping !== undefined) {
+        entry.forceMapping = forceMapping;
+      }
+      if (image !== undefined) {
+        entry.image = image;
+      }
+      if (inputModalities.length) {
+        entry.inputModalities = inputModalities;
+      }
+      if (outputModalities.length) {
+        entry.outputModalities = outputModalities;
       }
       if (priority !== undefined) {
         const parsed = Number(priority);
@@ -482,7 +508,7 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
   const codexRaw = raw.codex;
   config.codexIdentityConfuse = normalizeBoolean(
     isRecord(codexRaw)
-      ? codexRaw['identity-confuse'] ?? codexRaw.identityConfuse
+      ? (codexRaw['identity-confuse'] ?? codexRaw.identityConfuse)
       : raw.codexIdentityConfuse
   );
   const pluginsRaw = raw.plugins;
@@ -626,9 +652,24 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
       .filter(Boolean) as GeminiKeyConfig[];
   }
 
+  const interactionsList =
+    raw['interactions-api-key'] ?? raw.interactionsApiKey ?? raw.interactionsApiKeys;
+  if (Array.isArray(interactionsList)) {
+    config.interactionsApiKeys = interactionsList
+      .map((item) => normalizeGeminiKeyConfig(item))
+      .filter(Boolean) as GeminiKeyConfig[];
+  }
+
   const codexList = raw['codex-api-key'] ?? raw.codexApiKey ?? raw.codexApiKeys;
   if (Array.isArray(codexList)) {
     config.codexApiKeys = codexList
+      .map((item) => normalizeProviderKeyConfig(item))
+      .filter(Boolean) as ProviderKeyConfig[];
+  }
+
+  const xaiList = raw['xai-api-key'] ?? raw.xaiApiKey ?? raw.xaiApiKeys;
+  if (Array.isArray(xaiList)) {
+    config.xaiApiKeys = xaiList
       .map((item) => normalizeProviderKeyConfig(item))
       .filter(Boolean) as ProviderKeyConfig[];
   }

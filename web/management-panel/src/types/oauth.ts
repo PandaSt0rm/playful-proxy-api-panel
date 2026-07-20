@@ -4,12 +4,7 @@
  */
 
 // OAuth 提供商类型
-export type OAuthProvider =
-  | 'codex'
-  | 'anthropic'
-  | 'antigravity'
-  | 'gemini-cli'
-  | 'kimi';
+export type OAuthProvider = 'codex' | 'anthropic' | 'antigravity' | 'gemini-cli' | 'kimi';
 
 // OAuth 流程状态
 export interface OAuthFlow {
@@ -38,6 +33,7 @@ export interface OAuthExcludedModels {
 export interface OAuthModelAliasEntry {
   name: string;
   alias: string;
+  displayName?: string;
   fork?: boolean;
 }
 

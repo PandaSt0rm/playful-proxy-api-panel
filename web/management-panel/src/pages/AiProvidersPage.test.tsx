@@ -27,6 +27,7 @@ type StubSectionProps = {
   loading?: boolean;
   onAdd?: () => void;
   onEdit?: (index: number) => void;
+  providerKey?: string;
 };
 
 vi.mock('@/components/providers', () => {
@@ -46,7 +47,16 @@ vi.mock('@/components/providers', () => {
 
   return {
     GeminiSection: makeStub('gemini-section'),
-    CodexSection: makeStub('codex-section'),
+    CodexSection: ({ providerKey, ...props }: StubSectionProps) => {
+      const testid =
+        providerKey === 'interactions'
+          ? 'interactions-section'
+          : providerKey === 'xai'
+            ? 'xai-section'
+            : 'codex-section';
+      const Stub = makeStub(testid);
+      return <Stub {...props} />;
+    },
     ClaudeSection: makeStub('claude-section'),
     VertexSection: makeStub('vertex-section'),
     ZaiSection: makeStub('zai-section'),
@@ -125,6 +135,8 @@ describe('AiProvidersPage', () => {
 
     await waitFor(() => expect(screen.getByTestId('gemini-section')).toBeInTheDocument());
     expect(screen.getByTestId('codex-section')).toBeInTheDocument();
+    expect(screen.getByTestId('interactions-section')).toBeInTheDocument();
+    expect(screen.getByTestId('xai-section')).toBeInTheDocument();
     expect(screen.getByTestId('claude-section')).toBeInTheDocument();
     expect(screen.getByTestId('vertex-section')).toBeInTheDocument();
     expect(screen.getByTestId('zai-section')).toBeInTheDocument();

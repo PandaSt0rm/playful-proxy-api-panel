@@ -16,8 +16,6 @@ const (
 	placeholderKey   = "${PROXY_API_KEY}"
 	placeholderModel = "<your-model-id>"
 
-	factoryDroidDefaultMaxOutputTokens = 16384
-
 	// ModelProviderOpenAI identifies models that use the OpenAI Responses API.
 	ModelProviderOpenAI = "openai"
 	// ModelProviderAnthropic identifies models that use the Anthropic Messages API.
@@ -66,6 +64,14 @@ type RenderRequest struct {
 	// (ModelProviderOpenAI, ModelProviderAnthropic, or ModelProviderGeneric).
 	// When unset, all models default to ModelProviderGeneric.
 	ModelProviders map[string]string `json:"model_providers,omitempty"`
+	// ModelCapabilities maps model names to optional metadata used by tool
+	// templates that can encode model limits and input support.
+	ModelCapabilities map[string]ModelCapabilities `json:"model_capabilities,omitempty"`
+}
+
+type ModelCapabilities struct {
+	MaxOutputTokens int   `json:"maxOutputTokens,omitempty"`
+	NoImageSupport  *bool `json:"noImageSupport,omitempty"`
 }
 
 type RenderResponse struct {
@@ -224,7 +230,7 @@ func renderFactoryDroid(req RenderRequest) (string, []AuxiliaryFile, error) {
 		BaseURL         string `json:"baseUrl"`
 		APIKey          string `json:"apiKey"`
 		DisplayName     string `json:"displayName"`
-		MaxOutputTokens int    `json:"maxOutputTokens"`
+		MaxOutputTokens int    `json:"maxOutputTokens,omitempty"`
 		NoImageSupport  bool   `json:"noImageSupport"`
 		Provider        string `json:"provider"`
 	}
@@ -240,8 +246,8 @@ func renderFactoryDroid(req RenderRequest) (string, []AuxiliaryFile, error) {
 			BaseURL:         base + "/v1",
 			APIKey:          key,
 			DisplayName:     displayName,
-			MaxOutputTokens: factoryDroidMaxOutputTokens(model),
-			NoImageSupport:  false,
+			MaxOutputTokens: factoryDroidMaxOutputTokens(req, model),
+			NoImageSupport:  factoryDroidNoImageSupport(req, model),
 			Provider:        factoryDroidProviderForModel(resolveProviderForModel(req, model)),
 		})
 	}
@@ -573,11 +579,40 @@ func factoryDroidModelKey(model string) string {
 	return key
 }
 
-func factoryDroidMaxOutputTokens(model string) int {
+func factoryDroidMaxOutputTokens(req RenderRequest, model string) int {
+	if capabilities, ok := resolveModelCapabilities(req, model); ok && capabilities.MaxOutputTokens > 0 {
+		return capabilities.MaxOutputTokens
+	}
 	if tokens, ok := factoryDroidMaxOutputTokensByModel[factoryDroidModelKey(model)]; ok {
 		return tokens
 	}
-	return factoryDroidDefaultMaxOutputTokens
+	return 0
+}
+
+func factoryDroidNoImageSupport(req RenderRequest, model string) bool {
+	if capabilities, ok := resolveModelCapabilities(req, model); ok && capabilities.NoImageSupport != nil {
+		return *capabilities.NoImageSupport
+	}
+	return false
+}
+
+func resolveModelCapabilities(req RenderRequest, model string) (ModelCapabilities, bool) {
+	if req.ModelCapabilities == nil {
+		return ModelCapabilities{}, false
+	}
+	model = strings.TrimSpace(model)
+	if model == "" {
+		return ModelCapabilities{}, false
+	}
+	if capabilities, ok := req.ModelCapabilities[model]; ok {
+		return capabilities, true
+	}
+	if idx := strings.LastIndex(model, "/"); idx >= 0 {
+		if capabilities, ok := req.ModelCapabilities[model[idx+1:]]; ok {
+			return capabilities, true
+		}
+	}
+	return ModelCapabilities{}, false
 }
 
 func factoryDroidDisplayName(model string) string {

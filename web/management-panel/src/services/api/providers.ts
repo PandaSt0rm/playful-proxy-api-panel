@@ -108,6 +108,19 @@ export const serializeModelAliases = (models?: ModelAlias[]) =>
           }
           setOptionalNumber(payload, 'priority', model.priority);
           setOptionalString(payload, 'test-model', model.testModel);
+          setOptionalString(payload, 'display-name', model.displayName);
+          setOptionalBoolean(payload, 'force-mapping', model.forceMapping);
+          setOptionalBoolean(payload, 'image', model.image);
+          if (model.inputModalities?.length) {
+            payload['input-modalities'] = [...model.inputModalities];
+          } else {
+            delete payload['input-modalities'];
+          }
+          if (model.outputModalities?.length) {
+            payload['output-modalities'] = [...model.outputModalities];
+          } else {
+            delete payload['output-modalities'];
+          }
           const thinking = serializeThinkingSupport(model);
           if (thinking) {
             payload.thinking = thinking;
@@ -302,6 +315,38 @@ export const providersApi = {
 
   deleteCodexConfig: (apiKey: string, baseUrl?: string) =>
     apiClient.delete(`/codex-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
+
+  async getInteractionsConfigs(): Promise<GeminiKeyConfig[]> {
+    const data = await apiClient.get('/interactions-api-key');
+    const list = extractArrayPayload(data, 'interactions-api-key');
+    return list.map((item) => normalizeGeminiKeyConfig(item)).filter(Boolean) as GeminiKeyConfig[];
+  },
+
+  saveInteractionsConfigs: (configs: GeminiKeyConfig[]) =>
+    apiClient.put(
+      '/interactions-api-key',
+      configs.map((item) => serializeGeminiKey(item))
+    ),
+
+  deleteInteractionsConfig: (apiKey: string, baseUrl?: string) =>
+    apiClient.delete(`/interactions-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
+
+  async getXAIConfigs(): Promise<ProviderKeyConfig[]> {
+    const data = await apiClient.get('/xai-api-key');
+    const list = extractArrayPayload(data, 'xai-api-key');
+    return list
+      .map((item) => normalizeProviderKeyConfig(item))
+      .filter(Boolean) as ProviderKeyConfig[];
+  },
+
+  saveXAIConfigs: (configs: ProviderKeyConfig[]) =>
+    apiClient.put(
+      '/xai-api-key',
+      configs.map((item) => serializeProviderKey(item))
+    ),
+
+  deleteXAIConfig: (apiKey: string, baseUrl?: string) =>
+    apiClient.delete(`/xai-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
 
   async getClaudeConfigs(): Promise<ProviderKeyConfig[]> {
     const data = await apiClient.get('/claude-api-key');

@@ -5,7 +5,9 @@ import { ProviderNav } from './ProviderNav';
 
 const PROVIDER_IDS = [
   'gemini',
+  'interactions',
   'codex',
+  'xai',
   'claude',
   'vertex',
   'zai',

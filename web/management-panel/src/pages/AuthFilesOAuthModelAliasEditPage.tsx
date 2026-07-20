@@ -75,7 +75,9 @@ export function AuthFilesOAuthModelAliasEditPage() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [modelAliasUnsupported, setModelAliasUnsupported] = useState(false);
 
-  const [mappings, setMappings] = useState<OAuthModelMappingFormEntry[]>([buildEmptyMappingEntry()]);
+  const [mappings, setMappings] = useState<OAuthModelMappingFormEntry[]>([
+    buildEmptyMappingEntry(),
+  ]);
   const [modelsList, setModelsList] = useState<AuthFileModelItem[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
   const [modelsError, setModelsError] = useState<'unsupported' | null>(null);
@@ -320,7 +322,9 @@ export function AuthFilesOAuthModelAliasEditPage() {
         const key = `${name.toLowerCase()}::${alias.toLowerCase()}::${entry.fork ? '1' : '0'}`;
         if (seen.has(key)) return null;
         seen.add(key);
-        return entry.fork ? { name, alias, fork: true } : { name, alias };
+        const displayName = String(entry.displayName ?? '').trim();
+        const normalizedEntry = entry.fork ? { name, alias, fork: true } : { name, alias };
+        return displayName ? { ...normalizedEntry, displayName } : normalizedEntry;
       })
       .filter(Boolean) as OAuthModelAliasEntry[];
 
@@ -380,7 +384,9 @@ export function AuthFilesOAuthModelAliasEditPage() {
             <div className={styles.settingsSection}>
               <div className={styles.settingsRow}>
                 <div className={styles.settingsInfo}>
-                  <div className={styles.settingsLabel}>{t('oauth_model_alias.provider_label')}</div>
+                  <div className={styles.settingsLabel}>
+                    {t('oauth_model_alias.provider_label')}
+                  </div>
                   <div className={styles.settingsDesc}>{t('oauth_model_alias.provider_hint')}</div>
                 </div>
                 <div className={styles.settingsControl}>
@@ -453,6 +459,13 @@ export function AuthFilesOAuthModelAliasEditPage() {
                     placeholder={t('oauth_model_alias.alias_placeholder')}
                     value={entry.alias}
                     onChange={(e) => updateMappingEntry(index, 'alias', e.target.value)}
+                    disabled={disableControls || saving}
+                  />
+                  <input
+                    className={`input ${styles.mappingAliasInput}`}
+                    placeholder="Display name (optional)"
+                    value={entry.displayName ?? ''}
+                    onChange={(e) => updateMappingEntry(index, 'displayName', e.target.value)}
                     disabled={disableControls || saving}
                   />
                   <div className={styles.mappingFork}>

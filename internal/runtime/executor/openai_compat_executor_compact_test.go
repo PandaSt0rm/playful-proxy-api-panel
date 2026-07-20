@@ -3,6 +3,7 @@ package executor
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -362,6 +363,128 @@ func TestRewriteOpenAICompatImagesMultipartPayloadPreservesStreamAndFileContentT
 	}
 	if got := form.File["image"]; len(got) != 1 || got[0].Header.Get("Content-Type") != "image/webp" {
 		t.Fatalf("image headers = %#v, want image/webp", got)
+	}
+}
+
+func TestOpenAICompatExecutorStreamAcceptHeader(t *testing.T) {
+	tests := []struct {
+		name       string
+		accept     string
+		wantAccept string
+	}{
+		{name: "default", wantAccept: "text/event-stream"},
+		{name: "provider override", accept: "*/*", wantAccept: "*/*"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotAccept string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotAccept = r.Header.Get("Accept")
+				w.Header().Set("Content-Type", "text/event-stream")
+				_, _ = w.Write([]byte("data: [DONE]\n\n"))
+			}))
+			defer server.Close()
+
+			attrs := map[string]string{
+				"base_url": server.URL + "/v1",
+				"api_key":  "test",
+			}
+			if tt.accept != "" {
+				attrs["header:Accept"] = tt.accept
+			}
+			executor := NewOpenAICompatExecutor("openai-compatibility", &config.Config{})
+			result, err := executor.ExecuteStream(context.Background(), &cliproxyauth.Auth{Attributes: attrs}, cliproxyexecutor.Request{
+				Model:   "compat-model",
+				Payload: []byte(`{"model":"compat-model","messages":[{"role":"user","content":"hi"}],"stream":true}`),
+			}, cliproxyexecutor.Options{
+				SourceFormat: sdktranslator.FromString("openai"),
+				Stream:       true,
+			})
+			if err != nil {
+				t.Fatalf("ExecuteStream error: %v", err)
+			}
+			for chunk := range result.Chunks {
+				if chunk.Err != nil {
+					t.Fatalf("unexpected stream error: %v", chunk.Err)
+				}
+			}
+			if gotAccept != tt.wantAccept {
+				t.Fatalf("Accept = %q, want %q", gotAccept, tt.wantAccept)
+			}
+		})
+	}
+}
+
+func TestOpenAICompatExecutorNormalizeSystemMessages(t *testing.T) {
+	const payload = `{"model":"compat-model","messages":[{"role":"system","content":"one"},{"role":"system","content":"two"},{"role":"user","content":"hi"}]}`
+	tests := []struct {
+		name        string
+		enabled     bool
+		wantCount   int
+		wantContent string
+	}{
+		{name: "disabled", wantCount: 3, wantContent: "one"},
+		{name: "enabled", enabled: true, wantCount: 2, wantContent: "one\n\ntwo"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			executor := NewOpenAICompatExecutor("openai-compatibility", &config.Config{
+				OpenAICompatibility: []config.OpenAICompatibility{{
+					Name:                "Bifrost",
+					MergeSystemMessages: tt.enabled,
+				}},
+			})
+			auth := &cliproxyauth.Auth{Attributes: map[string]string{"compat_name": "Bifrost"}}
+			normalized := executor.normalizeSystemMessages(auth, []byte(payload))
+
+			var request struct {
+				Messages []struct {
+					Role    string `json:"role"`
+					Content string `json:"content"`
+				} `json:"messages"`
+			}
+			if err := json.Unmarshal(normalized, &request); err != nil {
+				t.Fatalf("unmarshal normalized payload: %v", err)
+			}
+			if len(request.Messages) != tt.wantCount {
+				t.Fatalf("message count = %d, want %d: %s", len(request.Messages), tt.wantCount, normalized)
+			}
+			if got := request.Messages[0].Content; got != tt.wantContent {
+				t.Fatalf("first system content = %q, want %q", got, tt.wantContent)
+			}
+		})
+	}
+}
+
+func TestMergeLeadingSystemMessagesCombinesContentParts(t *testing.T) {
+	payload := []byte(`{"messages":[{"role":"system","content":"one"},{"role":"system","content":[{"type":"text","text":"two"}]},{"role":"user","content":"hi"}]}`)
+	normalized := mergeLeadingSystemMessages(payload)
+
+	var request struct {
+		Messages []struct {
+			Role    string          `json:"role"`
+			Content json.RawMessage `json:"content"`
+		} `json:"messages"`
+	}
+	if err := json.Unmarshal(normalized, &request); err != nil {
+		t.Fatalf("unmarshal normalized payload: %v", err)
+	}
+	if len(request.Messages) != 2 {
+		t.Fatalf("message count = %d, want 2: %s", len(request.Messages), normalized)
+	}
+	var got []struct {
+		Type string `json:"type"`
+		Text string `json:"text"`
+	}
+	if err := json.Unmarshal(request.Messages[0].Content, &got); err != nil {
+		t.Fatalf("unmarshal merged content: %v", err)
+	}
+	if len(got) != 2 ||
+		got[0].Type != "text" || got[0].Text != "one" ||
+		got[1].Type != "text" || got[1].Text != "two" {
+		t.Fatalf("merged content = %#v, want two preserved text parts", got)
 	}
 }
 

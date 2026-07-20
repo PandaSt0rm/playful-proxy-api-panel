@@ -30,6 +30,15 @@ interface CodexSectionProps {
   onEdit: (index: number) => void;
   onDelete: (index: number) => void;
   onToggle: (index: number, enabled: boolean) => void;
+  providerKey?: string;
+  title?: string;
+  addButtonLabel?: string;
+  emptyTitle?: string;
+  emptyDescription?: string;
+  itemTitle?: string;
+  modelsCountLabel?: string;
+  iconSrc?: string;
+  showWebsockets?: boolean;
 }
 
 export function CodexSection({
@@ -43,6 +52,15 @@ export function CodexSection({
   onEdit,
   onDelete,
   onToggle,
+  providerKey = 'codex',
+  title,
+  addButtonLabel,
+  emptyTitle,
+  emptyDescription,
+  itemTitle,
+  modelsCountLabel,
+  iconSrc = iconCodex,
+  showWebsockets = true,
 }: CodexSectionProps) {
   const { t } = useTranslation();
   const actionsDisabled = disableControls || loading || isSwitching;
@@ -57,26 +75,26 @@ export function CodexSection({
       cache.set(
         configKey,
         statusBarDataFromRecentRequests(
-          getProviderRecentBuckets(usageByProvider, 'codex', config.apiKey, config.baseUrl)
+          getProviderRecentBuckets(usageByProvider, providerKey, config.apiKey, config.baseUrl)
         )
       );
     });
 
     return cache;
-  }, [configs, usageByProvider]);
+  }, [configs, providerKey, usageByProvider]);
 
   return (
     <>
       <Card
         title={
           <span className={styles.cardTitle}>
-            <img src={iconCodex} alt="" className={styles.cardTitleIcon} />
-            {t('ai_providers.codex_title')}
+            <img src={iconSrc} alt="" className={styles.cardTitleIcon} />
+            {title ?? t('ai_providers.codex_title')}
           </span>
         }
         extra={
           <Button size="sm" onClick={onAdd} disabled={actionsDisabled}>
-            {t('ai_providers.codex_add_button')}
+            {addButtonLabel ?? t('ai_providers.codex_add_button')}
           </Button>
         }
       >
@@ -84,8 +102,8 @@ export function CodexSection({
           items={configs}
           loading={loading}
           keyField={(item, index) => getProviderConfigKey(item, index)}
-          emptyTitle={t('ai_providers.codex_empty_title')}
-          emptyDescription={t('ai_providers.codex_empty_desc')}
+          emptyTitle={emptyTitle ?? t('ai_providers.codex_empty_title')}
+          emptyDescription={emptyDescription ?? t('ai_providers.codex_empty_desc')}
           onEdit={(_, index) => onEdit(index)}
           onDelete={(_, index) => onDelete(index)}
           actionsDisabled={actionsDisabled}
@@ -101,7 +119,7 @@ export function CodexSection({
           renderContent={(item, index) => {
             const stats = getProviderTotalStats(
               usageByProvider,
-              'codex',
+              providerKey,
               item.apiKey,
               item.baseUrl
             );
@@ -114,7 +132,7 @@ export function CodexSection({
 
             return (
               <Fragment>
-                <div className="item-title">{t('ai_providers.codex_item_title')}</div>
+                <div className="item-title">{itemTitle ?? t('ai_providers.codex_item_title')}</div>
                 <div className={styles.fieldRow}>
                   <span className={styles.fieldLabel}>{t('common.api_key')}:</span>
                   <span className={styles.fieldValue}>{maskApiKey(item.apiKey)}</span>
@@ -143,11 +161,15 @@ export function CodexSection({
                     <span className={styles.fieldValue}>{item.proxyUrl}</span>
                   </div>
                 )}
-                <ProviderConcurrencyBadge providerKey="codex" config={upstreamConcurrency} />
-                {item.websockets !== undefined && (
+                <ProviderConcurrencyBadge providerKey={providerKey} config={upstreamConcurrency} />
+                {showWebsockets && item.websockets !== undefined && (
                   <div className={styles.fieldRow}>
-                    <span className={styles.fieldLabel}>{t('ai_providers.codex_websockets_label')}:</span>
-                    <span className={styles.fieldValue}>{item.websockets ? t('common.yes') : t('common.no')}</span>
+                    <span className={styles.fieldLabel}>
+                      {t('ai_providers.codex_websockets_label')}:
+                    </span>
+                    <span className={styles.fieldValue}>
+                      {item.websockets ? t('common.yes') : t('common.no')}
+                    </span>
                   </div>
                 )}
                 {item.disableCooling !== undefined && (
@@ -180,7 +202,8 @@ export function CodexSection({
                 {item.models?.length ? (
                   <div className={styles.modelTagList}>
                     <span className={styles.modelCountLabel}>
-                      {t('ai_providers.codex_models_count')}: {item.models.length}
+                      {modelsCountLabel ?? t('ai_providers.codex_models_count')}:{' '}
+                      {item.models.length}
                     </span>
                     {item.models.map((model) => (
                       <span key={model.name} className={styles.modelTag}>
@@ -199,7 +222,10 @@ export function CodexSection({
                     </div>
                     <div className={styles.modelTagList}>
                       {excludedModels.map((model) => (
-                        <span key={model} className={`${styles.modelTag} ${styles.excludedModelTag}`}>
+                        <span
+                          key={model}
+                          className={`${styles.modelTag} ${styles.excludedModelTag}`}
+                        >
                           <span className={styles.modelName}>{model}</span>
                         </span>
                       ))}

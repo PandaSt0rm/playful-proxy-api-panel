@@ -4,6 +4,12 @@ export interface ModelEntry {
   name: string;
   alias: string;
   regex?: boolean;
+  displayName?: string;
+  forceMapping?: boolean;
+  image?: boolean;
+  inputModalities?: string[];
+  outputModalities?: string[];
+  raw?: Record<string, unknown>;
   thinking?: ThinkingSupport;
   thinkingLevels?: string[];
   thinkingPayloads?: ThinkingPayloadMap;
@@ -37,6 +43,24 @@ export const modelsToEntries = (models?: ModelAlias[]): ModelEntry[] => {
       name: model.name || '',
       alias: model.alias || '',
     };
+    if (model.displayName) {
+      entry.displayName = model.displayName;
+    }
+    if (model.forceMapping !== undefined) {
+      entry.forceMapping = model.forceMapping;
+    }
+    if (model.image !== undefined) {
+      entry.image = model.image;
+    }
+    if (Array.isArray(model.inputModalities) && model.inputModalities.length) {
+      entry.inputModalities = [...model.inputModalities];
+    }
+    if (Array.isArray(model.outputModalities) && model.outputModalities.length) {
+      entry.outputModalities = [...model.outputModalities];
+    }
+    if (model.raw) {
+      entry.raw = { ...model.raw };
+    }
     if (model.thinking) {
       entry.thinking = { ...model.thinking };
     }
@@ -61,6 +85,25 @@ export const entriesToModels = (entries: ModelEntry[]): ModelAlias[] => {
       const alias = entry.alias.trim();
       if (alias && alias !== model.name) {
         model.alias = alias;
+      }
+      const displayName = entry.displayName?.trim();
+      if (displayName) {
+        model.displayName = displayName;
+      }
+      if (entry.forceMapping !== undefined) {
+        model.forceMapping = entry.forceMapping;
+      }
+      if (entry.image !== undefined) {
+        model.image = entry.image;
+      }
+      if (Array.isArray(entry.inputModalities) && entry.inputModalities.length) {
+        model.inputModalities = [...entry.inputModalities];
+      }
+      if (Array.isArray(entry.outputModalities) && entry.outputModalities.length) {
+        model.outputModalities = [...entry.outputModalities];
+      }
+      if (entry.raw) {
+        model.raw = { ...entry.raw };
       }
       const thinking = entry.thinking ? { ...entry.thinking } : undefined;
       if (Array.isArray(entry.thinkingLevels) && entry.thinkingLevels.length) {

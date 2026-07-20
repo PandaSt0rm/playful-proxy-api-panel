@@ -122,6 +122,7 @@ func (e *OpenAICompatExecutor) Execute(ctx context.Context, auth *cliproxyauth.A
 	requestedModel := helps.PayloadRequestedModel(opts, req.Model)
 	requestPath := helps.PayloadRequestPath(opts)
 	translated = helps.ApplyPayloadConfigWithRequest(e.cfg, baseModel, to.String(), from.String(), "", translated, originalTranslated, requestedModel, requestPath, opts.Headers)
+	translated = e.normalizeSystemMessages(auth, translated)
 	if opts.Alt == "responses/compact" {
 		if updated, errDelete := sjson.DeleteBytes(translated, "stream"); errDelete == nil {
 			translated = updated
@@ -323,10 +324,11 @@ func (e *OpenAICompatExecutor) ExecuteStream(ctx context.Context, auth *cliproxy
 	requestedModel := helps.PayloadRequestedModel(opts, req.Model)
 	requestPath := helps.PayloadRequestPath(opts)
 	translated = helps.ApplyPayloadConfigWithRequest(e.cfg, baseModel, to.String(), from.String(), "", translated, originalTranslated, requestedModel, requestPath, opts.Headers)
+	translated = e.normalizeSystemMessages(auth, translated)
 
 	// Request usage data in the final streaming chunk so that token statistics
 	// are captured even when the upstream is an OpenAI-compatible provider.
-	translated, _ = sjson.SetBytes(translated, "stream_options.include_usage", true)
+	translated = helps.SetBoolIfDifferent(translated, "stream_options.include_usage", true)
 	reporter.SetTranslatedReasoningEffort(translated, to.String())
 
 	url := strings.TrimSuffix(baseURL, "/") + "/chat/completions"
@@ -344,7 +346,9 @@ func (e *OpenAICompatExecutor) ExecuteStream(ctx context.Context, auth *cliproxy
 		attrs = auth.Attributes
 	}
 	util.ApplyCustomHeadersFromAttrs(httpReq, attrs)
-	httpReq.Header.Set("Accept", "text/event-stream")
+	if httpReq.Header.Get("Accept") == "" {
+		httpReq.Header.Set("Accept", "text/event-stream")
+	}
 	httpReq.Header.Set("Cache-Control", "no-cache")
 	var authID, authLabel, authType, authValue string
 	if auth != nil {
@@ -393,12 +397,12 @@ func (e *OpenAICompatExecutor) ExecuteStream(ctx context.Context, auth *cliproxy
 		scanner := bufio.NewScanner(httpResp.Body)
 		scanner.Buffer(nil, 52_428_800) // 50MB
 		var param any
+		var streamUsage helps.StreamUsageBuffer
+		defer streamUsage.Publish(ctx, reporter)
 		for scanner.Scan() {
 			line := scanner.Bytes()
 			helps.AppendAPIResponseChunk(ctx, e.cfg, line)
-			if detail, ok := helps.ParseOpenAIStreamUsage(line); ok {
-				reporter.Publish(ctx, detail)
-			}
+			streamUsage.ObserveOpenAIStream(line)
 			trimmedLine := bytes.TrimSpace(line)
 			if len(trimmedLine) == 0 {
 				continue
@@ -452,7 +456,8 @@ func (e *OpenAICompatExecutor) ExecuteStream(ctx context.Context, auth *cliproxy
 				}
 			}
 		}
-		// Ensure we record the request if no usage chunk was ever seen
+		// Ensure we record the request if no usage chunk was ever seen.
+		streamUsage.Publish(ctx, reporter)
 		reporter.EnsurePublished(ctx)
 	}()
 	return &cliproxyexecutor.StreamResult{Headers: httpResp.Header.Clone(), Chunks: out}, nil
@@ -633,10 +638,10 @@ func prepareOpenAICompatImagesPayload(payload []byte, model string, contentType 
 	contentType = strings.TrimSpace(contentType)
 	if json.Valid(payload) {
 		if model != "" {
-			payload, _ = sjson.SetBytes(payload, "model", model)
+			payload = helps.SetStringIfDifferent(payload, "model", model)
 		}
 		if stream {
-			payload, _ = sjson.SetBytes(payload, "stream", true)
+			payload = helps.SetBoolIfDifferent(payload, "stream", true)
 		} else {
 			payload, _ = sjson.DeleteBytes(payload, "stream")
 		}
@@ -773,12 +778,103 @@ func (e *OpenAICompatExecutor) resolveCompatConfig(auth *cliproxyauth.Auth) *con
 	return nil
 }
 
+func (e *OpenAICompatExecutor) normalizeSystemMessages(auth *cliproxyauth.Auth, payload []byte) []byte {
+	compat := e.resolveCompatConfig(auth)
+	if compat == nil || !compat.MergeSystemMessages {
+		return payload
+	}
+	return mergeLeadingSystemMessages(payload)
+}
+
+func mergeLeadingSystemMessages(payload []byte) []byte {
+	var request struct {
+		Messages []json.RawMessage `json:"messages"`
+	}
+	if err := json.Unmarshal(payload, &request); err != nil || len(request.Messages) < 2 {
+		return payload
+	}
+
+	systemContents := make([]json.RawMessage, 0, len(request.Messages))
+	textContents := make([]string, 0, len(request.Messages))
+	allText := true
+	for _, rawMessage := range request.Messages {
+		var message struct {
+			Role    string          `json:"role"`
+			Content json.RawMessage `json:"content"`
+		}
+		if err := json.Unmarshal(rawMessage, &message); err != nil ||
+			!strings.EqualFold(strings.TrimSpace(message.Role), "system") {
+			break
+		}
+		var text string
+		if err := json.Unmarshal(message.Content, &text); err == nil {
+			textContents = append(textContents, text)
+		} else {
+			var parts []json.RawMessage
+			if err := json.Unmarshal(message.Content, &parts); err != nil {
+				return payload
+			}
+			allText = false
+		}
+		systemContents = append(systemContents, message.Content)
+	}
+	if len(systemContents) < 2 {
+		return payload
+	}
+
+	var mergedFirst []byte
+	var err error
+	if allText {
+		mergedFirst, err = sjson.SetBytes(request.Messages[0], "content", strings.Join(textContents, "\n\n"))
+	} else {
+		mergedParts := make([]json.RawMessage, 0, len(systemContents))
+		for _, rawContent := range systemContents {
+			var text string
+			if errText := json.Unmarshal(rawContent, &text); errText == nil {
+				rawPart, errMarshal := json.Marshal(struct {
+					Type string `json:"type"`
+					Text string `json:"text"`
+				}{Type: "text", Text: text})
+				if errMarshal != nil {
+					return payload
+				}
+				mergedParts = append(mergedParts, rawPart)
+				continue
+			}
+			var parts []json.RawMessage
+			if errParts := json.Unmarshal(rawContent, &parts); errParts != nil {
+				return payload
+			}
+			mergedParts = append(mergedParts, parts...)
+		}
+		rawParts, errMarshal := json.Marshal(mergedParts)
+		if errMarshal != nil {
+			return payload
+		}
+		mergedFirst, err = sjson.SetRawBytes(request.Messages[0], "content", rawParts)
+	}
+	if err != nil {
+		return payload
+	}
+	mergedMessages := make([]json.RawMessage, 0, len(request.Messages)-len(systemContents)+1)
+	mergedMessages = append(mergedMessages, mergedFirst)
+	mergedMessages = append(mergedMessages, request.Messages[len(systemContents):]...)
+	rawMessages, err := json.Marshal(mergedMessages)
+	if err != nil {
+		return payload
+	}
+	updated, err := sjson.SetRawBytes(payload, "messages", rawMessages)
+	if err != nil {
+		return payload
+	}
+	return updated
+}
+
 func (e *OpenAICompatExecutor) overrideModel(payload []byte, model string) []byte {
 	if len(payload) == 0 || model == "" {
 		return payload
 	}
-	payload, _ = sjson.SetBytes(payload, "model", model)
-	return payload
+	return helps.SetStringIfDifferent(payload, "model", model)
 }
 
 type statusErr struct {

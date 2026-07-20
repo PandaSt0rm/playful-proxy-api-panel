@@ -2,6 +2,7 @@ package management
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/router-for-me/CLIProxyAPI/v7/internal/registry"
@@ -39,7 +40,7 @@ func (h *Handler) RenderToolingTemplates(c *gin.Context) {
 	}
 	h.mu.Unlock()
 
-	enrichModelProviders(&req.RenderRequest)
+	enrichModelMetadata(&req.RenderRequest)
 
 	resp, err := toolingtemplates.Render(req.RenderRequest)
 	if err != nil {
@@ -49,17 +50,26 @@ func (h *Handler) RenderToolingTemplates(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-// enrichModelProviders populates ModelProviders on the render request by
-// inspecting the model registry and the static model catalog. It maps each
-// model to its provider category (openai, anthropic, or generic) so that
-// templates can emit tool-specific provider settings.
-func enrichModelProviders(req *toolingtemplates.RenderRequest) {
+// enrichModelMetadata populates model provider categories and model capability
+// metadata from the live registry and static catalog.
+func enrichModelMetadata(req *toolingtemplates.RenderRequest) {
 	if req == nil || len(req.Models) == 0 {
 		return
 	}
 	req.ModelProviders = make(map[string]string, len(req.Models))
+	req.ModelCapabilities = make(map[string]toolingtemplates.ModelCapabilities, len(req.Models))
 	for _, model := range req.Models {
+		model = strings.TrimSpace(model)
+		if model == "" {
+			continue
+		}
 		req.ModelProviders[model] = providerForModel(model)
+		if capabilities, ok := capabilitiesForModel(model); ok {
+			req.ModelCapabilities[model] = capabilities
+		}
+	}
+	if len(req.ModelCapabilities) == 0 {
+		req.ModelCapabilities = nil
 	}
 }
 
@@ -91,4 +101,63 @@ func providerForModel(model string) string {
 	}
 
 	return toolingtemplates.ModelProviderGeneric
+}
+
+func capabilitiesForModel(model string) (toolingtemplates.ModelCapabilities, bool) {
+	info := modelInfoForToolingTemplate(model)
+	if info == nil {
+		return toolingtemplates.ModelCapabilities{}, false
+	}
+
+	capabilities := toolingtemplates.ModelCapabilities{}
+	if info.MaxCompletionTokens > 0 {
+		capabilities.MaxOutputTokens = info.MaxCompletionTokens
+	} else if info.OutputTokenLimit > 0 {
+		capabilities.MaxOutputTokens = info.OutputTokenLimit
+	}
+
+	if noImageSupport, ok := noImageSupportForModelInfo(info); ok {
+		capabilities.NoImageSupport = &noImageSupport
+	}
+
+	return capabilities, capabilities.MaxOutputTokens > 0 || capabilities.NoImageSupport != nil
+}
+
+func modelInfoForToolingTemplate(model string) *registry.ModelInfo {
+	for _, candidate := range modelMetadataCandidates(model) {
+		if info := registry.LookupModelInfo(candidate); info != nil {
+			return info
+		}
+		if info := registry.LookupStaticModelInfoByPrefix(candidate); info != nil {
+			return info
+		}
+	}
+	return nil
+}
+
+func modelMetadataCandidates(model string) []string {
+	model = strings.TrimSpace(model)
+	if model == "" {
+		return nil
+	}
+	candidates := []string{model}
+	if idx := strings.LastIndex(model, "/"); idx >= 0 {
+		stripped := strings.TrimSpace(model[idx+1:])
+		if stripped != "" && stripped != model {
+			candidates = append(candidates, stripped)
+		}
+	}
+	return candidates
+}
+
+func noImageSupportForModelInfo(info *registry.ModelInfo) (bool, bool) {
+	if info == nil || len(info.SupportedInputModalities) == 0 {
+		return false, false
+	}
+	for _, modality := range info.SupportedInputModalities {
+		if strings.EqualFold(strings.TrimSpace(modality), "image") {
+			return false, true
+		}
+	}
+	return true, true
 }

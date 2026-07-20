@@ -49,6 +49,28 @@ describe('ModelEffortPayloadsEditor', () => {
     expect(screen.getByRole('button', { name: 'clear' })).toBeDisabled();
   });
 
+  it('edits catalog display name, image support, and modalities', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await openEditor(user);
+
+    await user.type(screen.getByPlaceholderText('Display name (optional)'), 'Vision Model');
+    await user.click(screen.getByRole('checkbox', { name: 'Image generation model' }));
+    const inputModalities = screen.getByPlaceholderText('Input modalities: text, image');
+    await user.type(inputModalities, 'text, image');
+    await user.tab();
+    const outputModalities = screen.getByPlaceholderText('Output modalities: text, image');
+    await user.type(outputModalities, 'image');
+    await user.tab();
+
+    expect(probedEntry()).toMatchObject({
+      displayName: 'Vision Model',
+      image: true,
+      inputModalities: ['text', 'image'],
+      outputModalities: ['image'],
+    });
+  });
+
   it('toggling a level chip on declares the level and shows its payload row', async () => {
     const user = userEvent.setup();
     render(<Harness />);
@@ -231,7 +253,9 @@ describe('ModelEffortPayloadsEditor', () => {
   it('JSON mode seeds bare levels as {} keys and round-trips them', async () => {
     const user = userEvent.setup();
     render(
-      <Harness initial={{ thinkingLevels: ['low', 'high'], thinking: { levels: ['low', 'high'] } }} />
+      <Harness
+        initial={{ thinkingLevels: ['low', 'high'], thinking: { levels: ['low', 'high'] } }}
+      />
     );
     await openEditor(user, 'effort payloads (2)');
     await user.click(screen.getByRole('button', { name: 'JSON' }));

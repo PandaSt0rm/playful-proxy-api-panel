@@ -6,6 +6,7 @@ import { AiProvidersClaudeEditPage } from '@/pages/AiProvidersClaudeEditPage';
 import { AiProvidersClaudeModelsPage } from '@/pages/AiProvidersClaudeModelsPage';
 import { AiProvidersCodexEditPage } from '@/pages/AiProvidersCodexEditPage';
 import { AiProvidersGeminiEditPage } from '@/pages/AiProvidersGeminiEditPage';
+import { AiProvidersNativeKeyEditPage } from '@/pages/AiProvidersNativeKeyEditPage';
 import { AiProvidersOpenAIEditLayout } from '@/pages/AiProvidersOpenAIEditLayout';
 import { AiProvidersOpenAIEditPage } from '@/pages/AiProvidersOpenAIEditPage';
 import { AiProvidersOpenAIModelsPage } from '@/pages/AiProvidersOpenAIModelsPage';
@@ -31,6 +32,16 @@ const mainRoutes = [
   { path: '/ai-providers/gemini/:index', element: <AiProvidersGeminiEditPage /> },
   { path: '/ai-providers/codex/new', element: <AiProvidersCodexEditPage /> },
   { path: '/ai-providers/codex/:index', element: <AiProvidersCodexEditPage /> },
+  {
+    path: '/ai-providers/interactions/new',
+    element: <AiProvidersNativeKeyEditPage kind="interactions" />,
+  },
+  {
+    path: '/ai-providers/interactions/:index',
+    element: <AiProvidersNativeKeyEditPage kind="interactions" />,
+  },
+  { path: '/ai-providers/xai/new', element: <AiProvidersNativeKeyEditPage kind="xai" /> },
+  { path: '/ai-providers/xai/:index', element: <AiProvidersNativeKeyEditPage kind="xai" /> },
   {
     path: '/ai-providers/claude/new',
     element: <AiProvidersClaudeEditLayout />,

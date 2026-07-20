@@ -70,6 +70,59 @@ func TestRenderFactoryDroidUsesSettingsSchema(t *testing.T) {
 	}
 }
 
+func TestRenderFactoryDroidUsesModelCapabilities(t *testing.T) {
+	noImageSupport := true
+	req := RenderRequest{
+		BaseURL:     "http://localhost:8317",
+		APIKey:      "sk-test",
+		APIKeyMode:  ModeEmbed,
+		Models:      []string{"ollama/qwen3-coder:480b-cloud"},
+		TemplateIDs: []string{"factory-droid"},
+		ModelCapabilities: map[string]ModelCapabilities{
+			"qwen3-coder:480b-cloud": {
+				MaxOutputTokens: 128000,
+				NoImageSupport:  &noImageSupport,
+			},
+		},
+	}
+
+	resp, err := Render(req)
+	if err != nil {
+		t.Fatalf("Render returned error: %v", err)
+	}
+
+	model := factoryDroidModel(t, resp, 0)
+	if model["maxOutputTokens"] != float64(128000) {
+		t.Fatalf("expected maxOutputTokens 128000, got %v", model["maxOutputTokens"])
+	}
+	if model["noImageSupport"] != true {
+		t.Fatalf("expected noImageSupport true, got %v", model["noImageSupport"])
+	}
+}
+
+func TestRenderFactoryDroidOmitsUnknownMaxOutputTokens(t *testing.T) {
+	req := RenderRequest{
+		BaseURL:     "http://localhost:8317",
+		APIKey:      "sk-test",
+		APIKeyMode:  ModeEmbed,
+		Models:      []string{"unknown-model"},
+		TemplateIDs: []string{"factory-droid"},
+	}
+
+	resp, err := Render(req)
+	if err != nil {
+		t.Fatalf("Render returned error: %v", err)
+	}
+
+	model := factoryDroidModel(t, resp, 0)
+	if _, ok := model["maxOutputTokens"]; ok {
+		t.Fatalf("expected maxOutputTokens to be omitted, got %v", model["maxOutputTokens"])
+	}
+	if model["noImageSupport"] != false {
+		t.Fatalf("expected noImageSupport false, got %v", model["noImageSupport"])
+	}
+}
+
 func TestRenderBySyncToolIDReturnsCanonicalTemplate(t *testing.T) {
 	req := RenderRequest{
 		BaseURL:     "http://localhost:8317",
@@ -395,6 +448,23 @@ func manualBlockMarkdown(t *testing.T, resp *RenderResponse, id string) string {
 	}
 	t.Fatalf("manual config block %q not found", id)
 	return ""
+}
+
+func factoryDroidModel(t *testing.T, resp *RenderResponse, index int) map[string]interface{} {
+	t.Helper()
+	if len(resp.Templates) != 1 {
+		t.Fatalf("expected one template, got %d", len(resp.Templates))
+	}
+	var payload struct {
+		CustomModels []map[string]interface{} `json:"customModels"`
+	}
+	if err := json.Unmarshal([]byte(resp.Templates[0].Content), &payload); err != nil {
+		t.Fatalf("factory droid content is not valid JSON: %v", err)
+	}
+	if index < 0 || index >= len(payload.CustomModels) {
+		t.Fatalf("custom model index %d out of range for %d models", index, len(payload.CustomModels))
+	}
+	return payload.CustomModels[index]
 }
 
 func containsWireAPI(content, value string) bool {

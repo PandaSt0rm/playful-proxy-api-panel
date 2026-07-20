@@ -13,6 +13,8 @@ import {
   ProviderNav,
   useProviderRecentRequests,
 } from '@/components/providers';
+import iconGemini from '@/assets/icons/gemini.svg';
+import iconOpenaiLight from '@/assets/icons/openai-light.svg';
 import {
   withDisableAllModelsRule,
   withoutDisableAllModelsRule,
@@ -52,6 +54,10 @@ export function AiProvidersPage() {
   const [codexConfigs, setCodexConfigs] = useState<ProviderKeyConfig[]>(
     () => config?.codexApiKeys || []
   );
+  const [interactionsConfigs, setInteractionsConfigs] = useState<GeminiKeyConfig[]>(
+    () => config?.interactionsApiKeys || []
+  );
+  const [xaiConfigs, setXaiConfigs] = useState<ProviderKeyConfig[]>(() => config?.xaiApiKeys || []);
   const [claudeConfigs, setClaudeConfigs] = useState<ProviderKeyConfig[]>(
     () => config?.claudeApiKeys || []
   );
@@ -86,9 +92,7 @@ export function AiProvidersPage() {
     () =>
       openaiProviders
         .map((config, originalIndex) => ({ config, originalIndex }))
-        .filter(
-          ({ config }) => !isZaiOpenAIProvider(config) && isOpenRouterOpenAIProvider(config)
-        ),
+        .filter(({ config }) => !isZaiOpenAIProvider(config) && isOpenRouterOpenAIProvider(config)),
     [openaiProviders]
   );
 
@@ -140,6 +144,8 @@ export function AiProvidersPage() {
       setGeminiKeys(data?.geminiApiKeys || []);
       setCodexConfigs(data?.codexApiKeys || []);
       setClaudeConfigs(data?.claudeApiKeys || []);
+      setInteractionsConfigs(data?.interactionsApiKeys || []);
+      setXaiConfigs(data?.xaiApiKeys || []);
       setVertexConfigs(data?.vertexApiKeys || []);
       setOpenaiProviders(data?.openaiCompatibility || []);
 
@@ -176,12 +182,16 @@ export function AiProvidersPage() {
   useEffect(() => {
     if (config?.geminiApiKeys) setGeminiKeys(config.geminiApiKeys);
     if (config?.codexApiKeys) setCodexConfigs(config.codexApiKeys);
+    if (config?.interactionsApiKeys) setInteractionsConfigs(config.interactionsApiKeys);
+    if (config?.xaiApiKeys) setXaiConfigs(config.xaiApiKeys);
     if (config?.claudeApiKeys) setClaudeConfigs(config.claudeApiKeys);
     if (config?.vertexApiKeys) setVertexConfigs(config.vertexApiKeys);
     if (config?.openaiCompatibility) setOpenaiProviders(config.openaiCompatibility);
   }, [
     config?.geminiApiKeys,
     config?.codexApiKeys,
+    config?.interactionsApiKeys,
+    config?.xaiApiKeys,
     config?.claudeApiKeys,
     config?.vertexApiKeys,
     config?.openaiCompatibility,
@@ -266,11 +276,7 @@ export function AiProvidersPage() {
     }
 
     const source =
-      provider === 'codex'
-        ? codexConfigs
-        : provider === 'claude'
-          ? claudeConfigs
-          : vertexConfigs;
+      provider === 'codex' ? codexConfigs : provider === 'claude' ? claudeConfigs : vertexConfigs;
     const current = source[index];
     if (!current) return;
 
@@ -331,6 +337,85 @@ export function AiProvidersPage() {
     }
   };
 
+  const setNativeConfigEnabled = async (
+    provider: 'interactions' | 'xai',
+    index: number,
+    enabled: boolean
+  ) => {
+    const source = provider === 'interactions' ? interactionsConfigs : xaiConfigs;
+    const current = source[index];
+    if (!current) return;
+    const previousList = source;
+    const nextItem = {
+      ...current,
+      excludedModels: enabled
+        ? withoutDisableAllModelsRule(current.excludedModels)
+        : withDisableAllModelsRule(current.excludedModels),
+    };
+    const nextList = previousList.map((item, itemIndex) => (itemIndex === index ? nextItem : item));
+    const configKey = provider === 'interactions' ? 'interactions-api-key' : 'xai-api-key';
+    setConfigSwitchingKey(`${provider}:${current.apiKey}`);
+    if (provider === 'interactions') setInteractionsConfigs(nextList as GeminiKeyConfig[]);
+    else setXaiConfigs(nextList as ProviderKeyConfig[]);
+    updateConfigValue(configKey, nextList);
+    clearCache(configKey);
+    try {
+      if (provider === 'interactions') {
+        await providersApi.saveInteractionsConfigs(nextList as GeminiKeyConfig[]);
+      } else {
+        await providersApi.saveXAIConfigs(nextList as ProviderKeyConfig[]);
+      }
+      showNotification(
+        enabled ? t('notification.config_enabled') : t('notification.config_disabled'),
+        'success'
+      );
+    } catch (err: unknown) {
+      if (provider === 'interactions') {
+        setInteractionsConfigs(previousList as GeminiKeyConfig[]);
+      } else {
+        setXaiConfigs(previousList as ProviderKeyConfig[]);
+      }
+      updateConfigValue(configKey, previousList);
+      clearCache(configKey);
+      showNotification(`${t('notification.update_failed')}: ${getErrorMessage(err)}`, 'error');
+    } finally {
+      setConfigSwitchingKey(null);
+    }
+  };
+
+  const deleteNativeProvider = async (provider: 'interactions' | 'xai', index: number) => {
+    const source = provider === 'interactions' ? interactionsConfigs : xaiConfigs;
+    const entry = source[index];
+    if (!entry) return;
+    const label = provider === 'interactions' ? 'Google Interactions' : 'xAI';
+    showConfirmation({
+      title: `Delete ${label} API key`,
+      message: `Delete this ${label} API key configuration?`,
+      variant: 'danger',
+      confirmText: t('common.confirm'),
+      onConfirm: async () => {
+        try {
+          if (provider === 'interactions') {
+            await providersApi.deleteInteractionsConfig(entry.apiKey, entry.baseUrl);
+            const next = interactionsConfigs.filter((_, itemIndex) => itemIndex !== index);
+            setInteractionsConfigs(next);
+            updateConfigValue('interactions-api-key', next);
+            clearCache('interactions-api-key');
+          } else {
+            await providersApi.deleteXAIConfig(entry.apiKey, entry.baseUrl);
+            const next = xaiConfigs.filter((_, itemIndex) => itemIndex !== index);
+            setXaiConfigs(next);
+            updateConfigValue('xai-api-key', next);
+            clearCache('xai-api-key');
+          }
+          showNotification(t('notification.delete_success'), 'success');
+        } catch (err: unknown) {
+          showNotification(`${t('notification.delete_failed')}: ${getErrorMessage(err)}`, 'error');
+        }
+      },
+    });
+  };
+
   const setOpenAIProviderEnabled = async (index: number, enabled: boolean) => {
     const current = openaiProviders[index];
     if (!current) return;
@@ -368,7 +453,9 @@ export function AiProvidersPage() {
     const entry = source[index];
     if (!entry) return;
     showConfirmation({
-      title: t(`ai_providers.${type}_delete_title`, { defaultValue: `Delete ${type === 'codex' ? 'Codex' : 'Claude'} Config` }),
+      title: t(`ai_providers.${type}_delete_title`, {
+        defaultValue: `Delete ${type === 'codex' ? 'Codex' : 'Claude'} Config`,
+      }),
       message: t(`ai_providers.${type}_delete_confirm`),
       variant: 'danger',
       confirmText: t('common.confirm'),
@@ -474,6 +561,32 @@ export function AiProvidersPage() {
           />
         </div>
 
+        <div id="provider-interactions">
+          <CodexSection
+            configs={interactionsConfigs}
+            upstreamConcurrency={config?.upstreamConcurrency}
+            usageByProvider={usageByProvider}
+            loading={loading}
+            disableControls={disableControls}
+            isSwitching={isSwitching}
+            providerKey="interactions"
+            title="Google Interactions"
+            addButtonLabel="Add Interactions API Key"
+            emptyTitle="No Interactions API keys"
+            emptyDescription="Add a native Google Interactions API credential."
+            itemTitle="Interactions API Key"
+            modelsCountLabel="Models"
+            iconSrc={iconGemini}
+            showWebsockets={false}
+            onAdd={() => openEditor('/ai-providers/interactions/new')}
+            onEdit={(index) => openEditor(`/ai-providers/interactions/${index}`)}
+            onDelete={(index) => void deleteNativeProvider('interactions', index)}
+            onToggle={(index, enabled) =>
+              void setNativeConfigEnabled('interactions', index, enabled)
+            }
+          />
+        </div>
+
         <div id="provider-codex">
           <CodexSection
             configs={codexConfigs}
@@ -486,6 +599,29 @@ export function AiProvidersPage() {
             onEdit={(index) => openEditor(`/ai-providers/codex/${index}`)}
             onDelete={(index) => void deleteProviderEntry('codex', index)}
             onToggle={(index, enabled) => void setConfigEnabled('codex', index, enabled)}
+          />
+        </div>
+
+        <div id="provider-xai">
+          <CodexSection
+            configs={xaiConfigs}
+            upstreamConcurrency={config?.upstreamConcurrency}
+            usageByProvider={usageByProvider}
+            loading={loading}
+            disableControls={disableControls}
+            isSwitching={isSwitching}
+            providerKey="xai"
+            title="xAI"
+            addButtonLabel="Add xAI API Key"
+            emptyTitle="No xAI API keys"
+            emptyDescription="Add a native xAI API credential."
+            itemTitle="xAI API Key"
+            modelsCountLabel="Models"
+            iconSrc={iconOpenaiLight}
+            onAdd={() => openEditor('/ai-providers/xai/new')}
+            onEdit={(index) => openEditor(`/ai-providers/xai/${index}`)}
+            onDelete={(index) => void deleteNativeProvider('xai', index)}
+            onToggle={(index, enabled) => void setNativeConfigEnabled('xai', index, enabled)}
           />
         </div>
 

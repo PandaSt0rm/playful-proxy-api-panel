@@ -17,6 +17,8 @@ import styles from './ProviderNav.module.scss';
 export type ProviderId =
   | 'gemini'
   | 'codex'
+  | 'interactions'
+  | 'xai'
   | 'claude'
   | 'vertex'
   | 'zai'
@@ -32,13 +34,23 @@ interface ProviderNavItem {
 
 const PROVIDERS: ProviderNavItem[] = [
   { id: 'gemini', label: 'Gemini', getIcon: () => iconGemini },
+  { id: 'interactions', label: 'Interactions', getIcon: () => iconGemini },
   { id: 'codex', label: 'Codex', getIcon: () => iconCodex },
+  {
+    id: 'xai',
+    label: 'xAI',
+    getIcon: (theme) => (theme === 'dark' ? iconOpenaiDark : iconOpenaiLight),
+  },
   { id: 'claude', label: 'Claude', getIcon: () => iconClaude },
   { id: 'vertex', label: 'Vertex', getIcon: () => iconVertex },
   { id: 'zai', label: 'Z.AI', getIcon: () => iconGlm },
   { id: 'openrouter', label: 'OpenRouter', getIcon: () => iconOpenRouter },
   { id: 'ollama', label: 'Ollama Cloud', getIcon: () => iconOllama },
-  { id: 'openai', label: 'OpenAI', getIcon: (theme) => (theme === 'dark' ? iconOpenaiDark : iconOpenaiLight) },
+  {
+    id: 'openai',
+    label: 'OpenAI',
+    getIcon: (theme) => (theme === 'dark' ? iconOpenaiDark : iconOpenaiLight),
+  },
 ];
 
 const HEADER_OFFSET = 24;
@@ -55,6 +67,8 @@ export function ProviderNav() {
   const navContainerRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<Record<ProviderId, HTMLButtonElement | null>>({
     gemini: null,
+    interactions: null,
+    xai: null,
     codex: null,
     claude: null,
     vertex: null,

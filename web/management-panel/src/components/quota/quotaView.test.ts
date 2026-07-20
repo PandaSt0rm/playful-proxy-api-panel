@@ -39,9 +39,16 @@ function state(overrides: Partial<QuotaViewState> = {}): QuotaViewState {
 }
 
 describe('QUOTA_PROVIDER_ORDER', () => {
-  it('starts with claude and includes all six providers', () => {
-    expect(QUOTA_PROVIDER_ORDER[0].type).toBe('claude');
-    expect(QUOTA_PROVIDER_ORDER).toHaveLength(6);
+  it('preserves the configured provider order', () => {
+    expect(QUOTA_PROVIDER_ORDER.map((provider) => provider.type)).toEqual([
+      'claude',
+      'antigravity',
+      'codex',
+      'gemini-cli',
+      'kimi',
+      'zai',
+      'xai',
+    ]);
   });
 });
 

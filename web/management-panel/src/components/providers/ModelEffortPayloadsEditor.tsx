@@ -135,9 +135,7 @@ const parseEffortMap = (
   }
 };
 
-const parsePayloadObject = (
-  text: string
-): { ok: boolean; value?: Record<string, unknown> } => {
+const parsePayloadObject = (text: string): { ok: boolean; value?: Record<string, unknown> } => {
   const trimmed = text.trim();
   if (!trimmed) return { ok: true, value: undefined };
   try {
@@ -263,7 +261,11 @@ function PayloadMapEditor({ serialized, disabled, onCommit }: PayloadMapEditorPr
  * model accepts (chips), an optional JSON payload per label (rows or raw JSON
  * mode), and provider templates.
  */
-export function ModelEffortPayloadsEditor({ entry, disabled, updateEntry }: ModelInputListRowExtrasArgs) {
+export function ModelEffortPayloadsEditor({
+  entry,
+  disabled,
+  updateEntry,
+}: ModelInputListRowExtrasArgs) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [jsonMode, setJsonMode] = useState(false);
@@ -334,9 +336,7 @@ export function ModelEffortPayloadsEditor({ entry, disabled, updateEntry }: Mode
       ...labels.filter(isReasoningLevel),
       ...levels.filter((level) => !THINKING_PAYLOAD_LABELS.has(level)),
     ]);
-    setStubLabels(
-      labels.filter((label) => !isReasoningLevel(label) && !nextPayloads?.[label])
-    );
+    setStubLabels(labels.filter((label) => !isReasoningLevel(label) && !nextPayloads?.[label]));
     commit(nextLevels, nextPayloads ?? {});
   };
 
@@ -373,6 +373,49 @@ export function ModelEffortPayloadsEditor({ entry, disabled, updateEntry }: Mode
       </button>
       {open && (
         <div className={styles.panel}>
+          <div className={styles.sectionLabel}>Catalog metadata</div>
+          <input
+            className="input"
+            value={entry.displayName ?? ''}
+            onChange={(event) => updateEntry({ displayName: event.target.value || undefined })}
+            placeholder="Display name (optional)"
+            disabled={disabled}
+          />
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(entry.image)}
+              onChange={(event) => updateEntry({ image: event.target.checked || undefined })}
+              disabled={disabled}
+            />{' '}
+            Image generation model
+          </label>
+          <input
+            className="input"
+            defaultValue={(entry.inputModalities ?? []).join(', ')}
+            onBlur={(event) => {
+              const values = event.target.value
+                .split(',')
+                .map((value) => value.trim())
+                .filter(Boolean);
+              updateEntry({ inputModalities: values.length ? values : undefined });
+            }}
+            placeholder="Input modalities: text, image"
+            disabled={disabled}
+          />
+          <input
+            className="input"
+            defaultValue={(entry.outputModalities ?? []).join(', ')}
+            onBlur={(event) => {
+              const values = event.target.value
+                .split(',')
+                .map((value) => value.trim())
+                .filter(Boolean);
+              updateEntry({ outputModalities: values.length ? values : undefined });
+            }}
+            placeholder="Output modalities: text, image"
+            disabled={disabled}
+          />
           <div className={styles.panelHeader}>
             <span className={styles.sectionLabel}>
               {t('ai_providers.thinking_payloads_levels_label')}

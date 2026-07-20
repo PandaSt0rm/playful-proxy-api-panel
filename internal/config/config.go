@@ -140,8 +140,14 @@ type Config struct {
 	// GeminiKey defines Gemini API key configurations with optional routing overrides.
 	GeminiKey []GeminiKey `yaml:"gemini-api-key" json:"gemini-api-key"`
 
+	// InteractionsKey defines native Google Interactions API key configurations.
+	InteractionsKey []GeminiKey `yaml:"interactions-api-key" json:"interactions-api-key"`
+
 	// Codex defines a list of Codex API key configurations as specified in the YAML configuration file.
 	CodexKey []CodexKey `yaml:"codex-api-key" json:"codex-api-key"`
+
+	// XAIKey defines xAI API key configurations using the same structure as Codex API keys.
+	XAIKey []XAIKey `yaml:"xai-api-key" json:"xai-api-key"`
 
 	// Codex configures provider-wide Codex request behavior.
 	Codex CodexConfig `yaml:"codex" json:"codex"`
@@ -180,7 +186,7 @@ type Config struct {
 	// vertex, aistudio, antigravity, claude, codex, kimi, xai.
 	//
 	// NOTE: This does not apply to existing per-credential model alias features under:
-	// gemini-api-key, codex-api-key, claude-api-key, openai-compatibility, and vertex-api-key.
+	// gemini-api-key, interactions-api-key, codex-api-key, xai-api-key, claude-api-key, openai-compatibility, and vertex-api-key.
 	OAuthModelAlias map[string][]OAuthModelAlias `yaml:"oauth-model-alias,omitempty" json:"oauth-model-alias,omitempty"`
 
 	// Payload defines default and override rules for provider payload parameters.
@@ -207,6 +213,8 @@ type PluginsConfig struct {
 	StoreSources []string `yaml:"store-sources,omitempty" json:"store-sources,omitempty"`
 	// StoreAuth defines optional auth rules for plugin store registry, metadata, and artifact requests.
 	StoreAuth []sdkpluginstore.AuthConfig `yaml:"store-auth,omitempty" json:"store-auth,omitempty"`
+	// AuthRevision changes when Home-managed plugin credentials change.
+	AuthRevision int64 `yaml:"auth-revision,omitempty" json:"auth-revision,omitempty"`
 	// Configs stores per-plugin instance configuration by plugin ID.
 	Configs map[string]PluginInstanceConfig `yaml:"configs" json:"configs"`
 }
@@ -459,6 +467,9 @@ type OAuthModelAlias struct {
 	Alias string `yaml:"alias" json:"alias"`
 	Fork  bool   `yaml:"fork,omitempty" json:"fork,omitempty"`
 
+	// DisplayName is the optional human-readable name shown in model catalogs.
+	DisplayName string `yaml:"display-name,omitempty" json:"display-name,omitempty"`
+
 	ForceMapping bool `yaml:"force-mapping,omitempty" json:"force-mapping,omitempty"`
 }
 
@@ -591,13 +602,17 @@ type ClaudeModel struct {
 	// Alias is the client-facing model name that maps to Name.
 	Alias string `yaml:"alias" json:"alias"`
 
+	// DisplayName is the optional human-readable name shown in model catalogs.
+	DisplayName string `yaml:"display-name,omitempty" json:"display-name,omitempty"`
+
 	// ForceMapping rewrites upstream response model fields back to Alias.
 	ForceMapping bool `yaml:"force-mapping,omitempty" json:"force-mapping,omitempty"`
 }
 
-func (m ClaudeModel) GetName() string       { return m.Name }
-func (m ClaudeModel) GetAlias() string      { return m.Alias }
-func (m ClaudeModel) GetForceMapping() bool { return m.ForceMapping }
+func (m ClaudeModel) GetName() string        { return m.Name }
+func (m ClaudeModel) GetAlias() string       { return m.Alias }
+func (m ClaudeModel) GetDisplayName() string { return m.DisplayName }
+func (m ClaudeModel) GetForceMapping() bool  { return m.ForceMapping }
 
 // CodexKey represents the configuration for a Codex API key,
 // including the API key itself and an optional base URL for the API endpoint.
@@ -646,13 +661,23 @@ type CodexModel struct {
 	// Alias is the client-facing model name that maps to Name.
 	Alias string `yaml:"alias" json:"alias"`
 
+	// DisplayName is the optional human-readable name shown in model catalogs.
+	DisplayName string `yaml:"display-name,omitempty" json:"display-name,omitempty"`
+
 	// ForceMapping rewrites upstream response model fields back to Alias.
 	ForceMapping bool `yaml:"force-mapping,omitempty" json:"force-mapping,omitempty"`
 }
 
-func (m CodexModel) GetName() string       { return m.Name }
-func (m CodexModel) GetAlias() string      { return m.Alias }
-func (m CodexModel) GetForceMapping() bool { return m.ForceMapping }
+func (m CodexModel) GetName() string        { return m.Name }
+func (m CodexModel) GetAlias() string       { return m.Alias }
+func (m CodexModel) GetDisplayName() string { return m.DisplayName }
+func (m CodexModel) GetForceMapping() bool  { return m.ForceMapping }
+
+// XAIKey uses the Codex API key structure for native xAI execution.
+type XAIKey = CodexKey
+
+// XAIModel uses the Codex model mapping structure for xAI models.
+type XAIModel = CodexModel
 
 // GeminiKey represents the configuration for a Gemini API key,
 // including optional overrides for upstream base URL, proxy routing, and headers.
@@ -697,13 +722,17 @@ type GeminiModel struct {
 	// Alias is the client-facing model name that maps to Name.
 	Alias string `yaml:"alias" json:"alias"`
 
+	// DisplayName is the optional human-readable name shown in model catalogs.
+	DisplayName string `yaml:"display-name,omitempty" json:"display-name,omitempty"`
+
 	// ForceMapping rewrites upstream response model fields back to Alias.
 	ForceMapping bool `yaml:"force-mapping,omitempty" json:"force-mapping,omitempty"`
 }
 
-func (m GeminiModel) GetName() string       { return m.Name }
-func (m GeminiModel) GetAlias() string      { return m.Alias }
-func (m GeminiModel) GetForceMapping() bool { return m.ForceMapping }
+func (m GeminiModel) GetName() string        { return m.Name }
+func (m GeminiModel) GetAlias() string       { return m.Alias }
+func (m GeminiModel) GetDisplayName() string { return m.DisplayName }
+func (m GeminiModel) GetForceMapping() bool  { return m.ForceMapping }
 
 // OpenAICompatibility represents the configuration for OpenAI API compatibility
 // with external providers, allowing model aliases to be routed through OpenAI API format.
@@ -733,6 +762,10 @@ type OpenAICompatibility struct {
 	// Headers optionally adds extra HTTP headers for requests sent to this provider.
 	Headers map[string]string `yaml:"headers,omitempty" json:"headers,omitempty"`
 
+	// MergeSystemMessages coalesces consecutive leading system messages before forwarding.
+	// Enable this for providers that accept only one system message.
+	MergeSystemMessages bool `yaml:"merge-system-messages,omitempty" json:"merge-system-messages,omitempty"`
+
 	// DisableCooling disables auth/model cooldown scheduling for this provider when true.
 	DisableCooling bool `yaml:"disable-cooling,omitempty" json:"disable-cooling,omitempty"`
 }
@@ -755,11 +788,21 @@ type OpenAICompatibilityModel struct {
 	// Alias is the model name alias that clients will use to reference this model.
 	Alias string `yaml:"alias" json:"alias"`
 
+	// DisplayName is the optional human-readable name shown in model catalogs.
+	DisplayName string `yaml:"display-name,omitempty" json:"display-name,omitempty"`
+
 	// ForceMapping rewrites upstream response model fields back to Alias.
 	ForceMapping bool `yaml:"force-mapping,omitempty" json:"force-mapping,omitempty"`
 
 	// Image marks this model as callable through /v1/images/generations and /v1/images/edits.
 	Image bool `yaml:"image,omitempty" json:"image,omitempty"`
+
+	// InputModalities declares chat/responses input capabilities (e.g. text, image) for Codex and other clients.
+	// This is separate from Image, which only enables /v1/images/* endpoints.
+	InputModalities []string `yaml:"input-modalities,omitempty" json:"input-modalities,omitempty"`
+
+	// OutputModalities declares supported output modalities when known (e.g. text, image).
+	OutputModalities []string `yaml:"output-modalities,omitempty" json:"output-modalities,omitempty"`
 
 	// Thinking configures the thinking/reasoning capability for this model.
 	// If nil, the upstream model name is resolved against the model registry's
@@ -781,9 +824,10 @@ type OpenAICompatibilityModel struct {
 	ThinkingPayloads map[string]map[string]any `yaml:"thinking-payloads,omitempty" json:"thinking-payloads,omitempty"`
 }
 
-func (m OpenAICompatibilityModel) GetName() string       { return m.Name }
-func (m OpenAICompatibilityModel) GetAlias() string      { return m.Alias }
-func (m OpenAICompatibilityModel) GetForceMapping() bool { return m.ForceMapping }
+func (m OpenAICompatibilityModel) GetName() string        { return m.Name }
+func (m OpenAICompatibilityModel) GetAlias() string       { return m.Alias }
+func (m OpenAICompatibilityModel) GetDisplayName() string { return m.DisplayName }
+func (m OpenAICompatibilityModel) GetForceMapping() bool  { return m.ForceMapping }
 
 // LoadConfig reads a YAML configuration file from the given path,
 // unmarshals it into a Config struct, applies environment variable overrides,
@@ -839,6 +883,7 @@ func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 	cfg.SaveCooldownStatus = false
 	cfg.TransientErrorCooldownSeconds = 0
 	cfg.DisableImageGeneration = DisableImageGenerationOff
+	cfg.WebsocketAuth = true
 	cfg.Pprof.Enable = false
 	cfg.Pprof.Addr = DefaultPprofAddr
 	cfg.RemoteManagement.PanelGitHubRepository = DefaultPanelGitHubRepository
@@ -908,15 +953,24 @@ func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 
 	cfg.UpstreamConcurrency.Normalize()
 	cfg.NormalizePluginsConfig()
+	if errResolvePluginsDir := cfg.ResolvePluginsDir(); errResolvePluginsDir != nil && cfg.Plugins.Enabled {
+		return nil, errResolvePluginsDir
+	}
 
 	// Sanitize Gemini API key configuration and migrate legacy entries.
 	cfg.SanitizeGeminiKeys()
+
+	// Sanitize native Interactions API key configuration.
+	cfg.SanitizeInteractionsKeys()
 
 	// Sanitize Vertex-compatible API keys.
 	cfg.SanitizeVertexCompatKeys()
 
 	// Sanitize Codex keys: drop entries without base-url
 	cfg.SanitizeCodexKeys()
+
+	// Sanitize xAI keys: drop entries without base-url
+	cfg.SanitizeXAIKeys()
 
 	// Sanitize Codex header defaults.
 	cfg.SanitizeCodexHeaderDefaults()
@@ -968,7 +1022,7 @@ func (cfg *Config) NormalizePluginsConfig() {
 	}
 	cfg.Plugins.Dir = strings.TrimSpace(cfg.Plugins.Dir)
 	if cfg.Plugins.Dir == "" {
-		cfg.Plugins.Dir = "plugins"
+		cfg.Plugins.Dir = defaultPluginsDir
 	}
 	if len(cfg.Plugins.StoreSources) > 0 {
 		sources := make([]string, 0, len(cfg.Plugins.StoreSources))
@@ -1095,7 +1149,13 @@ func (cfg *Config) SanitizeOAuthModelAlias() {
 				continue
 			}
 			seenAlias[aliasKey] = struct{}{}
-			clean = append(clean, OAuthModelAlias{Name: name, Alias: alias, Fork: entry.Fork, ForceMapping: entry.ForceMapping})
+			clean = append(clean, OAuthModelAlias{
+				Name:         name,
+				Alias:        alias,
+				Fork:         entry.Fork,
+				DisplayName:  strings.TrimSpace(entry.DisplayName),
+				ForceMapping: entry.ForceMapping,
+			})
 		}
 		if len(clean) > 0 {
 			out[channel] = clean
@@ -1130,12 +1190,28 @@ func (cfg *Config) SanitizeOpenAICompatibility() {
 // SanitizeCodexKeys removes Codex API key entries missing a BaseURL.
 // It trims whitespace and preserves order for remaining entries.
 func (cfg *Config) SanitizeCodexKeys() {
-	if cfg == nil || len(cfg.CodexKey) == 0 {
+	if cfg == nil {
 		return
 	}
-	out := make([]CodexKey, 0, len(cfg.CodexKey))
-	for i := range cfg.CodexKey {
-		e := cfg.CodexKey[i]
+	cfg.CodexKey = sanitizeCodexKeyEntries(cfg.CodexKey)
+}
+
+// SanitizeXAIKeys removes xAI API key entries missing a BaseURL.
+// It applies the same normalization rules as codex-api-key.
+func (cfg *Config) SanitizeXAIKeys() {
+	if cfg == nil {
+		return
+	}
+	cfg.XAIKey = sanitizeCodexKeyEntries(cfg.XAIKey)
+}
+
+func sanitizeCodexKeyEntries(entries []CodexKey) []CodexKey {
+	if len(entries) == 0 {
+		return entries
+	}
+	out := make([]CodexKey, 0, len(entries))
+	for i := range entries {
+		e := entries[i]
 		e.Prefix = normalizeModelPrefix(e.Prefix)
 		e.BaseURL = strings.TrimSpace(e.BaseURL)
 		e.Headers = NormalizeHeaders(e.Headers)
@@ -1145,7 +1221,7 @@ func (cfg *Config) SanitizeCodexKeys() {
 		}
 		out = append(out, e)
 	}
-	cfg.CodexKey = out
+	return out
 }
 
 // SanitizeClaudeKeys normalizes headers for Claude credentials.
@@ -1161,17 +1237,11 @@ func (cfg *Config) SanitizeClaudeKeys() {
 	}
 }
 
-// SanitizeGeminiKeys deduplicates and normalizes Gemini credentials.
-// It uses API key + base URL as the uniqueness key.
-func (cfg *Config) SanitizeGeminiKeys() {
-	if cfg == nil {
-		return
-	}
-
-	seen := make(map[string]struct{}, len(cfg.GeminiKey))
-	out := cfg.GeminiKey[:0]
-	for i := range cfg.GeminiKey {
-		entry := cfg.GeminiKey[i]
+func sanitizeGeminiKeyEntries(entries []GeminiKey) []GeminiKey {
+	seen := make(map[string]struct{}, len(entries))
+	out := entries[:0]
+	for i := range entries {
+		entry := entries[i]
 		entry.APIKey = strings.TrimSpace(entry.APIKey)
 		if entry.APIKey == "" {
 			continue
@@ -1188,7 +1258,25 @@ func (cfg *Config) SanitizeGeminiKeys() {
 		seen[uniqueKey] = struct{}{}
 		out = append(out, entry)
 	}
-	cfg.GeminiKey = out
+	return out
+}
+
+// SanitizeGeminiKeys deduplicates and normalizes Gemini credentials.
+// It uses API key + base URL as the uniqueness key.
+func (cfg *Config) SanitizeGeminiKeys() {
+	if cfg == nil {
+		return
+	}
+	cfg.GeminiKey = sanitizeGeminiKeyEntries(cfg.GeminiKey)
+}
+
+// SanitizeInteractionsKeys deduplicates and normalizes native Interactions credentials.
+// It uses API key + base URL as the uniqueness key.
+func (cfg *Config) SanitizeInteractionsKeys() {
+	if cfg == nil {
+		return
+	}
+	cfg.InteractionsKey = sanitizeGeminiKeyEntries(cfg.InteractionsKey)
 }
 
 func normalizeModelPrefix(prefix string) string {

@@ -21,6 +21,11 @@ export type ThinkingPayloadMap = Record<string, Record<string, unknown>>;
 export interface ModelAlias {
   name: string;
   alias?: string;
+  displayName?: string;
+  forceMapping?: boolean;
+  image?: boolean;
+  inputModalities?: string[];
+  outputModalities?: string[];
   priority?: number;
   testModel?: string;
   thinking?: ThinkingSupport;

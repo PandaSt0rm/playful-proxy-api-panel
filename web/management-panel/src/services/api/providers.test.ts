@@ -412,6 +412,41 @@ describe('providersApi.getGeminiKeys', () => {
   });
 });
 
+describe('providersApi native provider configs', () => {
+  it.each([
+    ['interactions', providersApi.getInteractionsConfigs, '/interactions-api-key'],
+    ['xai', providersApi.getXAIConfigs, '/xai-api-key'],
+  ] as const)(
+    'normalizes %s key lists from their management endpoint',
+    async (_, load, endpoint) => {
+      mockedGet.mockResolvedValue({
+        [endpoint.slice(1)]: [
+          {
+            'api-key': 'native-key',
+            priority: 3,
+            models: [
+              { name: 'upstream-model', alias: 'visible-model', thinking: { levels: ['high'] } },
+            ],
+          },
+        ],
+      });
+
+      const result = await load();
+
+      expect(mockedGet).toHaveBeenCalledWith(endpoint);
+      expect(result).toMatchObject([
+        {
+          apiKey: 'native-key',
+          priority: 3,
+          models: [
+            { name: 'upstream-model', alias: 'visible-model', thinking: { levels: ['high'] } },
+          ],
+        },
+      ]);
+    }
+  );
+});
+
 describe('providersApi.getCodexConfigs', () => {
   it('extracts from the items fallback key', async () => {
     mockedGet.mockResolvedValue({ items: [{ 'api-key': 'c1' }] });
@@ -433,10 +468,7 @@ describe('providersApi.getCodexConfigs', () => {
 describe('providersApi.getOpenAIProviders', () => {
   it('drops providers missing a base url', async () => {
     mockedGet.mockResolvedValue({
-      'openai-compatibility': [
-        { name: 'ok', 'base-url': 'https://ok' },
-        { name: 'broken' },
-      ],
+      'openai-compatibility': [{ name: 'ok', 'base-url': 'https://ok' }, { name: 'broken' }],
     });
 
     const result = await providersApi.getOpenAIProviders();
@@ -486,6 +518,37 @@ describe('providersApi save/update/delete request shapes', () => {
     expect(mockedDelete).toHaveBeenCalledWith('/gemini-api-key?api-key=k1&base-url=');
   });
 
+  it.each([
+    ['interactions', providersApi.saveInteractionsConfigs, '/interactions-api-key'],
+    ['xai', providersApi.saveXAIConfigs, '/xai-api-key'],
+  ] as const)('serializes complete %s key lists', async (_, save, endpoint) => {
+    mockedPut.mockResolvedValue(undefined);
+
+    await save([
+      {
+        apiKey: 'native-key',
+        priority: 3,
+        models: [
+          { name: 'upstream-model', alias: 'visible-model', thinking: { levels: ['high'] } },
+        ],
+      },
+    ]);
+
+    expect(mockedPut).toHaveBeenCalledWith(endpoint, [
+      {
+        'api-key': 'native-key',
+        priority: 3,
+        models: [
+          {
+            name: 'upstream-model',
+            alias: 'visible-model',
+            thinking: { levels: ['high'] },
+          },
+        ],
+      },
+    ]);
+  });
+
   it('saveVertexConfigs serializes models to name/alias pairs only', async () => {
     mockedPut.mockResolvedValue(undefined);
 
@@ -501,9 +564,7 @@ describe('providersApi save/update/delete request shapes', () => {
   it('saveVertexConfigs drops models missing an alias', async () => {
     mockedPut.mockResolvedValue(undefined);
 
-    await providersApi.saveVertexConfigs([
-      { apiKey: 'v', models: [{ name: 'm' }] },
-    ]);
+    await providersApi.saveVertexConfigs([{ apiKey: 'v', models: [{ name: 'm' }] }]);
 
     expect(mockedPut).toHaveBeenCalledWith('/vertex-api-key', [{ 'api-key': 'v' }]);
   });
