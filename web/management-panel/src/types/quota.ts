@@ -143,6 +143,17 @@ export interface ClaudeExtraUsage {
   utilization: number | null;
 }
 
+export interface ClaudeUsageLimit {
+  kind?: string | null;
+  percent?: number | null;
+  resets_at?: string | null;
+  scope?: {
+    model?: {
+      display_name?: string | null;
+    } | null;
+  } | null;
+}
+
 export interface ClaudeUsagePayload {
   five_hour?: ClaudeUsageWindow | null;
   seven_day?: ClaudeUsageWindow | null;
@@ -151,6 +162,7 @@ export interface ClaudeUsagePayload {
   seven_day_sonnet?: ClaudeUsageWindow | null;
   seven_day_cowork?: ClaudeUsageWindow | null;
   iguana_necktie?: ClaudeUsageWindow | null;
+  limits?: ClaudeUsageLimit[] | null;
   extra_usage?: ClaudeExtraUsage | null;
 }
 

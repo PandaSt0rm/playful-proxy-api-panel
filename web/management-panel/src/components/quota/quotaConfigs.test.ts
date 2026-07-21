@@ -482,6 +482,51 @@ describe('CLAUDE_CONFIG.fetchQuota window building', () => {
     expect(windows.map((w) => w.id)).toEqual(['five-hour']);
   });
 
+  it('builds a separate Fable window from the scoped weekly limit', async () => {
+    requestMock
+      .mockResolvedValueOnce(
+        okResult({
+          limits: [
+            {
+              kind: 'weekly_scoped',
+              group: 'weekly',
+              percent: 97,
+              resets_at: '2026-07-22T02:00:00Z',
+              scope: { model: { display_name: 'Fable' } },
+            },
+          ],
+        })
+      )
+      .mockResolvedValueOnce(okResult({}));
+
+    const { windows } = await CLAUDE_CONFIG.fetchQuota(makeFile(), t);
+
+    expect(windows).toEqual([
+      {
+        id: 'seven-day-fable',
+        label: '7-day Fable',
+        labelKey: 'claude_quota.seven_day_fable',
+        usedPercent: 97,
+        resetLabel: '07/22, 02:00',
+      },
+    ]);
+  });
+
+  it('ignores a malformed limits collection without hiding legacy windows', async () => {
+    requestMock
+      .mockResolvedValueOnce(
+        okResult({
+          five_hour: { utilization: 30, resets_at: '' },
+          limits: { kind: 'weekly_scoped' },
+        })
+      )
+      .mockResolvedValueOnce(okResult({}));
+
+    const { windows } = await CLAUDE_CONFIG.fetchQuota(makeFile(), t);
+
+    expect(windows.map((window) => window.id)).toEqual(['five-hour']);
+  });
+
   it('passes the extra_usage block through unchanged', async () => {
     const extraUsage = { is_enabled: true, monthly_limit: 5000, used_credits: 1234, utilization: 0.25 };
     requestMock

@@ -966,6 +966,23 @@ const buildClaudeQuotaWindows = (
     });
   }
 
+  const fableLimit = Array.isArray(payload.limits)
+    ? payload.limits.find(
+        (limit) =>
+          normalizeStringValue(limit?.kind)?.toLowerCase() === 'weekly_scoped' &&
+          normalizeStringValue(limit?.scope?.model?.display_name)?.toLowerCase() === 'fable'
+      )
+    : undefined;
+  if (fableLimit) {
+    windows.push({
+      id: 'seven-day-fable',
+      label: t('claude_quota.seven_day_fable'),
+      labelKey: 'claude_quota.seven_day_fable',
+      usedPercent: normalizeNumberValue(fableLimit.percent),
+      resetLabel: formatQuotaResetTime(normalizeStringValue(fableLimit.resets_at) ?? undefined),
+    });
+  }
+
   return windows;
 };
 
