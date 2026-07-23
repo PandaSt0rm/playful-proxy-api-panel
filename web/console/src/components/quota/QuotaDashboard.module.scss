@@ -1,0 +1,485 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+/* ---------------------------------------------------------------- Controls */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding: $spacing-md;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-lg;
+  background: color-mix(in srgb, var(--bg-primary) 94%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.controlsRow {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.refreshAll:global(.btn) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+}
+
+.updated {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.search {
+  flex: 1 1 220px;
+  min-width: 180px;
+  max-width: 360px;
+}
+
+.providerChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+  align-items: center;
+}
+
+/* Shared, theme-aware keyboard focus ring for the plain <button> chips/toggles
+   (the global outline keyword is WebKit-only and detaches on pill shapes). */
+.providerChip:focus-visible,
+.overviewChip:focus-visible,
+.meterToggle:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.providerChip {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background $transition-fast,
+    border-color $transition-fast,
+    color $transition-fast;
+
+  &:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+}
+
+.providerChipActive {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--primary-contrast, #fff);
+
+  &:hover {
+    background: var(--primary-hover);
+    color: var(--primary-contrast, #fff);
+  }
+}
+
+/* ------------------------------------------------------------- Overview strip */
+
+.overview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.overviewChip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: $radius-md;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    border-color $transition-fast,
+    background $transition-fast,
+    box-shadow $transition-fast;
+
+  &:hover {
+    border-color: var(--primary-color);
+  }
+}
+
+.overviewChipActive {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 1px var(--primary-color) inset;
+  color: var(--text-primary);
+}
+
+.overviewCount {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.overviewLabel {
+  white-space: nowrap;
+}
+
+/* Accent dot before each overview chip's count. */
+.overviewChip::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  align-self: center;
+  background: var(--text-tertiary);
+}
+
+.overview_all::before {
+  background: var(--text-tertiary);
+}
+.overview_ok::before {
+  background: var(--success-color, #22c55e);
+}
+.overview_warn::before {
+  background: var(--quota-medium-color, #e0aa14);
+}
+.overview_critical::before {
+  background: var(--danger-color);
+}
+.overview_error::before {
+  background: var(--danger-color);
+}
+
+/* ------------------------------------------------------------------- Groups */
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.groupHeader {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding-bottom: $spacing-xs;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.groupTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.groupCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--count-badge-text);
+  background-color: var(--count-badge-bg);
+}
+
+.groupAttention {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--danger-color);
+}
+
+.groupRows {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+/* -------------------------------------------------------------------- Rows */
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  border: 1px solid var(--border-color);
+  border-left-width: 3px;
+  border-left-color: var(--text-tertiary);
+  border-radius: $radius-md;
+  background: var(--bg-primary);
+  transition:
+    border-color $transition-fast,
+    box-shadow $transition-fast;
+
+  &:hover {
+    box-shadow: $shadow-md;
+  }
+}
+
+.rowHealth_ok {
+  border-left-color: var(--success-color, #22c55e);
+}
+.rowHealth_warn {
+  border-left-color: var(--quota-medium-color, #e0aa14);
+}
+.rowHealth_critical {
+  border-left-color: var(--danger-color);
+}
+.rowHealth_error {
+  border-left-color: var(--danger-color);
+}
+.rowHealth_unknown {
+  border-left-color: var(--text-tertiary);
+}
+
+.rowMain {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  min-width: 0;
+
+  @include mobile {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.rowIdentity {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+}
+
+.rowActions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-shrink: 0;
+}
+
+.rowUpdated {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.rowRefresh:global(.btn.btn-sm) {
+  padding-inline: 9px;
+  border-radius: 999px;
+}
+
+.healthDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--text-tertiary);
+}
+
+.health_ok {
+  background: var(--success-color, #22c55e);
+}
+.health_warn {
+  background: var(--quota-medium-color, #e0aa14);
+}
+.health_critical {
+  background: var(--danger-color);
+}
+.health_error {
+  background: var(--danger-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger-color) 22%, transparent);
+}
+.health_unknown {
+  background: var(--text-tertiary);
+}
+
+.typeBadge {
+  padding: 3px 9px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rowName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.extraChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.extraChipLabel {
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.extraChipValue {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.extraChipPremium {
+  border-color: rgba(217, 165, 22, 0.55);
+  background: linear-gradient(135deg, #fff9e3 0%, #ffe7a3 100%);
+
+  .extraChipLabel,
+  .extraChipValue {
+    color: #6b4b00;
+  }
+}
+
+:global([data-theme='dark']) .extraChipPremium {
+  background: linear-gradient(135deg, #4f3d0b 0%, #6e5510 100%);
+  border-color: rgba(226, 180, 50, 0.55);
+
+  .extraChipLabel,
+  .extraChipValue {
+    color: #fff0a8;
+  }
+}
+
+.rowBody {
+  min-width: 0;
+}
+
+.rowMessage {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  padding: 2px 0;
+}
+
+.rowError {
+  font-size: 12px;
+  color: var(--danger-color);
+  background-color: rgba($error-color, 0.08);
+  border: 1px solid var(--danger-color);
+  border-radius: $radius-sm;
+  padding: $spacing-xs $spacing-sm;
+}
+
+/* ------------------------------------------------------------------ Meters */
+
+.meterGrid {
+  display: grid;
+  gap: $spacing-sm $spacing-md;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+}
+
+.meter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.meterHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  min-width: 0;
+}
+
+.meterLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.meterPercent {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.meterMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  min-width: 0;
+}
+
+.meterAmount {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meterReset {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.meterToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: $spacing-xs;
+  padding: 4px 8px;
+  border: none;
+  background: none;
+  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

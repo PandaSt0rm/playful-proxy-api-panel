@@ -1,0 +1,816 @@
+@use '../../styles/mixins' as *;
+@use '../../styles/variables.scss' as *;
+
+// ── Section Layout ──────────────────────────────────────────────────────────
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  flex-wrap: wrap;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.sectionHint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+// ── Profile List ────────────────────────────────────────────────────────────
+
+.profileList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.profileCard {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-lg;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-primary);
+  transition:
+    border-color $transition-fast,
+    box-shadow $transition-fast;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--primary-color) 40%, var(--border-color));
+    box-shadow: $shadow-sm;
+  }
+}
+
+.profileCardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  min-width: 0;
+}
+
+.profileCardName {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  @include text-ellipsis;
+}
+
+.profileCardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.profileCardMetaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.profileCardActions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-shrink: 0;
+}
+
+// ── Loading / Error / Empty ─────────────────────────────────────────────────
+
+.loadingContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-2xl;
+  color: var(--text-tertiary);
+  font-size: 14px;
+  gap: $spacing-sm;
+}
+
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-lg;
+  color: $error-color;
+  font-size: 14px;
+  text-align: center;
+}
+
+.retryButton {
+  @include button-reset;
+  color: var(--primary-color);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: $radius-sm;
+
+  &:hover {
+    background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+  }
+}
+
+// ── Profile Form ────────────────────────────────────────────────────────────
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.formSection {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.formSectionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0 0 $spacing-xs;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: $spacing-md;
+  align-items: start;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.formLabel {
+  margin: 0;
+  padding-top: 10px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.formError {
+  font-size: 12px;
+  color: $error-color;
+  line-height: 1.5;
+}
+
+.formHint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.5;
+}
+
+.nameError,
+.toolsError {
+  font-size: 12px;
+  color: $error-color;
+  line-height: 1.5;
+}
+
+// ── Tool Card List ──────────────────────────────────────────────────────────
+
+.formSectionHint {
+  margin: -4px 0 0;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.5;
+}
+
+.toolCardList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.toolRowSlim {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition:
+    border-color $transition-fast,
+    background $transition-fast;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--primary-color) 40%, var(--border-color));
+    background: color-mix(in srgb, var(--primary-color) 4%, var(--bg-secondary));
+  }
+}
+
+.toolRowCheckbox {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--primary-color);
+  cursor: pointer;
+}
+
+.toolRowLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  user-select: none;
+}
+
+.toolCard {
+  border: 1px solid var(--primary-color);
+  border-radius: $radius-md;
+  background: var(--bg-primary);
+  overflow: hidden;
+  box-shadow: $shadow-sm;
+}
+
+.toolCardCollapsed {
+  .toolCardHeader {
+    border-bottom: none;
+  }
+}
+
+.toolCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  padding: 12px 14px;
+  background: color-mix(in srgb, var(--primary-color) 8%, var(--bg-secondary));
+  border-bottom: 1px solid var(--border-color);
+}
+
+.toolCardHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  cursor: pointer;
+}
+
+.toolCardTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.toolCardCollapse {
+  @include button-reset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: $radius-sm;
+  color: var(--text-secondary);
+
+  &:hover {
+    background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+    color: var(--primary-color);
+  }
+}
+
+.toolCardBody {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-md;
+  padding: $spacing-md;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.toolCardField {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  min-width: 0;
+
+  &:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+.toolCardLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+// ── Segmented Control ───────────────────────────────────────────────────────
+
+.segmented {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 2px;
+  border-radius: $radius-md;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  gap: 2px;
+}
+
+.segmentedButton {
+  @include button-reset;
+  padding: 4px 10px;
+  border-radius: calc(#{$radius-md} - 2px);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+
+  &:hover:not(:disabled) {
+    color: var(--text-primary);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.segmentedButtonActive {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  box-shadow: $shadow-sm;
+}
+
+// ── Form Actions ────────────────────────────────────────────────────────────
+
+.formActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+  padding-top: $spacing-md;
+  border-top: 1px solid var(--border-color);
+}
+
+// ── Delete Confirmation ─────────────────────────────────────────────────────
+
+.deleteWarning {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0 0 $spacing-md;
+
+  strong {
+    color: var(--text-primary);
+  }
+}
+
+.deleteProfileName {
+  font-family: $font-mono, monospace;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+// ── Sync Status ─────────────────────────────────────────────────────────────
+
+.statusIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusSynced {
+  color: $success-color;
+  .statusDot {
+    background: $success-color;
+  }
+}
+
+.statusOutdated {
+  color: $warning-color;
+  .statusDot {
+    background: $warning-color;
+  }
+}
+
+.statusNeverSynced {
+  color: var(--text-tertiary);
+  .statusDot {
+    background: var(--text-tertiary);
+  }
+}
+
+.statusError {
+  color: $error-color;
+  .statusDot {
+    background: $error-color;
+  }
+}
+
+.statusConflict {
+  color: $warning-color;
+  .statusDot {
+    background: $warning-color;
+  }
+}
+
+.statusTimestamp {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+// ── Target List in Profile Detail ───────────────────────────────────────────
+
+.targetList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.targetRow {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: $spacing-md;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-sm;
+  background: var(--bg-primary);
+}
+
+.targetToolName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.targetModelInfo {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-family: $font-mono, monospace;
+}
+
+// ── Expanded Profile Detail ─────────────────────────────────────────────────
+
+.profileDetail {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-lg $spacing-lg;
+  border: 1px solid var(--border-color);
+  border-top: none;
+  border-radius: 0 0 $radius-md $radius-md;
+  background: var(--bg-secondary);
+}
+
+.profileDetailTargets {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.targetDetailRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-sm;
+  background: var(--bg-primary);
+}
+
+.targetDetailToolLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 100px;
+}
+
+.targetDetailModel {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: $font-mono, monospace;
+}
+
+.targetDetailFilter {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-family: $font-mono, monospace;
+  font-style: italic;
+}
+
+.syncAllRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+  padding-top: $spacing-sm;
+}
+
+// ── Model Picker ────────────────────────────────────────────────────────────
+
+.modelPickerWrap {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  width: 100%;
+}
+
+.modelPickerTrigger {
+  @include button-reset;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+  transition:
+    border-color $transition-fast,
+    box-shadow $transition-fast;
+
+  &:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--primary-color) 40%, var(--border-color));
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 18%, transparent);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.modelPickerTriggerPlaceholder {
+  color: var(--text-tertiary);
+}
+
+.modelPickerTriggerText {
+  @include text-ellipsis;
+  flex: 1;
+  text-align: left;
+}
+
+.modelPickerTriggerIcon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-tertiary);
+}
+
+.modelPickerPopover {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-primary);
+  box-shadow: $shadow-lg;
+  overflow: hidden;
+}
+
+.modelPickerSearch {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.modelPickerSearchIcon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.modelPickerSearchInput {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  color: var(--text-primary);
+
+  &::placeholder {
+    color: var(--text-tertiary);
+  }
+}
+
+.modelPickerBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: $spacing-xs 0;
+  min-height: 120px;
+}
+
+.modelPickerEmpty {
+  padding: $spacing-lg;
+  font-size: 13px;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+.modelPickerFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.modelPickerClearLink {
+  @include button-reset;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-color);
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.modelPickerCount {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.modelGroup {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+}
+
+.modelGroupTitle {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  padding: 6px 12px 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.modelGroupSublabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.modelGroupList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.modelRow {
+  @include button-reset;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  width: 100%;
+  padding: 7px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  font-family: $font-mono, monospace;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+  }
+}
+
+.modelRowActive {
+  background: color-mix(in srgb, var(--primary-color) 14%, transparent);
+}
+
+.modelRowCheckbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--bg-primary);
+  transition:
+    background $transition-fast,
+    border-color $transition-fast;
+}
+
+.modelRowCheckboxActive {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--bg-primary);
+}
+
+.modelRowId {
+  flex: 1;
+  @include text-ellipsis;
+}
+
+.modelRowCheck {
+  display: inline-flex;
+  align-items: center;
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+// ── Model Chips ─────────────────────────────────────────────────────────────
+
+.modelChipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.modelChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px 3px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary-color) 8%, var(--bg-secondary));
+  font-size: 12px;
+  font-family: $font-mono, monospace;
+  color: var(--text-primary);
+  max-width: 100%;
+}
+
+.modelChipLabel {
+  @include text-ellipsis;
+  max-width: 240px;
+}
+
+.modelChipRemove {
+  @include button-reset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: var(--text-secondary);
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, $error-color 14%, transparent);
+    color: $error-color;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}

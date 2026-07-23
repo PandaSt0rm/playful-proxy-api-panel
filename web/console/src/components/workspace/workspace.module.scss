@@ -1,0 +1,175 @@
+.workspace,
+.masthead,
+.heading,
+.mastheadTools,
+.content,
+.panel,
+.panelHeader,
+.panelHeading,
+.panelTools,
+.panelBody {
+  min-width: 0;
+}
+
+.workspace {
+  display: grid;
+  gap: 24px;
+  width: 100%;
+  margin-inline: auto;
+}
+
+.wide {
+  max-width: 1440px;
+}
+
+.reading {
+  max-width: 920px;
+}
+
+.full {
+  max-width: none;
+}
+
+.masthead {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 4px 0 20px 18px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.masthead::before {
+  position: absolute;
+  inset: 0 auto 20px 0;
+  width: 2px;
+  background: var(--route);
+  content: '';
+}
+
+.heading {
+  display: grid;
+  gap: 8px;
+  max-width: 78ch;
+}
+
+.heading h1,
+.panelHeading h2 {
+  margin: 0;
+  color: var(--ink);
+}
+
+.heading h1 {
+  font-family: var(--font-heading, 'Arial Narrow', 'Roboto Condensed', system-ui, sans-serif);
+  font-size: clamp(1.75rem, 3vw, 2.4rem);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+}
+
+.eyebrow {
+  color: var(--route);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.description,
+.panelDescription {
+  color: var(--ink-muted);
+  line-height: 1.5;
+}
+
+.mastheadTools,
+.panelTools,
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.content {
+  display: grid;
+  gap: 20px;
+}
+
+.panel {
+  border: 1px solid var(--rule);
+  background: var(--surface-1);
+}
+
+.panelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.panelHeading {
+  display: grid;
+  gap: 4px;
+}
+
+.panelHeading h2 {
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.panelDescription {
+  font-size: 0.875rem;
+}
+
+.panelBody {
+  padding: 18px;
+}
+
+.legacyBody {
+  min-width: 0;
+}
+
+.legacyBody > * {
+  width: 100%;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.legacyBody h1:first-of-type {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .workspace {
+    gap: 18px;
+  }
+
+  .masthead,
+  .panelHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .masthead {
+    gap: 16px;
+    padding-bottom: 16px;
+  }
+
+  .masthead::before {
+    bottom: 16px;
+  }
+
+  .mastheadTools,
+  .panelTools,
+  .actions {
+    justify-content: flex-start;
+  }
+
+  .panelBody {
+    padding: 16px;
+  }
+}

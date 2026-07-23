@@ -1,0 +1,110 @@
+:root {
+  color-scheme: light;
+  --canvas: #efece5;
+  --surface-1: #f8f6f1;
+  --surface-2: #e6e1d7;
+  --rule: #c9c2b5;
+  --ink: #211f1a;
+  --ink-muted: #666056;
+  --route: #80600d;
+  --ok: #2e684b;
+  --caution: #7f570d;
+  --danger: #98443e;
+  --info: #316274;
+  --overlay: rgba(13, 17, 20, 0.38);
+  --focus-offset: var(--canvas);
+  --route-pattern: color-mix(in srgb, var(--route) 18%, var(--canvas));
+  --info-pattern: color-mix(in srgb, var(--info) 16%, var(--canvas));
+}
+
+[data-theme='white'] {
+  color-scheme: light;
+  --canvas: #ffffff;
+  --surface-1: #f7f9f8;
+  --surface-2: #edf1ef;
+  --rule: #c9d2ce;
+  --ink: #151b18;
+  --ink-muted: #58635e;
+  --route: #765500;
+  --ok: #236847;
+  --caution: #75500a;
+  --danger: #983e39;
+  --info: #275e74;
+  --overlay: rgba(13, 17, 20, 0.42);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+  --canvas: #0d1114;
+  --surface-1: #13191d;
+  --surface-2: #1a2227;
+  --rule: #2a353b;
+  --ink: #e7ecea;
+  --ink-muted: #9aa7a4;
+  --route: #d3a84c;
+  --ok: #65b98c;
+  --caution: #e1a85b;
+  --danger: #d97872;
+  --info: #72a9c2;
+  --overlay: rgba(0, 0, 0, 0.64);
+}
+
+:root,
+[data-theme='white'],
+[data-theme='dark'] {
+  --bg-secondary: var(--canvas);
+  --bg-primary: var(--surface-1);
+  --bg-tertiary: var(--surface-2);
+  --bg-hover: var(--surface-2);
+  --bg-quinary: var(--surface-1);
+  --bg-error-light: color-mix(in srgb, var(--danger) 12%, transparent);
+  --floating-surface: var(--surface-1);
+  --floating-border: var(--rule);
+  --floating-shadow: 0 12px 28px color-mix(in srgb, var(--canvas) 25%, transparent);
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-muted);
+  --text-tertiary: var(--ink-muted);
+  --text-quaternary: var(--ink-muted);
+  --text-muted: var(--ink-muted);
+  --border-color: var(--rule);
+  --border-secondary: var(--rule);
+  --border-primary: var(--rule);
+  --border-hover: var(--route);
+  --primary-color: var(--route);
+  --primary-hover: color-mix(in srgb, var(--route) 84%, var(--ink));
+  --primary-active: color-mix(in srgb, var(--route) 72%, var(--ink));
+  --primary-contrast: var(--canvas);
+  --success-color: var(--ok);
+  --quota-medium-color: var(--caution);
+  --warning-color: var(--caution);
+  --error-color: var(--danger);
+  --danger-color: var(--danger);
+  --info-color: var(--info);
+  --warning-bg: color-mix(in srgb, var(--caution) 12%, transparent);
+  --warning-border: color-mix(in srgb, var(--caution) 48%, var(--rule));
+  --warning-text: var(--caution);
+  --success-badge-bg: color-mix(in srgb, var(--ok) 14%, transparent);
+  --success-badge-text: var(--ok);
+  --success-badge-border: var(--ok);
+  --failure-badge-bg: color-mix(in srgb, var(--danger) 14%, transparent);
+  --failure-badge-text: var(--danger);
+  --failure-badge-border: var(--danger);
+  --count-badge-bg: var(--surface-2);
+  --count-badge-text: var(--ink);
+  --shadow: none;
+  --shadow-lg: none;
+  --radius-md: 8px;
+  --accent-tertiary: var(--surface-2);
+  --glass-blur: 0;
+  --glass-backdrop-filter: none;
+  --glass-filter: none;
+  --glass-bg: var(--surface-1);
+  --glass-bg-secondary: var(--surface-2);
+  --glass-border: var(--rule);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --overlay: var(--canvas);
+  }
+}

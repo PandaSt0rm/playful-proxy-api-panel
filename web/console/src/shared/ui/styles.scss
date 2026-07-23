@@ -1,0 +1,40 @@
+.rf-badge {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 0 8px;
+  font-size: 12px;
+  line-height: 16px;
+}
+.rf-badge--ok {
+  color: var(--ok);
+}
+.rf-badge--caution {
+  color: var(--caution);
+}
+.rf-badge--danger {
+  color: var(--danger);
+}
+.rf-badge--info {
+  color: var(--info);
+}
+.rf-skeleton {
+  display: block;
+  min-height: 20px;
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

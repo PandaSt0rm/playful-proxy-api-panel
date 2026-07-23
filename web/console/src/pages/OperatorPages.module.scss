@@ -1,0 +1,369 @@
+.workspace,
+.masthead,
+.signalRail,
+.panelGrid,
+.panelHeader,
+.panelBody,
+.toolbar,
+.fieldGrid,
+.tableViewport,
+.logViewport,
+.stateBlock,
+.detailGrid,
+.operationsSplit,
+.routeRows {
+  min-width: 0;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.freshness {
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+}
+.signalRail {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--rule);
+  background: var(--surface-1);
+}
+.signalRail > div {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+}
+.signalRail > div + div {
+  border-left: 1px solid var(--rule);
+}
+.signalRail span {
+  color: var(--ink-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.signalRail strong {
+  font-family: ui-monospace, monospace;
+}
+.operationsSplit {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.75fr) minmax(0, 2fr);
+  gap: 20px;
+  align-items: start;
+}
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(130px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.tableViewport {
+  overflow: auto;
+  max-width: 100%;
+}
+.tableViewport table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+}
+.tableViewport th,
+.tableViewport td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+  white-space: nowrap;
+}
+.tableViewport th {
+  color: var(--ink-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.rowTrigger {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--route);
+  font: inherit;
+  font-family: ui-monospace, monospace;
+  cursor: pointer;
+}
+.routeRows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.routeRows li + li {
+  border-top: 1px solid var(--rule);
+}
+.routeRows button {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  padding: 11px 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.routeRows button:hover,
+.routeRows button[aria-pressed='true'] {
+  background: var(--surface-2);
+}
+.routeRows span,
+.routeRows time {
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+}
+.logViewport {
+  display: grid;
+  max-height: min(46dvh, 440px);
+  overflow: auto;
+  background: var(--surface-2);
+  font-family: ui-monospace, monospace;
+  font-size: 0.75rem;
+}
+.logViewport > code {
+  display: block;
+  padding: 3px 8px;
+  white-space: pre;
+}
+.logViewport > div {
+  display: grid;
+  grid-template-columns: 180px 56px minmax(max-content, 1fr);
+  gap: 8px;
+  padding: 3px 8px;
+  white-space: pre;
+}
+.logViewport time,
+.logViewport strong {
+  color: var(--ink-muted);
+}
+.stateBlock {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--rule);
+  background: var(--surface-2);
+}
+.stateBlock p {
+  margin: 0;
+}
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.detailGrid > div {
+  min-width: 0;
+}
+.detailGrid dt {
+  color: var(--ink-muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+.detailGrid dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+.detailWide {
+  grid-column: 1 / -1;
+}
+.detailWide pre {
+  max-width: 100%;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.diagnosticsWorkbench {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  min-width: 0;
+}
+.selectedTarget {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--rule);
+  background: var(--surface-2);
+}
+.selectedTarget dt {
+  color: var(--ink-muted);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+.selectedTarget dd {
+  margin: 5px 0 0;
+  overflow-wrap: anywhere;
+}
+.checkCards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.checkCards label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 8px;
+  padding: 14px;
+  border: 1px solid var(--rule);
+  cursor: pointer;
+}
+.checkCards label:has(input:checked) {
+  border-left: 2px solid var(--route);
+  background: var(--surface-2);
+}
+.checkCards input {
+  grid-row: 1 / span 2;
+}
+.checkCards span {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+}
+.resultPanel,
+.resultHeading,
+.modelResults,
+.safeDetail {
+  min-width: 0;
+}
+.resultHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.resultHeading h3 {
+  margin: 0;
+}
+.modelResults {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+.modelResults input {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--rule);
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.modelResults ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1px;
+  max-height: 260px;
+  overflow: auto;
+  margin: 0;
+  padding: 1px;
+  list-style: none;
+  background: var(--rule);
+}
+.modelResults li {
+  padding: 8px;
+  background: var(--surface-1);
+}
+.safeDetail {
+  max-height: 320px;
+  overflow: auto;
+  margin: 14px 0 0;
+  padding: 12px;
+  border: 1px solid var(--rule);
+  background: var(--surface-2);
+}
+
+.readinessList,
+.passedChecks ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.readinessList li,
+.passedChecks li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 0;
+  border-top: 1px solid var(--rule);
+}
+.readinessList li:first-child {
+  border-top: 0;
+}
+.readinessList li > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.readinessList p {
+  margin: 4px 0 0;
+  color: var(--ink-muted);
+}
+.passedChecks {
+  margin-top: 16px;
+  border-top: 1px solid var(--rule);
+  padding-top: 12px;
+}
+.passedChecks summary {
+  cursor: pointer;
+  color: var(--ink-muted);
+}
+.changesWorkbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+  gap: 20px;
+  align-items: start;
+  min-width: 0;
+}
+.revisionInspector {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.revisionInspector pre {
+  max-width: 100%;
+  max-height: 56dvh;
+  overflow: auto;
+}
+.selectedRow {
+  background: var(--surface-2);
+  box-shadow: inset 2px 0 var(--route);
+}
+
+@media (max-width: 1100px) {
+  .changesWorkbench {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .diagnosticsWorkbench {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 1000px) {
+  .operationsSplit,
+  .detailGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fieldGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .signalRail,
+  .fieldGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .signalRail > div + div {
+    border-top: 1px solid var(--rule);
+    border-left: 0;
+  }
+}
