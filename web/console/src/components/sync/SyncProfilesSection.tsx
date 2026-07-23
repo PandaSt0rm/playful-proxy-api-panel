@@ -236,7 +236,7 @@ export function SyncProfilesSection() {
                     >
                       {profile.name}
                       <span
-                        style={{ marginLeft: 6, fontSize: 11, color: 'var(--text-tertiary)' }}
+                        style={{ marginLeft: 6, fontSize: 11, color: 'var(--ink-muted)' }}
                         aria-hidden="true"
                       >
                         {expandedIndex === index ? '▾' : '▸'}

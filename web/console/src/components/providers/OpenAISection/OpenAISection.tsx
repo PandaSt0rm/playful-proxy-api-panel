@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -22,7 +21,6 @@ import { statusBarDataFromRecentRequests } from '@/utils/recentRequests';
 import styles from '@/pages/AiProvidersPage.module.scss';
 import { ProviderConcurrencyBadge } from '../ProviderConcurrencyBadge';
 import { ProviderStatusBar } from '../ProviderStatusBar';
-import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer';
 import {
   getOpenAIProviderRecentWindowStats,
   getOpenAIProviderRecentStatusData,
@@ -34,13 +32,6 @@ import {
 
 type SortOption = 'name' | 'priority' | 'recent-success';
 type SortDirection = 'asc' | 'desc';
-
-interface FloatingToolbarStyle {
-  left: number;
-  top: number;
-  width: number;
-  visible: boolean;
-}
 
 const EMPTY_STATUS_BAR = statusBarDataFromRecentRequests([]);
 
@@ -87,8 +78,6 @@ export function OpenAISection({
   onToggle,
 }: OpenAISectionProps) {
   const { t } = useTranslation();
-  const pageTransitionLayer = usePageTransitionLayer();
-  const isTransitionAnimating = pageTransitionLayer?.isAnimating ?? false;
   const actionsDisabled = disableControls || loading || isSwitching;
   const toggleDisabled = disableControls || loading || isSwitching;
   const [sortOption, setSortOption] = useState<SortOption>('priority');
@@ -96,78 +85,7 @@ export function OpenAISection({
   const [selectedModels, setSelectedModels] = useState<Set<string>>(new Set());
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [dropdownLayout, setDropdownLayout] = useState({ openAbove: false, maxHeight: 300 });
-  const [floatingToolbarStyle, setFloatingToolbarStyle] = useState<FloatingToolbarStyle>({
-    left: 0,
-    top: 0,
-    width: 0,
-    visible: false,
-  });
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const topToolbarAnchorRef = useRef<HTMLDivElement>(null);
   const topDropdownRef = useRef<HTMLDivElement>(null);
-  const floatingDropdownRef = useRef<HTMLDivElement>(null);
-
-  const shouldRenderFloatingToolbar = !isTransitionAnimating && floatingToolbarStyle.visible;
-
-  useEffect(() => {
-    if (isTransitionAnimating) {
-      return;
-    }
-
-    const updateFloatingToolbar = () => {
-      const section = sectionRef.current;
-      const anchor = topToolbarAnchorRef.current;
-
-      if (!section || !anchor) {
-        return;
-      }
-
-      const sectionRect = section.getBoundingClientRect();
-      const anchorRect = anchor.getBoundingClientRect();
-      const rootStyles = getComputedStyle(document.documentElement);
-      const fixedTop = Number.parseFloat(rootStyles.getPropertyValue('--header-height')) || 64;
-      const toolbarHeight = anchorRect.height;
-      const isMobile = window.innerWidth <= 768;
-      const shouldShow =
-        !isMobile && anchorRect.top <= fixedTop && sectionRect.bottom > fixedTop + toolbarHeight;
-
-      setFloatingToolbarStyle((prev) => {
-        const next = {
-          left: sectionRect.left,
-          top: fixedTop,
-          width: sectionRect.width,
-          visible: shouldShow,
-        };
-
-        if (
-          prev.left === next.left &&
-          prev.top === next.top &&
-          prev.width === next.width &&
-          prev.visible === next.visible
-        ) {
-          return prev;
-        }
-
-        return next;
-      });
-    };
-
-    updateFloatingToolbar();
-    window.addEventListener('resize', updateFloatingToolbar);
-    window.addEventListener('scroll', updateFloatingToolbar, true);
-
-    return () => {
-      window.removeEventListener('resize', updateFloatingToolbar);
-      window.removeEventListener('scroll', updateFloatingToolbar, true);
-    };
-  }, [
-    configs.length,
-    isDropdownOpen,
-    isTransitionAnimating,
-    selectedModels,
-    sortDirection,
-    sortOption,
-  ]);
 
   useEffect(() => {
     if (!isDropdownOpen) {
@@ -176,10 +94,9 @@ export function OpenAISection({
 
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      const clickedTop = topDropdownRef.current?.contains(target);
-      const clickedFloating = floatingDropdownRef.current?.contains(target);
+      const clickedToolbar = topDropdownRef.current?.contains(target);
 
-      if (!clickedTop && !clickedFloating) {
+      if (!clickedToolbar) {
         setIsDropdownOpen(false);
       }
     };
@@ -193,9 +110,7 @@ export function OpenAISection({
     }
 
     const updateDropdownLayout = () => {
-      const wrapper = floatingToolbarStyle.visible
-        ? floatingDropdownRef.current
-        : topDropdownRef.current;
+      const wrapper = topDropdownRef.current;
 
       if (!wrapper) {
         return;
@@ -232,7 +147,7 @@ export function OpenAISection({
       window.removeEventListener('resize', updateDropdownLayout);
       window.removeEventListener('scroll', updateDropdownLayout, true);
     };
-  }, [floatingToolbarStyle.visible, isDropdownOpen]);
+  }, [isDropdownOpen]);
 
   const indexedConfigs = useMemo<IndexedOpenAIProvider[]>(() => {
     return configs
@@ -401,18 +316,15 @@ export function OpenAISection({
     </div>
   );
 
-  const renderToolbar = (isFloating = false) => {
-    const isActiveToolbar = isFloating === shouldRenderFloatingToolbar;
+  const renderToolbar = () => {
+    const isActiveToolbar = true;
     const dropdownClassName = dropdownLayout.openAbove
       ? `${styles.modelDropdownList} ${styles.modelDropdownListAbove}`
       : styles.modelDropdownList;
 
     return (
       <div className={styles.cardHeaderActions}>
-        <div
-          className={styles.modelMultiSelectWrapper}
-          ref={isFloating ? floatingDropdownRef : topDropdownRef}
-        >
+        <div className={styles.modelMultiSelectWrapper} ref={topDropdownRef}>
           <div
             className={[
               styles.modelFilterControl,
@@ -581,7 +493,7 @@ export function OpenAISection({
             </div>
           )}
           {providerDisabled && (
-            <div className="status-badge warning" style={{ marginTop: 8, marginBottom: 0 }}>
+            <div className="rf-badge rf-badge--caution" style={{ marginTop: 8, marginBottom: 0 }}>
               {t('ai_providers.config_disabled_badge')}
             </div>
           )}
@@ -697,17 +609,10 @@ export function OpenAISection({
 
   return (
     <>
-      <div ref={sectionRef}>
+      <div>
         <Card
           title={renderStaticTitle()}
-          extra={
-            <div
-              ref={topToolbarAnchorRef}
-              className={shouldRenderFloatingToolbar ? styles.openaiToolbarAnchorHidden : undefined}
-            >
-              {renderToolbar(false)}
-            </div>
-          }
+          extra={<div className={styles.openaiToolbar}>{renderToolbar()}</div>}
         >
           {loading && indexedConfigs.length === 0 ? (
             <div className="hint">{t('common.loading')}</div>
@@ -736,24 +641,6 @@ export function OpenAISection({
           )}
         </Card>
       </div>
-      {typeof document !== 'undefined' && shouldRenderFloatingToolbar
-        ? createPortal(
-            <div
-              className={`card ${styles.openaiFloatingToolbar}`}
-              style={{
-                left: `${floatingToolbarStyle.left}px`,
-                top: `${floatingToolbarStyle.top}px`,
-                width: `${floatingToolbarStyle.width}px`,
-              }}
-            >
-              <div className="card-header">
-                <div className="title">{renderStaticTitle()}</div>
-                {renderToolbar(true)}
-              </div>
-            </div>,
-            document.body
-          )
-        : null}
     </>
   );
 }

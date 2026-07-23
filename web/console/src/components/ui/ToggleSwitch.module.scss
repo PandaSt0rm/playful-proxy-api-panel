@@ -1,3 +1,5 @@
+@use '../../styles/variables' as *;
+
 .root {
   position: relative;
   display: inline-flex;
@@ -26,10 +28,13 @@
 .track {
   width: 44px;
   height: 24px;
-  background: var(--border-color);
-  border-radius: $radius-full;
+  border: 1px solid var(--rule);
+  background: var(--surface-2);
+  border-radius: $radius-square;
   position: relative;
-  transition: background $transition-fast;
+  transition:
+    background-color $transition-control,
+    border-color $transition-control;
 }
 
 .thumb {
@@ -38,14 +43,20 @@
   left: 3px;
   width: 18px;
   height: 18px;
-  background: #fff;
-  border-radius: $radius-full;
-  box-shadow: $shadow-sm;
-  transition: transform $transition-fast;
+  background: var(--canvas);
+  border-radius: $radius-square;
+  box-shadow: none;
+  transition: transform $transition-control;
 }
 
 .root input:checked + .track {
-  background: var(--primary-color);
+  border-color: var(--route);
+  background: var(--route);
+}
+
+.root input:focus-visible + .track {
+  outline: 2px solid var(--route);
+  outline-offset: 2px;
 }
 
 .root input:checked + .track .thumb {
@@ -53,6 +64,6 @@
 }
 
 .label {
-  color: var(--text-primary);
+  color: var(--ink);
   font-weight: 600;
 }

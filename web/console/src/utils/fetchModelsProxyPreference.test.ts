@@ -109,4 +109,10 @@ describe('fetchModelsProxyPreference.write', () => {
 
     expect(() => fetchModelsProxyPreference.write('codex', true)).not.toThrow();
   });
+  it('uses the fallback and skips writes when window is unavailable', () => {
+    vi.stubGlobal('window', undefined);
+    expect(fetchModelsProxyPreference.read('openai', true)).toBe(true);
+    expect(() => fetchModelsProxyPreference.write('openai', true)).not.toThrow();
+    vi.unstubAllGlobals();
+  });
 });

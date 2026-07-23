@@ -23,7 +23,7 @@
   flex-direction: column;
   gap: $spacing-xs;
   padding: $spacing-md $spacing-lg;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--rule);
 
   @include mobile {
     padding-left: $spacing-md;
@@ -36,12 +36,12 @@
   align-items: center;
   gap: $spacing-xs;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
 .settingsHeaderHint {
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
 }
 
 .settingsSection {
@@ -80,12 +80,12 @@
 .settingsLabel {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
 .settingsDesc {
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
 }
 
 .settingsControl {
@@ -109,18 +109,21 @@
   display: inline-flex;
   align-items: center;
   padding: 4px 10px;
-  border-radius: $radius-full;
-  border: 1px solid var(--border-color);
-  background-color: var(--bg-secondary);
-  color: var(--text-secondary);
+  border-radius: $radius-square;
+  border: 1px solid var(--rule);
+  background-color: var(--canvas);
+  color: var(--ink-muted);
   font-size: 12px;
   cursor: pointer;
-  transition: all $transition-fast;
+  transition:
+    color $transition-control,
+    background-color $transition-control,
+    border-color $transition-control;
 
   &:hover {
-    border-color: var(--primary-color);
-    color: var(--text-primary);
-    background-color: var(--bg-tertiary);
+    border-color: var(--route);
+    color: var(--ink);
+    background-color: var(--surface-2);
   }
 
   &:disabled {
@@ -130,13 +133,13 @@
 }
 
 .tagActive {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
+  background-color: var(--route);
+  border-color: var(--route);
   color: #fff;
 
   &:hover {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
+    background-color: var(--route);
+    border-color: var(--route);
     color: #fff;
   }
 }
@@ -147,7 +150,7 @@
   justify-content: space-between;
   gap: $spacing-md;
   padding: $spacing-md $spacing-lg;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--rule);
 
   @include mobile {
     padding-left: $spacing-md;
@@ -157,7 +160,7 @@
 
 .mappingsTitle {
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
 .modelsHint {
@@ -166,8 +169,8 @@
   gap: $spacing-xs;
   padding: $spacing-sm $spacing-lg;
   font-size: 13px;
-  color: var(--text-secondary);
-  border-bottom: 1px solid var(--border-color);
+  color: var(--ink-muted);
+  border-bottom: 1px solid var(--rule);
 
   @include mobile {
     padding-left: $spacing-md;
@@ -190,7 +193,7 @@
   align-items: center;
   gap: $spacing-sm;
   padding: 10px 0;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--rule);
 
   &:last-child {
     border-bottom: none;
@@ -203,7 +206,7 @@
 }
 
 .mappingSeparator {
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   text-align: center;
 
   @include mobile {

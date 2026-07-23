@@ -5,7 +5,7 @@
 .pageTitle {
   font-size: 28px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--ink);
   margin: 0 0 $spacing-xl 0;
 }
 
@@ -32,9 +32,9 @@
 .aboutLogo {
   width: 108px;
   height: 108px;
-  border-radius: 26px;
+  border-radius: $radius-square;
   object-fit: cover;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+  box-shadow: none;
 }
 
 .aboutTitle {
@@ -42,7 +42,7 @@
   font-size: clamp(28px, 4.2vw, 44px);
   font-weight: 800;
   line-height: 1.12;
-  color: var(--text-primary);
+  color: var(--ink);
   letter-spacing: -0.02em;
   text-align: center;
   text-wrap: balance;
@@ -66,15 +66,15 @@
   gap: 6px;
   min-height: 120px;
   padding: $spacing-md $spacing-lg;
-  border-radius: $radius-lg;
-  border: 1px solid var(--border-color);
-  background: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
+  border-radius: $radius-square;
+  border: 1px solid var(--rule);
+  background: color-mix(in srgb, var(--canvas) 82%, transparent);
   text-align: left;
 }
 
 .tapTile {
-  border: 1px solid var(--border-color);
-  background: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
+  border: 1px solid var(--rule);
+  background: color-mix(in srgb, var(--canvas) 82%, transparent);
   color: inherit;
   padding: $spacing-md $spacing-lg;
   cursor: pointer;
@@ -85,8 +85,8 @@
 
   &:hover {
     transform: translateY(-1px);
-    border-color: var(--primary-color);
-    box-shadow: 0 8px 18px rgba($primary-color, 0.18);
+    border-color: var(--route);
+    box-shadow: none;
   }
 
   &:active {
@@ -97,7 +97,7 @@
 .tileLabel {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
 }
 
 .tileHeader {
@@ -117,14 +117,14 @@
 .tileValue {
   font-size: 22px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--ink);
   line-height: 1.25;
   word-break: break-word;
 }
 
 .tileSub {
   font-size: 12px;
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
   line-height: 1.4;
 }
 
@@ -137,13 +137,13 @@
 .sectionTitle {
   font-size: 20px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
   margin: 0 0 $spacing-md 0;
 }
 
 .sectionDescription {
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   margin: 0 0 $spacing-md 0;
 }
 
@@ -161,16 +161,16 @@
     display: flex;
     justify-content: space-between;
     padding: $spacing-sm $spacing-md;
-    background-color: var(--bg-secondary);
-    border-radius: $radius-md;
+    background-color: var(--canvas);
+    border-radius: $radius-square;
 
     .label {
       font-weight: 500;
-      color: var(--text-secondary);
+      color: var(--ink-muted);
     }
 
     .value {
-      color: var(--text-primary);
+      color: var(--ink);
       font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     }
   }
@@ -186,13 +186,13 @@
 
 .modelItem {
   padding: $spacing-sm $spacing-md;
-  background-color: var(--bg-secondary);
-  border-radius: $radius-md;
+  background-color: var(--canvas);
+  border-radius: $radius-square;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 13px;
 
   &:hover {
-    background-color: var(--bg-hover);
+    background-color: var(--surface-2);
   }
 }
 
@@ -220,21 +220,21 @@
   align-items: center;
   gap: $spacing-xs;
   padding: 4px 10px;
-  border-radius: $radius-full;
-  border: 1px solid var(--border-color);
-  background-color: var(--bg-secondary);
+  border-radius: $radius-square;
+  border: 1px solid var(--rule);
+  background-color: var(--canvas);
   font-family:
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
     monospace;
 }
 
 .modelName {
-  color: var(--text-primary);
+  color: var(--ink);
   font-weight: 600;
 }
 
 .modelAlias {
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   font-size: 12px;
 }
 
@@ -251,19 +251,19 @@
 
   .versionItem {
     padding: $spacing-md;
-    background-color: var(--bg-secondary);
-    border-radius: $radius-md;
+    background-color: var(--canvas);
+    border-radius: $radius-square;
 
     .label {
       font-size: 12px;
-      color: var(--text-secondary);
+      color: var(--ink-muted);
       margin-bottom: $spacing-xs;
     }
 
     .version {
       font-size: 16px;
       font-weight: 600;
-      color: var(--text-primary);
+      color: var(--ink);
       font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     }
   }
@@ -280,18 +280,21 @@
   align-items: center;
   gap: $spacing-md;
   padding: $spacing-md $spacing-lg;
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: $radius-lg;
+  background-color: var(--canvas);
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
   text-decoration: none;
   color: inherit;
-  transition: all 0.2s ease;
+  transition:
+    color $transition-control,
+    background-color $transition-control,
+    border-color $transition-control;
 
   &:hover {
-    background-color: var(--bg-hover);
-    border-color: var(--primary-color);
+    background-color: var(--surface-2);
+    border-color: var(--route);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: none;
   }
 
   &:active {
@@ -305,8 +308,8 @@
   justify-content: center;
   width: 44px;
   height: 44px;
-  border-radius: $radius-md;
-  background-color: var(--primary-color);
+  border-radius: $radius-square;
+  background-color: var(--route);
   color: white;
   flex-shrink: 0;
 
@@ -330,7 +333,7 @@
   gap: $spacing-xs;
   font-size: 15px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
   margin-bottom: 2px;
 
   svg {
@@ -341,7 +344,7 @@
 
 .linkDesc {
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -351,7 +354,7 @@
   .aboutLogo {
     width: 92px;
     height: 92px;
-    border-radius: 22px;
+    border-radius: $radius-square;
   }
 
   .aboutTitle {

@@ -20,7 +20,7 @@
 .sectionTitle {
   font-size: 18px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--ink);
   margin: 0;
 }
 
@@ -28,7 +28,7 @@
   margin: 0;
   font-size: 13px;
   line-height: 1.6;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
 }
 
 // ── Profile List ────────────────────────────────────────────────────────────
@@ -45,16 +45,16 @@
   align-items: center;
   gap: $spacing-md;
   padding: $spacing-md $spacing-lg;
-  border: 1px solid var(--border-color);
-  border-radius: $radius-md;
-  background: var(--bg-primary);
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
+  background: var(--surface-1);
   transition:
-    border-color $transition-fast,
-    box-shadow $transition-fast;
+    border-color $transition-control,
+    box-shadow $transition-control;
 
   &:hover {
-    border-color: color-mix(in srgb, var(--primary-color) 40%, var(--border-color));
-    box-shadow: $shadow-sm;
+    border-color: color-mix(in srgb, var(--route) 40%, var(--rule));
+    box-shadow: none;
   }
 }
 
@@ -68,7 +68,7 @@
 .profileCardName {
   font-size: 15px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
   @include text-ellipsis;
 }
 
@@ -77,7 +77,7 @@
   flex-wrap: wrap;
   gap: $spacing-sm;
   font-size: 12px;
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
 }
 
 .profileCardMetaItem {
@@ -100,7 +100,7 @@
   align-items: center;
   justify-content: center;
   padding: $spacing-2xl;
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
   font-size: 14px;
   gap: $spacing-sm;
 }
@@ -111,21 +111,21 @@
   align-items: center;
   gap: $spacing-sm;
   padding: $spacing-lg;
-  color: $error-color;
+  color: var(--danger);
   font-size: 14px;
   text-align: center;
 }
 
 .retryButton {
   @include button-reset;
-  color: var(--primary-color);
+  color: var(--route);
   font-weight: 600;
   font-size: 13px;
   padding: 4px 8px;
-  border-radius: $radius-sm;
+  border-radius: $radius-square;
 
   &:hover {
-    background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+    background: color-mix(in srgb, var(--route) 10%, transparent);
   }
 }
 
@@ -148,7 +148,7 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   margin: 0 0 $spacing-xs;
 }
 
@@ -167,7 +167,7 @@
   margin: 0;
   padding-top: 10px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
   font-size: 14px;
 }
 
@@ -179,20 +179,20 @@
 
 .formError {
   font-size: 12px;
-  color: $error-color;
+  color: var(--danger);
   line-height: 1.5;
 }
 
 .formHint {
   font-size: 12px;
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
   line-height: 1.5;
 }
 
 .nameError,
 .toolsError {
   font-size: 12px;
-  color: $error-color;
+  color: var(--danger);
   line-height: 1.5;
 }
 
@@ -201,7 +201,7 @@
 .formSectionHint {
   margin: -4px 0 0;
   font-size: 12px;
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
   line-height: 1.5;
 }
 
@@ -216,17 +216,17 @@
   align-items: center;
   gap: $spacing-sm;
   padding: 10px 14px;
-  border: 1px solid var(--border-color);
-  border-radius: $radius-md;
-  background: var(--bg-secondary);
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
+  background: var(--canvas);
   cursor: pointer;
   transition:
-    border-color $transition-fast,
-    background $transition-fast;
+    border-color $transition-control,
+    background $transition-control;
 
   &:hover {
-    border-color: color-mix(in srgb, var(--primary-color) 40%, var(--border-color));
-    background: color-mix(in srgb, var(--primary-color) 4%, var(--bg-secondary));
+    border-color: color-mix(in srgb, var(--route) 40%, var(--rule));
+    background: color-mix(in srgb, var(--route) 4%, var(--canvas));
   }
 }
 
@@ -235,23 +235,23 @@
   width: 16px;
   height: 16px;
   margin: 0;
-  accent-color: var(--primary-color);
+  accent-color: var(--route);
   cursor: pointer;
 }
 
 .toolRowLabel {
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--ink);
   user-select: none;
 }
 
 .toolCard {
-  border: 1px solid var(--primary-color);
-  border-radius: $radius-md;
-  background: var(--bg-primary);
+  border: 1px solid var(--route);
+  border-radius: $radius-square;
+  background: var(--surface-1);
   overflow: hidden;
-  box-shadow: $shadow-sm;
+  box-shadow: none;
 }
 
 .toolCardCollapsed {
@@ -266,8 +266,8 @@
   justify-content: space-between;
   gap: $spacing-sm;
   padding: 12px 14px;
-  background: color-mix(in srgb, var(--primary-color) 8%, var(--bg-secondary));
-  border-bottom: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--route) 8%, var(--canvas));
+  border-bottom: 1px solid var(--rule);
 }
 
 .toolCardHeaderLeft {
@@ -280,7 +280,7 @@
 .toolCardTitle {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
 .toolCardCollapse {
@@ -290,12 +290,12 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  border-radius: $radius-sm;
-  color: var(--text-secondary);
+  border-radius: $radius-square;
+  color: var(--ink-muted);
 
   &:hover {
-    background: color-mix(in srgb, var(--primary-color) 12%, transparent);
-    color: var(--primary-color);
+    background: color-mix(in srgb, var(--route) 12%, transparent);
+    color: var(--route);
   }
 }
 
@@ -324,7 +324,7 @@
 .toolCardLabel {
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   letter-spacing: 0.02em;
 }
 
@@ -334,22 +334,22 @@
   display: inline-flex;
   align-self: flex-start;
   padding: 2px;
-  border-radius: $radius-md;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  border-radius: $radius-square;
+  background: var(--canvas);
+  border: 1px solid var(--rule);
   gap: 2px;
 }
 
 .segmentedButton {
   @include button-reset;
   padding: 4px 10px;
-  border-radius: calc(#{$radius-md} - 2px);
+  border-radius: $radius-square;
   font-size: 12px;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
 
   &:hover:not(:disabled) {
-    color: var(--text-primary);
+    color: var(--ink);
   }
 
   &:disabled {
@@ -359,9 +359,9 @@
 }
 
 .segmentedButtonActive {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  box-shadow: $shadow-sm;
+  background: var(--surface-1);
+  color: var(--ink);
+  box-shadow: none;
 }
 
 // ── Form Actions ────────────────────────────────────────────────────────────
@@ -372,7 +372,7 @@
   justify-content: flex-end;
   gap: $spacing-sm;
   padding-top: $spacing-md;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--rule);
 }
 
 // ── Delete Confirmation ─────────────────────────────────────────────────────
@@ -380,18 +380,18 @@
 .deleteWarning {
   font-size: 14px;
   line-height: 1.6;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   margin: 0 0 $spacing-md;
 
   strong {
-    color: var(--text-primary);
+    color: var(--ink);
   }
 }
 
 .deleteProfileName {
   font-family: $font-mono, monospace;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
 // ── Sync Status ─────────────────────────────────────────────────────────────
@@ -407,48 +407,48 @@
 .statusDot {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: $radius-circle;
   flex-shrink: 0;
 }
 
 .statusSynced {
-  color: $success-color;
+  color: var(--ok);
   .statusDot {
-    background: $success-color;
+    background: var(--ok);
   }
 }
 
 .statusOutdated {
-  color: $warning-color;
+  color: var(--caution);
   .statusDot {
-    background: $warning-color;
+    background: var(--caution);
   }
 }
 
 .statusNeverSynced {
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
   .statusDot {
-    background: var(--text-tertiary);
+    background: var(--ink-muted);
   }
 }
 
 .statusError {
-  color: $error-color;
+  color: var(--danger);
   .statusDot {
-    background: $error-color;
+    background: var(--danger);
   }
 }
 
 .statusConflict {
-  color: $warning-color;
+  color: var(--caution);
   .statusDot {
-    background: $warning-color;
+    background: var(--caution);
   }
 }
 
 .statusTimestamp {
   font-size: 11px;
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
 }
 
 // ── Target List in Profile Detail ───────────────────────────────────────────
@@ -465,20 +465,20 @@
   align-items: center;
   gap: $spacing-md;
   padding: 8px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: $radius-sm;
-  background: var(--bg-primary);
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
+  background: var(--surface-1);
 }
 
 .targetToolName {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
 .targetModelInfo {
   font-size: 12px;
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
   font-family: $font-mono, monospace;
 }
 
@@ -489,10 +489,10 @@
   flex-direction: column;
   gap: $spacing-md;
   padding: $spacing-md $spacing-lg $spacing-lg;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--rule);
   border-top: none;
-  border-radius: 0 0 $radius-md $radius-md;
-  background: var(--bg-secondary);
+  border-radius: $radius-square;
+  background: var(--canvas);
 }
 
 .profileDetailTargets {
@@ -507,27 +507,27 @@
   align-items: center;
   gap: $spacing-sm;
   padding: 8px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: $radius-sm;
-  background: var(--bg-primary);
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
+  background: var(--surface-1);
 }
 
 .targetDetailToolLabel {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
   min-width: 100px;
 }
 
 .targetDetailModel {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   font-family: $font-mono, monospace;
 }
 
 .targetDetailFilter {
   font-size: 11px;
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
   font-family: $font-mono, monospace;
   font-style: italic;
 }
@@ -557,23 +557,23 @@
   gap: $spacing-sm;
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: $radius-md;
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
+  background: var(--surface-1);
+  color: var(--ink);
   font-size: 13px;
   transition:
-    border-color $transition-fast,
-    box-shadow $transition-fast;
+    border-color $transition-control,
+    box-shadow $transition-control;
 
   &:hover:not(:disabled) {
-    border-color: color-mix(in srgb, var(--primary-color) 40%, var(--border-color));
+    border-color: color-mix(in srgb, var(--route) 40%, var(--rule));
   }
 
   &:focus-visible {
     outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 18%, transparent);
+    border-color: var(--route);
+    box-shadow: none;
   }
 
   &:disabled {
@@ -583,7 +583,7 @@
 }
 
 .modelPickerTriggerPlaceholder {
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
 }
 
 .modelPickerTriggerText {
@@ -595,16 +595,16 @@
 .modelPickerTriggerIcon {
   display: inline-flex;
   align-items: center;
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
 }
 
 .modelPickerPopover {
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--border-color);
-  border-radius: $radius-md;
-  background: var(--bg-primary);
-  box-shadow: $shadow-lg;
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
+  background: var(--surface-1);
+  box-shadow: none;
   overflow: hidden;
 }
 
@@ -613,14 +613,14 @@
   align-items: center;
   gap: $spacing-sm;
   padding: 10px 12px;
-  border-bottom: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--rule);
+  background: var(--canvas);
 }
 
 .modelPickerSearchIcon {
   display: inline-flex;
   align-items: center;
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
   flex-shrink: 0;
 }
 
@@ -630,10 +630,10 @@
   outline: none;
   background: transparent;
   font-size: 13px;
-  color: var(--text-primary);
+  color: var(--ink);
 
   &::placeholder {
-    color: var(--text-tertiary);
+    color: var(--ink-muted);
   }
 }
 
@@ -647,7 +647,7 @@
 .modelPickerEmpty {
   padding: $spacing-lg;
   font-size: 13px;
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
   text-align: center;
 }
 
@@ -657,15 +657,15 @@
   justify-content: space-between;
   gap: $spacing-sm;
   padding: 8px 12px;
-  border-top: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+  border-top: 1px solid var(--rule);
+  background: var(--canvas);
 }
 
 .modelPickerClearLink {
   @include button-reset;
   font-size: 12px;
   font-weight: 600;
-  color: var(--primary-color);
+  color: var(--route);
 
   &:hover {
     text-decoration: underline;
@@ -674,7 +674,7 @@
 
 .modelPickerCount {
   font-size: 12px;
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
 }
 
 .modelGroup {
@@ -693,13 +693,13 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
 }
 
 .modelGroupSublabel {
   font-size: 11px;
   font-weight: 500;
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
   text-transform: none;
   letter-spacing: 0;
 }
@@ -718,18 +718,18 @@
   width: 100%;
   padding: 7px 12px;
   font-size: 13px;
-  color: var(--text-primary);
+  color: var(--ink);
   font-family: $font-mono, monospace;
   text-align: left;
   cursor: pointer;
 
   &:hover {
-    background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+    background: color-mix(in srgb, var(--route) 10%, transparent);
   }
 }
 
 .modelRowActive {
-  background: color-mix(in srgb, var(--primary-color) 14%, transparent);
+  background: color-mix(in srgb, var(--route) 14%, transparent);
 }
 
 .modelRowCheckbox {
@@ -739,19 +739,19 @@
   flex-shrink: 0;
   width: 16px;
   height: 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: var(--bg-primary);
-  color: var(--bg-primary);
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
+  background: var(--surface-1);
+  color: var(--surface-1);
   transition:
-    background $transition-fast,
-    border-color $transition-fast;
+    background $transition-control,
+    border-color $transition-control;
 }
 
 .modelRowCheckboxActive {
-  background: var(--primary-color);
-  border-color: var(--primary-color);
-  color: var(--bg-primary);
+  background: var(--route);
+  border-color: var(--route);
+  color: var(--surface-1);
 }
 
 .modelRowId {
@@ -762,7 +762,7 @@
 .modelRowCheck {
   display: inline-flex;
   align-items: center;
-  color: var(--primary-color);
+  color: var(--route);
   flex-shrink: 0;
 }
 
@@ -780,12 +780,12 @@
   align-items: center;
   gap: 4px;
   padding: 3px 4px 3px 8px;
-  border: 1px solid var(--border-color);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--primary-color) 8%, var(--bg-secondary));
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
+  background: color-mix(in srgb, var(--route) 8%, var(--canvas));
   font-size: 12px;
   font-family: $font-mono, monospace;
-  color: var(--text-primary);
+  color: var(--ink);
   max-width: 100%;
 }
 
@@ -801,12 +801,12 @@
   justify-content: center;
   width: 20px;
   height: 20px;
-  border-radius: 50%;
-  color: var(--text-secondary);
+  border-radius: $radius-square;
+  color: var(--ink-muted);
 
   &:hover:not(:disabled) {
-    background: color-mix(in srgb, $error-color 14%, transparent);
-    color: $error-color;
+    background: color-mix(in srgb, var(--danger) 14%, transparent);
+    color: var(--danger);
   }
 
   &:disabled {

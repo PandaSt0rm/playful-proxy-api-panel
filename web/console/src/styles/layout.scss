@@ -267,7 +267,7 @@ $mobile-max: 768px;
   padding: 6px;
   border: 1px solid var(--rule);
   background: var(--surface-1);
-  box-shadow: 0 14px 34px color-mix(in srgb, var(--canvas) 44%, transparent);
+  box-shadow: none;
 }
 
 .route-popover button {

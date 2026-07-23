@@ -1,5 +1,12 @@
-import { describe, it, expect } from 'vitest';
-import { maskApiKey, formatFileSize, truncateText, formatUnixTimestamp } from '@/utils/format';
+import { describe, it, expect, vi } from 'vitest';
+import {
+  maskApiKey,
+  formatDateTime,
+  formatFileSize,
+  formatNumber,
+  truncateText,
+  formatUnixTimestamp,
+} from '@/utils/format';
 
 describe('maskApiKey', () => {
   it('keeps the first and last two characters and masks the middle for a normal key', () => {
@@ -58,5 +65,43 @@ describe('formatUnixTimestamp', () => {
 
   it('returns an empty string for unparseable input', () => {
     expect(formatUnixTimestamp('not-a-date')).toBe('');
+  });
+});
+
+describe('locale-aware formatting', () => {
+  it('formats Date and string inputs with explicit and document locales', () => {
+    document.documentElement.lang = 'en-US';
+    const date = new Date('2026-01-02T03:04:05Z');
+    expect(formatDateTime(date, 'en-US')).toContain('2026');
+    expect(formatDateTime('2026-01-02T03:04:05Z')).toContain('2026');
+    expect(formatDateTime('not-a-date', 'en-US')).toBe('Invalid Date');
+    expect(formatNumber(1234, 'en-US')).toBe('1,234');
+    expect(formatNumber(1234, '   ')).toBe('1,234');
+    document.documentElement.lang = '';
+    expect(formatNumber(1234)).not.toBe('');
+  });
+
+  it.each([
+    [1_700_000_000, 'seconds'],
+    [1_700_000_000_000, 'milliseconds'],
+    [1_700_000_000_000_000, 'microseconds'],
+    [1_700_000_000_000_000_000, 'nanoseconds'],
+  ])('formats finite %s %s timestamps', (value) => {
+    expect(formatUnixTimestamp(value, 'en-US')).toContain('2023');
+    expect(formatUnixTimestamp(String(value))).not.toBe('');
+  });
+
+  it('parses a nonnumeric date string and rejects nonfinite numbers', () => {
+    expect(formatUnixTimestamp('2026-01-02T03:04:05Z', 'en-US')).toContain('2026');
+    expect(formatUnixTimestamp(Number.NaN)).toBe('');
+    expect(formatUnixTimestamp(undefined)).toBe('');
+  });
+
+  it('lets the runtime choose a locale when browser globals are absent', () => {
+    vi.stubGlobal('document', undefined);
+    vi.stubGlobal('navigator', undefined);
+    expect(formatNumber(1234)).not.toBe('');
+    expect(formatDateTime(new Date('2026-01-02T03:04:05Z'))).toContain('2026');
+    vi.unstubAllGlobals();
   });
 });

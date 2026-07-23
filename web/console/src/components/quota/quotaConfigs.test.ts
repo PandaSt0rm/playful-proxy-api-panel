@@ -630,13 +630,11 @@ describe('CLAUDE_CONFIG.fetchQuota plan-type resolution', () => {
   });
 
   it('resolves plan_team for an active claude_team organization', async () => {
-    requestMock
-      .mockResolvedValueOnce(usageOk())
-      .mockResolvedValueOnce(
-        okResult({
-          organization: { organization_type: 'CLAUDE_TEAM', subscription_status: 'ACTIVE' },
-        })
-      );
+    requestMock.mockResolvedValueOnce(usageOk()).mockResolvedValueOnce(
+      okResult({
+        organization: { organization_type: 'CLAUDE_TEAM', subscription_status: 'ACTIVE' },
+      })
+    );
 
     const { planType } = await CLAUDE_CONFIG.fetchQuota(makeFile(), t);
 
@@ -696,13 +694,11 @@ describe('CLAUDE_CONFIG.fetchQuota plan-type resolution', () => {
   });
 
   it('does not treat a claude_team organization as team unless the subscription is active', async () => {
-    requestMock
-      .mockResolvedValueOnce(usageOk())
-      .mockResolvedValueOnce(
-        okResult({
-          organization: { organization_type: 'claude_team', subscription_status: 'canceled' },
-        })
-      );
+    requestMock.mockResolvedValueOnce(usageOk()).mockResolvedValueOnce(
+      okResult({
+        organization: { organization_type: 'claude_team', subscription_status: 'canceled' },
+      })
+    );
 
     const { planType } = await CLAUDE_CONFIG.fetchQuota(makeFile(), t);
 

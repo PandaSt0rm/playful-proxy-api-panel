@@ -28,7 +28,13 @@ export function IconButton({
   children: ReactNode;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button type="button" aria-label={label} aria-busy={busy || undefined} {...props}>
+    <button
+      {...props}
+      type={props.type ?? 'button'}
+      className={['rf-icon-button', props.className].filter(Boolean).join(' ')}
+      aria-label={label}
+      aria-busy={busy || undefined}
+    >
       {children}
     </button>
   );
@@ -37,10 +43,15 @@ export function IconButton({
 export function PasswordInput(props: InputHTMLAttributes<HTMLInputElement>) {
   const [visible, setVisible] = useState(false);
   return (
-    <span>
-      <input {...props} type={visible ? 'text' : 'password'} />
+    <span className="rf-password-input">
+      <input
+        {...props}
+        className={['rf-input', props.className].filter(Boolean).join(' ')}
+        type={visible ? 'text' : 'password'}
+      />
       <button
         type="button"
+        className="rf-password-input__toggle"
         aria-label={visible ? 'Hide value' : 'Show value'}
         onClick={() => setVisible(!visible)}
       >
@@ -50,10 +61,18 @@ export function PasswordInput(props: InputHTMLAttributes<HTMLInputElement>) {
   );
 }
 export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea {...props} />;
+  return (
+    <textarea {...props} className={['rf-textarea', props.className].filter(Boolean).join(' ')} />
+  );
 }
 export function Checkbox(props: InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} type="checkbox" />;
+  return (
+    <input
+      {...props}
+      className={['rf-checkbox', props.className].filter(Boolean).join(' ')}
+      type="checkbox"
+    />
+  );
 }
 export function Toggle({
   checked,
@@ -72,6 +91,7 @@ export function Toggle({
       role="switch"
       aria-checked={checked}
       disabled={disabled}
+      className="rf-toggle"
       onClick={() => onChange(!checked)}
     >
       {label}
@@ -91,11 +111,12 @@ export function SegmentedControl<T extends string>({
   onChange: (value: T) => void;
 }) {
   return (
-    <div role="group" aria-label={label}>
+    <div className="rf-segmented" role="group" aria-label={label}>
       {options.map((option) => (
         <button
           key={option.value}
           type="button"
+          className="rf-segmented__option"
           aria-pressed={value === option.value}
           onClick={() => onChange(option.value)}
         >
@@ -130,7 +151,7 @@ export function Tabs<T extends string>({
   };
   return (
     <>
-      <div role="tablist" aria-label={label}>
+      <div className="rf-tabs" role="tablist" aria-label={label}>
         {tabs.map((tab, index) => (
           <button
             id={`tab-${tab.id}`}
@@ -138,6 +159,7 @@ export function Tabs<T extends string>({
             type="button"
             role="tab"
             aria-selected={value === tab.id}
+            className="rf-tabs__tab"
             aria-controls={`panel-${tab.id}`}
             tabIndex={value === tab.id ? 0 : -1}
             onClick={() => onChange(tab.id)}
@@ -154,6 +176,7 @@ export function Tabs<T extends string>({
           role="tabpanel"
           aria-labelledby={`tab-${tab.id}`}
           hidden={value !== tab.id}
+          className="rf-tabs__panel"
         >
           {tab.panel}
         </div>
@@ -163,10 +186,10 @@ export function Tabs<T extends string>({
 }
 
 export function Badge({
-  tone = 'info',
+  tone = 'neutral',
   children,
 }: {
-  tone?: 'ok' | 'caution' | 'danger' | 'info';
+  tone?: 'neutral' | 'ok' | 'caution' | 'danger' | 'info';
   children: ReactNode;
 }) {
   return <span className={`rf-badge rf-badge--${tone}`}>{children}</span>;
@@ -181,8 +204,8 @@ export function ProgressMeter({
   max?: number;
 }) {
   return (
-    <label>
-      {label}
+    <label className="rf-progress">
+      <span>{label}</span>
       <progress value={value} max={max} />
       <span>{Math.round((value / max) * 100)}%</span>
     </label>
@@ -198,7 +221,7 @@ export function Pagination({
   onChange: (page: number) => void;
 }) {
   return (
-    <nav aria-label="Pagination">
+    <nav className="rf-pagination" aria-label="Pagination">
       <button type="button" disabled={page <= 1} onClick={() => onChange(page - 1)}>
         Previous
       </button>
@@ -213,7 +236,7 @@ export function Pagination({
 }
 export function CodeBlock({ children }: { children: string }) {
   return (
-    <pre>
+    <pre className="rf-code-block">
       <code>{children}</code>
     </pre>
   );
@@ -235,6 +258,7 @@ export function Toast({
 }) {
   return (
     <div
+      className={`rf-toast rf-toast--${tone}`}
       role={tone === 'error' ? 'alert' : 'status'}
       aria-live={tone === 'error' ? 'assertive' : 'polite'}
     >
@@ -264,9 +288,9 @@ export function ConfirmationDialog({
 }) {
   return (
     <Modal open={open} title={title} onClose={pending ? () => {} : onClose}>
-      <div>{children}</div>
-      <div>
-        <Button type="button" onClick={onClose} disabled={pending}>
+      <div className="rf-dialog__body">{children}</div>
+      <div className="rf-dialog__actions">
+        <Button type="button" variant="secondary" onClick={onClose} disabled={pending}>
           {cancelLabel}
         </Button>
         <Button type="button" onClick={onConfirm} loading={pending}>
@@ -289,14 +313,14 @@ export function Drawer({
   onClose: () => void;
 }) {
   return (
-    <Modal open={open} title={title} onClose={onClose}>
-      {children}
+    <Modal open={open} title={title} onClose={onClose} className="rf-drawer">
+      <div className="rf-drawer__body">{children}</div>
     </Modal>
   );
 }
 export function DiffView({ diff }: { diff: string }) {
   return (
-    <pre aria-label="Configuration diff">
+    <pre className="rf-diff" aria-label="Configuration diff">
       <code>{diff}</code>
     </pre>
   );
@@ -311,7 +335,7 @@ export function CodeMirrorSurface({
   label?: string;
 }) {
   return (
-    <div aria-label={label}>
+    <div className="rf-code-mirror" aria-label={label}>
       <ReactCodeMirror value={value} extensions={[yaml()]} onChange={onChange} />
     </div>
   );
@@ -327,27 +351,29 @@ export function DataTable({
   rows: Array<Record<string, ReactNode>>;
 }) {
   return (
-    <table>
-      <caption>{caption}</caption>
-      <thead>
-        <tr>
-          {headers.map((header) => (
-            <th key={header.key} scope="col" aria-sort={header.sort}>
-              {header.label}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row, index) => (
-          <tr key={String(row.id ?? index)}>
+    <div className="rf-table-viewport">
+      <table className="rf-data-table">
+        <caption>{caption}</caption>
+        <thead>
+          <tr>
             {headers.map((header) => (
-              <td key={header.key}>{row[header.key]}</td>
+              <th key={header.key} scope="col" aria-sort={header.sort}>
+                {header.label}
+              </th>
             ))}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((row, index) => (
+            <tr key={String(row.id ?? index)}>
+              {headers.map((header) => (
+                <td key={header.key}>{row[header.key]}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -363,7 +389,7 @@ export function Field({
   const id = useId();
   const descriptionId = hint ? `${id}-hint` : undefined;
   return (
-    <div>
+    <div className="rf-field">
       <label htmlFor={id}>{label}</label>
       {children({ inputId: id, descriptionId })}
       {hint && <p id={descriptionId}>{hint}</p>}
@@ -374,10 +400,15 @@ export function Surface({
   as: Tag = 'section',
   label,
   children,
+  className,
   ...props
 }: { as?: 'section' | 'div'; label?: string; children: ReactNode } & HTMLAttributes<HTMLElement>) {
   return (
-    <Tag aria-label={label} {...props}>
+    <Tag
+      aria-label={label}
+      {...props}
+      className={['rf-surface', className].filter(Boolean).join(' ')}
+    >
       {children}
     </Tag>
   );

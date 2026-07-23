@@ -40,9 +40,6 @@ export function ConfirmationModal() {
   };
 
   const handleCancel = () => {
-    if (isLoading) {
-      return;
-    }
     if (onCancel) {
       onCancel();
     }

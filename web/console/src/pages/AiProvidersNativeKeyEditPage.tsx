@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
@@ -120,8 +120,15 @@ export function AiProvidersNativeKeyEditPage({ kind }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const disableControls = connectionStatus !== 'connected';
+  const excludedModelsId = useId();
 
   useEffect(() => {
+    if (invalidIndexParam) {
+      setError(t('common.invalid_provider_index'));
+      setLoading(false);
+      return;
+    }
+    setError('');
     let cancelled = false;
     setLoading(true);
     const loadConfigs =
@@ -149,7 +156,7 @@ export function AiProvidersNativeKeyEditPage({ kind }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [editIndex, kind, t]);
+  }, [editIndex, invalidIndexParam, kind, t]);
 
   const dirty = useMemo(
     () => Boolean(baseline) && JSON.stringify(form) !== baseline,
@@ -175,13 +182,6 @@ export function AiProvidersNativeKeyEditPage({ kind }: Props) {
   const swipeRef = useEdgeSwipeBack({ onBack: handleBack });
 
   const handleSave = async () => {
-    if (!form.apiKey.trim()) {
-      showNotification(
-        t('notification.api_key_required', { defaultValue: 'API key is required' }),
-        'error'
-      );
-      return;
-    }
     const nextItem = toConfig(form, kind === 'xai');
     const nextList =
       editIndex === null
@@ -218,13 +218,13 @@ export function AiProvidersNativeKeyEditPage({ kind }: Props) {
       backAriaLabel={t('common.back')}
       hideTopBarBackButton
       hideTopBarRightAction
-      floatingAction={
-        <div className={layoutStyles.floatingActions}>
+      actionBar={
+        <div className={layoutStyles.actions}>
           <Button
             variant="secondary"
             size="sm"
             onClick={handleBack}
-            className={layoutStyles.floatingBackButton}
+            className={layoutStyles.backButton}
           >
             {t('common.back')}
           </Button>
@@ -233,7 +233,7 @@ export function AiProvidersNativeKeyEditPage({ kind }: Props) {
             onClick={() => void handleSave()}
             loading={saving}
             disabled={!canSave}
-            className={layoutStyles.floatingSaveButton}
+            className={layoutStyles.saveButton}
           >
             {t('common.save')}
           </Button>
@@ -339,8 +339,9 @@ export function AiProvidersNativeKeyEditPage({ kind }: Props) {
               />
             </div>
             <div className="form-group">
-              <label>{t('ai_providers.excluded_models_label')}</label>
+              <label htmlFor={excludedModelsId}>{t('ai_providers.excluded_models_label')}</label>
               <textarea
+                id={excludedModelsId}
                 className="input"
                 value={form.excludedText}
                 onChange={(event) =>

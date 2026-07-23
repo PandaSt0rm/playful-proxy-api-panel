@@ -20,6 +20,7 @@ import {
   withoutDisableAllModelsRule,
 } from '@/components/providers/utils';
 import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer';
+import { WorkspacePage } from '@/components/workspace/WorkspacePage';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore, useThemeStore } from '@/stores';
@@ -541,8 +542,7 @@ export function AiProvidersPage() {
   };
 
   return (
-    <div className={styles.container}>
-      <h1 className={styles.pageTitle}>{t('ai_providers.title')}</h1>
+    <WorkspacePage title={t('ai_providers.title')}>
       <div className={styles.content}>
         {error && <div className="error-box">{error}</div>}
 
@@ -719,6 +719,6 @@ export function AiProvidersPage() {
       </div>
 
       <ProviderNav />
-    </div>
+    </WorkspacePage>
   );
 }

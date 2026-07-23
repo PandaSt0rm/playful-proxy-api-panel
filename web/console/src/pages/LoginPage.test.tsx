@@ -28,9 +28,9 @@ const loginSpy =
 const restoreSessionSpy = vi.fn<() => Promise<boolean>>();
 const setLanguageSpy = vi.fn<(lang: string) => void>();
 
-function renderLogin() {
+function renderLogin(initialEntry: string | { pathname: string; state?: unknown } = '/login') {
   return render(
-    <MemoryRouter initialEntries={['/login']}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<div>home route</div>} />
@@ -310,5 +310,93 @@ describe('LoginPage language selection', () => {
     await userEvent.click(screen.getByRole('option', { name: 'Русский' }));
 
     expect(setLanguageSpy).toHaveBeenCalledWith('ru');
+  });
+});
+
+describe('LoginPage operator controls', () => {
+  it('restores saved connection fields, reveals and edits the custom base, remembers the key, and toggles visibility', async () => {
+    useAuthStore.setState({
+      apiBase: 'http://saved:8317/',
+      managementKey: 'saved-key',
+      rememberPassword: true,
+    });
+    await renderForm();
+    const key = screen.getByPlaceholderText('Enter the management key');
+    expect(key).toHaveValue('saved-key');
+    expect(screen.getByRole('checkbox', { name: 'Remember password' })).toBeChecked();
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Custom Connection URL:' }));
+    const base = screen.getByRole('textbox', { name: 'Custom Connection URL:' });
+    expect(base).toHaveValue('http://saved:8317/');
+    await userEvent.clear(base);
+    await userEvent.type(base, 'http://custom:8317/');
+    const visibility = key.parentElement?.querySelector('button');
+    expect(visibility).not.toBeNull();
+    await userEvent.click(visibility!);
+    expect(key).toHaveAttribute('type', 'text');
+    await userEvent.click(visibility!);
+    expect(key).toHaveAttribute('type', 'password');
+    await userEvent.click(screen.getByRole('button', { name: 'Login' }));
+    await waitFor(() =>
+      expect(loginSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ apiBase: 'http://custom:8317' })
+      )
+    );
+  });
+  it('falls back to the detected base when the custom base field is cleared', async () => {
+    await renderForm();
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Custom Connection URL:' }));
+    await userEvent.clear(screen.getByRole('textbox', { name: 'Custom Connection URL:' }));
+    await userEvent.type(screen.getByPlaceholderText('Enter the management key'), 'key');
+    await userEvent.click(screen.getByRole('button', { name: 'Login' }));
+    await waitFor(() =>
+      expect(loginSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ apiBase: expect.any(String) })
+      )
+    );
+  });
+
+  it('submits with Enter and ignores additional Enter presses while login is pending', async () => {
+    const pending = Promise.withResolvers<void>();
+    loginSpy.mockReturnValue(pending.promise);
+    await renderForm();
+    const key = screen.getByPlaceholderText('Enter the management key');
+    await userEvent.type(key, 'key{Enter}{Enter}');
+    expect(loginSpy).toHaveBeenCalledTimes(1);
+    pending.resolve();
+  });
+
+  it('restores a session to its guarded deep link', async () => {
+    restoreSessionSpy.mockResolvedValue(true);
+    renderLogin({ pathname: '/login', state: { from: { pathname: '/config' } } });
+    expect(await screen.findByText('config route')).toBeInTheDocument();
+  });
+
+  it('redirects an already authenticated user to its guarded deep link', async () => {
+    useAuthStore.setState({ isAuthenticated: true });
+    renderLogin({ pathname: '/login', state: { from: { pathname: '/config' } } });
+    expect(await screen.findByText('config route')).toBeInTheDocument();
+  });
+});
+
+describe('LoginPage message-shaped error mapping', () => {
+  const submit = async (error: unknown) => {
+    loginSpy.mockRejectedValue(error);
+    await renderForm();
+    await userEvent.type(screen.getByPlaceholderText('Enter the management key'), 'key');
+    await userEvent.click(screen.getByRole('button', { name: 'Login' }));
+  };
+
+  it.each([
+    [{ message: 'request timeout' }, 'Connection timed out, server not responding'],
+    [
+      'network error from browser',
+      'Network connection failed, please check your network or server address',
+    ],
+    [{ message: 'certificate rejected' }, 'SSL/TLS certificate verification failed'],
+    ['cross-origin blocked', 'Cross-origin request blocked, please check server configuration'],
+    [{}, 'Connection failed, please check address and key'],
+  ])('maps non-Error payload %# without leaking its raw value', async (error, expected) => {
+    await submit(error);
+    expect(await screen.findByText(expected)).toBeInTheDocument();
   });
 });

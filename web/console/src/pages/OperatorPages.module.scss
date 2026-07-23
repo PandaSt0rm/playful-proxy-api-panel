@@ -331,7 +331,7 @@
 }
 .selectedRow {
   background: var(--surface-2);
-  box-shadow: inset 2px 0 var(--route);
+  box-shadow: none;
 }
 
 @media (max-width: 1100px) {

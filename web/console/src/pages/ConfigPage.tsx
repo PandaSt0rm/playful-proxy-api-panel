@@ -1,12 +1,12 @@
-import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { createPortal } from 'react-dom';
 import type { ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { parse as parseYaml, parseDocument } from 'yaml';
 import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { WorkspacePage } from '@/components/workspace/WorkspacePage';
 import {
   IconCheck,
   IconChevronDown,
@@ -85,14 +85,13 @@ export function ConfigPage() {
   });
   const [lastSearchedQuery, setLastSearchedQuery] = useState('');
   const editorRef = useRef<ReactCodeMirrorRef | null>(null);
-  const floatingActionsRef = useRef<HTMLDivElement>(null);
   const autoSaveTimerRef = useRef<number | null>(null);
   const autoSaveSignatureRef = useRef('');
   const latestAutoSaveSignatureRef = useRef('');
 
   const disableControls = connectionStatus !== 'connected';
   const isDirty = dirty || visualDirty;
-  const shouldRenderFloatingActions = isCurrentLayer;
+  const shouldRenderActionBar = isCurrentLayer;
   const hasVisualModeError = !!visualParseError;
   const hasVisualValidationErrors =
     activeTab === 'visual' &&
@@ -544,31 +543,6 @@ export function ConfigPage() {
     performSearch(lastSearchedQuery, 'next');
   }, [lastSearchedQuery, performSearch]);
 
-  // Keep bottom floating actions from covering page content by syncing its height to a CSS variable.
-  useLayoutEffect(() => {
-    if (typeof window === 'undefined' || !shouldRenderFloatingActions) return;
-
-    const actionsEl = floatingActionsRef.current;
-    if (!actionsEl) return;
-
-    const updatePadding = () => {
-      const height = actionsEl.getBoundingClientRect().height;
-      document.documentElement.style.setProperty('--config-action-bar-height', `${height}px`);
-    };
-
-    updatePadding();
-    window.addEventListener('resize', updatePadding);
-
-    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updatePadding);
-    ro?.observe(actionsEl);
-
-    return () => {
-      ro?.disconnect();
-      window.removeEventListener('resize', updatePadding);
-      document.documentElement.style.removeProperty('--config-action-bar-height');
-    };
-  }, [shouldRenderFloatingActions]);
-
   // Status text
   const getStatusText = () => {
     if (disableControls) return t('config_management.status_disconnected');
@@ -598,7 +572,7 @@ export function ConfigPage() {
     return '';
   };
 
-  const getFloatingStatusText = () => {
+  const getActionBarStatusText = () => {
     if (!isMobile) return getStatusText();
     if (disableControls)
       return t('config_management.status_disconnected_short', { defaultValue: 'Disconnected' });
@@ -639,19 +613,19 @@ export function ConfigPage() {
     });
   }, [isDirty, loadConfig, showConfirmation, t]);
 
-  const floatingActions = (
-    <div className={styles.floatingActionContainer} ref={floatingActionsRef}>
-      <div className={styles.floatingActionList}>
+  const actionBar = (
+    <div className={styles.actionBar}>
+      <div className={styles.actionBarList}>
         <div
-          className={`${styles.floatingStatus} ${
-            isMobile ? styles.floatingStatusCompact : ''
+          className={`${styles.actionBarStatus} ${
+            isMobile ? styles.actionBarStatusCompact : ''
           } ${getStatusClass()}`}
         >
-          {getFloatingStatusText()}
+          {getActionBarStatusText()}
         </div>
         <button
           type="button"
-          className={styles.floatingActionButton}
+          className={styles.actionBarButton}
           onClick={handleReload}
           disabled={loading || saving}
           title={t('config_management.reload')}
@@ -661,7 +635,7 @@ export function ConfigPage() {
         </button>
         <button
           type="button"
-          className={styles.floatingActionButton}
+          className={styles.actionBarButton}
           onClick={handleSave}
           disabled={
             disableControls ||
@@ -692,14 +666,11 @@ export function ConfigPage() {
       : t('config_management.description');
 
   return (
-    <div className={styles.container}>
-      <div className={styles.pageHeader}>
-        <div className={styles.pageHeaderCopy}>
-          <span className={styles.pageEyebrow}>{pageEyebrow}</span>
-          <h1 className={styles.pageTitle}>{t('config_management.title')}</h1>
-          <p className={styles.description}>{pageDescription}</p>
-        </div>
-
+    <WorkspacePage
+      eyebrow={pageEyebrow}
+      title={t('config_management.title')}
+      description={pageDescription}
+      actions={
         <div className={styles.pageMeta}>
           <div className={styles.autoSaveControl}>
             <ToggleSwitch
@@ -734,8 +705,9 @@ export function ConfigPage() {
             </button>
           </div>
         </div>
-      </div>
-
+      }
+      width="full"
+    >
       <div className={styles.workspaceShell}>
         <div className={styles.content}>
           {error && <div className="error-box">{error}</div>}
@@ -834,9 +806,7 @@ export function ConfigPage() {
         </div>
       </div>
 
-      {shouldRenderFloatingActions && typeof document !== 'undefined'
-        ? createPortal(floatingActions, document.body)
-        : null}
+      {shouldRenderActionBar && actionBar}
       <DiffModal
         open={diffModalOpen}
         original={serverYaml}
@@ -845,6 +815,6 @@ export function ConfigPage() {
         onCancel={() => setDiffModalOpen(false)}
         loading={saving}
       />
-    </div>
+    </WorkspacePage>
   );
 }

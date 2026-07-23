@@ -32,6 +32,7 @@ import { HTTP_METHODS, STATUS_GROUPS, resolveStatusGroup, type LogState } from '
 import { parseLogLine } from './hooks/logParsing';
 import { useLogFilters } from './hooks/useLogFilters';
 import { isNearBottom, useLogScroller } from './hooks/useLogScroller';
+import { WorkspacePage } from '@/components/workspace/WorkspacePage';
 import styles from './LogsPage.module.scss';
 
 interface ErrorLogItem {
@@ -517,9 +518,7 @@ export function LogsPage() {
   }, []);
 
   return (
-    <div className={styles.container}>
-      <h1 className={styles.pageTitle}>{t('logs.title')}</h1>
-
+    <WorkspacePage title={t('logs.title')}>
       <div className={styles.tabBar}>
         <button
           type="button"
@@ -937,8 +936,10 @@ export function LogsPage() {
                               </span>
                             )}
 
-                            {line.latency && <span className={styles.pill}>{line.latency}</span>}
-                            {line.ip && <span className={styles.pill}>{line.ip}</span>}
+                            {line.latency && (
+                              <span className={styles.metadata}>{line.latency}</span>
+                            )}
+                            {line.ip && <span className={styles.metadata}>{line.ip}</span>}
 
                             {line.method && (
                               <span className={[styles.badge, styles.methodBadge].join(' ')}>
@@ -990,7 +991,7 @@ export function LogsPage() {
 
               {requestLogEnabled && (
                 <div>
-                  <div className="status-badge warning">
+                  <div className="rf-badge rf-badge--caution">
                     {t('logs.error_logs_request_log_enabled')}
                   </div>
                 </div>
@@ -1063,6 +1064,6 @@ export function LogsPage() {
       >
         {requestLogId ? t('logs.request_log_download_confirm', { id: requestLogId }) : null}
       </Modal>
-    </div>
+    </WorkspacePage>
   );
 }

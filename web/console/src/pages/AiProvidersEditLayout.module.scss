@@ -4,17 +4,17 @@
   margin: 0 auto;
 }
 
-.floatingActions {
+.actions {
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
-.floatingBackButton {
+.backButton {
   min-width: 82px;
 }
 
-.floatingSaveButton {
+.saveButton {
   min-width: 88px;
 }
 
@@ -28,6 +28,6 @@
 
 .upstreamApiKeyHint {
   margin: 0;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   font-size: 13px;
 }

@@ -26,6 +26,7 @@ import {
 } from '@/components/quota/quotaView';
 import type { QuotaType } from '@/components/quota/quotaConfigs';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
+import { WorkspacePage } from '@/components/workspace/WorkspacePage';
 import styles from './QuotaPage.module.scss';
 
 const DEFAULT_VIEW_STATE: QuotaViewState = {
@@ -150,12 +151,10 @@ export function QuotaPage() {
       : 'quota_management.empty_desc';
 
   return (
-    <div className={styles.container}>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>{t('quota_management.title')}</h1>
-        <p className={styles.description}>{t('quota_management.description')}</p>
-      </div>
-
+    <WorkspacePage
+      title={t('quota_management.title')}
+      description={t('quota_management.description')}
+    >
       {error && <div className={styles.errorBox}>{error}</div>}
 
       <QuotaDashboardHeader
@@ -198,6 +197,6 @@ export function QuotaPage() {
           ))}
         </div>
       )}
-    </div>
+    </WorkspacePage>
   );
 }

@@ -19,9 +19,9 @@
   gap: 24px;
   align-items: end;
   padding: $spacing-lg;
-  border-radius: $radius-lg;
-  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
-  background: color-mix(in srgb, var(--bg-primary) 86%, transparent);
+  border-radius: $radius-square;
+  border: 1px solid color-mix(in srgb, var(--rule) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 86%, transparent);
 
   @include mobile {
     grid-template-columns: minmax(0, 1fr);
@@ -39,7 +39,7 @@
 }
 
 .pageEyebrow {
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0;
@@ -48,7 +48,7 @@
 
 .pageTitle {
   margin: 0;
-  color: var(--text-primary);
+  color: var(--ink);
   font-size: 30px;
   line-height: 1.15;
   letter-spacing: 0;
@@ -57,7 +57,7 @@
 .description {
   margin: 0;
   max-width: 46rem;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   font-size: 15px;
   line-height: 1.7;
 }
@@ -85,7 +85,7 @@
 }
 
 .autoSaveLabel {
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
@@ -97,10 +97,10 @@
   justify-content: center;
   min-height: 38px;
   padding: 0 14px;
-  border-radius: $radius-md;
-  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
-  background: color-mix(in srgb, var(--bg-primary) 86%, transparent);
-  color: var(--text-primary);
+  border-radius: $radius-square;
+  border: 1px solid color-mix(in srgb, var(--rule) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 86%, transparent);
+  color: var(--ink);
   font-size: 13px;
   font-weight: 700;
   text-align: center;
@@ -115,9 +115,9 @@
   align-items: center;
   gap: 4px;
   padding: 4px;
-  border-radius: $radius-md;
-  background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
-  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
+  border-radius: $radius-square;
+  background: color-mix(in srgb, var(--surface-1) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rule) 82%, transparent);
   width: fit-content;
   max-width: 100%;
   overflow-x: auto;
@@ -135,9 +135,9 @@
 .tabItem {
   @include button-reset;
   padding: 10px 16px;
-  border-radius: $radius-sm;
+  border-radius: $radius-square;
   border: 1px solid transparent;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   font-size: 14px;
   font-weight: 700;
   white-space: nowrap;
@@ -148,9 +148,9 @@
     transform 0.15s ease;
 
   &:hover:not(:disabled) {
-    color: var(--text-primary);
-    background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
-    border-color: color-mix(in srgb, var(--border-color) 88%, transparent);
+    color: var(--ink);
+    background: color-mix(in srgb, var(--canvas) 92%, transparent);
+    border-color: color-mix(in srgb, var(--rule) 88%, transparent);
   }
 
   &:disabled {
@@ -166,10 +166,10 @@
 }
 
 .tabActive {
-  color: var(--text-primary);
-  background: var(--bg-primary);
-  border-color: color-mix(in srgb, var(--primary-color) 24%, var(--border-color));
-  box-shadow: 0 16px 32px -28px rgba(0, 0, 0, 0.3);
+  color: var(--ink);
+  background: var(--surface-1);
+  border-color: color-mix(in srgb, var(--route) 24%, var(--rule));
+  box-shadow: none;
 }
 
 .workspaceShell {
@@ -177,14 +177,14 @@
   flex-direction: column;
   gap: $spacing-lg;
   padding: $spacing-lg;
-  border-radius: $radius-lg;
-  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
-  background: color-mix(in srgb, var(--bg-primary) 74%, transparent);
-  box-shadow: var(--shadow);
+  border-radius: $radius-square;
+  border: 1px solid color-mix(in srgb, var(--rule) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 74%, transparent);
+  box-shadow: none;
 
   @include mobile {
     padding: 16px;
-    border-radius: $radius-lg;
+    border-radius: $radius-square;
   }
 }
 
@@ -207,7 +207,7 @@
   align-items: center;
   gap: $spacing-sm;
   padding-bottom: 16px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 80%, transparent);
 
   @include mobile {
     flex-direction: column;
@@ -230,7 +230,7 @@
 
 .searchInput {
   flex: 1;
-  border-radius: $radius-md !important;
+  border-radius: $radius-square;
   padding-right: 132px !important;
 }
 
@@ -245,10 +245,10 @@
   align-items: center;
   min-height: 28px;
   padding: 0 10px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
-  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-  color: var(--text-secondary);
+  border-radius: $radius-square;
+  background: color-mix(in srgb, var(--surface-1) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rule) 84%, transparent);
+  color: var(--ink-muted);
   font-size: 12px;
   font-weight: 700;
   pointer-events: none;
@@ -262,18 +262,18 @@
   justify-content: center;
   width: 34px;
   height: 34px;
-  border-radius: 999px;
-  background: var(--primary-color);
-  border: 1px solid var(--primary-color);
+  border-radius: $radius-square;
+  background: var(--route);
+  border: 1px solid var(--route);
   color: #fff;
   transition:
-    background-color $transition-fast,
-    border-color $transition-fast,
-    opacity $transition-fast;
+    background-color $transition-control,
+    border-color $transition-control,
+    opacity $transition-control;
 
   &:hover:not(:disabled) {
-    background: var(--primary-hover);
-    border-color: var(--primary-hover);
+    background: color-mix(in srgb, var(--route) 84%, var(--ink));
+    border-color: color-mix(in srgb, var(--route) 84%, var(--ink));
   }
 
   &:disabled {
@@ -292,7 +292,7 @@
     width: 36px;
     height: 36px;
     padding: 0 !important;
-    border-radius: 999px;
+    border-radius: $radius-square;
   }
 
   @include mobile {
@@ -309,10 +309,10 @@
   width: 100%;
   flex: 0 0 auto;
   height: clamp(420px, 64vh, 980px);
-  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-  border-radius: $radius-lg;
+  border: 1px solid color-mix(in srgb, var(--rule) 84%, transparent);
+  border-radius: $radius-square;
   overflow: hidden;
-  background: color-mix(in srgb, var(--bg-primary) 90%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 90%, transparent);
 
   @supports (height: 100dvh) {
     height: clamp(420px, 64dvh, 980px);
@@ -334,22 +334,22 @@
     }
 
     .cm-gutters {
-      border-right: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-      background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
+      border-right: 1px solid color-mix(in srgb, var(--rule) 84%, transparent);
+      background: color-mix(in srgb, var(--canvas) 88%, transparent);
     }
 
     .cm-lineNumbers .cm-gutterElement {
       padding: 0 8px 0 12px;
       min-width: 40px;
-      color: var(--text-muted);
+      color: var(--ink-muted);
     }
 
     .cm-activeLine {
-      background: var(--bg-hover);
+      background: var(--surface-2);
     }
 
     .cm-activeLineGutter {
-      background: var(--bg-hover);
+      background: var(--surface-2);
     }
 
     .cm-selectionMatch {
@@ -367,7 +367,7 @@
 
     [data-theme='dark'] & {
       .cm-gutters {
-        background: var(--bg-tertiary);
+        background: var(--surface-2);
       }
 
       .cm-selectionMatch {
@@ -378,108 +378,94 @@
 }
 
 .modified {
-  color: var(--warning-text);
-  background: var(--warning-bg);
-  border-color: var(--warning-border);
+  color: var(--caution);
+  background: color-mix(in srgb, var(--caution) 12%, transparent);
+  border-color: color-mix(in srgb, var(--caution) 48%, var(--rule));
 }
 
 .saved {
-  color: var(--success-color);
-  background: color-mix(in srgb, var(--success-color) 12%, var(--bg-primary));
-  border-color: color-mix(in srgb, var(--success-color) 28%, var(--border-color));
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 12%, var(--surface-1));
+  border-color: color-mix(in srgb, var(--ok) 28%, var(--rule));
 }
 
 .error {
-  color: var(--warning-text);
-  background: var(--warning-bg);
-  border-color: var(--warning-border);
+  color: var(--caution);
+  background: color-mix(in srgb, var(--caution) 12%, transparent);
+  border-color: color-mix(in srgb, var(--caution) 48%, var(--rule));
 }
 
-.floatingActionContainer {
-  position: fixed;
-  left: var(--content-center-x, 50%);
-  bottom: calc(16px + env(safe-area-inset-bottom));
-  transform: translateX(-50%);
-  z-index: 50;
-  pointer-events: auto;
-  width: fit-content;
-  max-width: calc(100vw - 24px);
+.actionBar {
+  position: sticky;
+  z-index: 20;
+  bottom: 0;
+  width: 100%;
+  min-width: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--canvas);
 }
 
-.floatingActionList {
-  display: inline-flex;
+.actionBarList {
+  display: flex;
+  width: 100%;
+  min-width: 0;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
   padding: 8px 10px;
-  --glass-blur: 12px;
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-backdrop-filter);
-  -webkit-backdrop-filter: var(--glass-backdrop-filter);
-  border: 1px solid var(--glass-border);
-  border-radius: 999px;
-  box-shadow: var(--shadow-lg);
-  max-width: inherit;
-  overflow-x: auto;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  border: 1px solid var(--rule);
+  background: var(--surface-1);
 }
 
-.floatingStatus {
+.actionBarStatus {
   display: inline-flex;
-  align-items: center;
   min-width: 0;
   min-height: 28px;
+  max-width: min(280px, 46vw);
+  align-items: center;
+  overflow: hidden;
   padding: 0 10px;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
-  color: var(--text-primary);
+  border: 1px solid var(--rule);
+  border-left: 2px solid var(--route);
+  border-radius: $radius-square;
+  background: var(--surface-2);
+  color: var(--ink);
   font-size: 11px;
   font-weight: 700;
   text-align: center;
-  max-width: min(280px, 46vw);
-  white-space: nowrap;
-  overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.floatingStatusCompact {
+.actionBarStatusCompact {
   max-width: 112px;
-  padding: 0 8px;
-  font-size: 10px;
 }
 
-.floatingActionButton {
+.actionBarButton {
   @include button-reset;
   position: relative;
   display: flex;
+  width: 44px;
+  height: 44px;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
+  background: transparent;
+  color: var(--ink);
   cursor: pointer;
-  color: var(--text-primary);
   transition:
-    background-color 0.2s ease,
-    transform 0.15s ease;
+    background-color $transition-control,
+    border-color $transition-control;
 
   &:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--text-primary) 10%, transparent);
-    transform: scale(1.08);
-  }
-
-  &:active:not(:disabled) {
-    transform: scale(0.95);
+    border-color: var(--route);
+    background: var(--surface-2);
   }
 
   &:disabled {
-    opacity: 0.5;
     cursor: not-allowed;
-    transform: none;
+    opacity: 0.5;
   }
 }
 
@@ -489,39 +475,8 @@
   right: 8px;
   width: 7px;
   height: 7px;
-  border-radius: 999px;
-  background: var(--warning-color);
-  box-shadow: 0 0 0 2px rgba($warning-color, 0.25);
-}
-
-@media (max-width: 1200px) {
-  .floatingActionContainer {
-    bottom: calc(12px + env(safe-area-inset-bottom));
-    max-width: calc(100vw - 16px);
-  }
-
-  .floatingActionList {
-    gap: 6px;
-    padding: 8px 10px;
-  }
-
-  .floatingStatus {
-    max-width: min(180px, 40vw);
-    font-size: 10px;
-    padding: 0 8px;
-  }
-
-  .floatingActionButton {
-    width: 38px;
-    height: 38px;
-    flex: 0 0 auto;
-  }
-}
-
-@media (max-width: 480px) {
-  .floatingStatus {
-    max-width: min(132px, 38vw);
-  }
+  border-radius: $radius-circle;
+  background: var(--caution);
 }
 
 @media (max-width: 380px) {

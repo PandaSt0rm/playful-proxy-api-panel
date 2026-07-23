@@ -24,7 +24,6 @@ const IOS_EXIT_TO_X_PERCENT_FORWARD = -30;
 const IOS_EXIT_TO_X_PERCENT_BACKWARD = 100;
 const IOS_ENTER_FROM_X_PERCENT_BACKWARD = -30;
 const IOS_EXIT_DIM_OPACITY = 0.72;
-const IOS_SHADOW_VALUE = '-14px 0 24px rgba(0, 0, 0, 0.16)';
 
 const easePower2Out = (progress: number) => 1 - (1 - progress) ** 3;
 const easeCircOut = (progress: number) => Math.sqrt(1 - (progress - 1) ** 2);
@@ -36,7 +35,6 @@ const clearLayerStyles = (element: HTMLElement | null) => {
   if (!element) return;
   element.style.removeProperty('transform');
   element.style.removeProperty('opacity');
-  element.style.removeProperty('box-shadow');
 };
 
 type Layer = {
@@ -73,15 +71,12 @@ export function PageTransition({
       status: 'current',
     },
   ]);
-  const currentLayer =
-    layers.find((layer) => layer.status === 'current') ?? layers[layers.length - 1];
-  const currentLayerKey = currentLayer?.key ?? location.key;
-  const currentLayerPathname = currentLayer?.location.pathname;
+  const currentLayer = layers.find((layer) => layer.status === 'current')!;
+  const currentLayerKey = currentLayer.key;
+  const currentLayerPathname = currentLayer.location.pathname;
 
   const resolveScrollContainer = useCallback(() => {
-    if (scrollContainerRef?.current) return scrollContainerRef.current;
-    if (typeof document === 'undefined') return null;
-    return document.scrollingElement as HTMLElement | null;
+    return scrollContainerRef?.current ?? (document.scrollingElement as HTMLElement | null);
   }, [scrollContainerRef]);
 
   useLayoutEffect(() => {
@@ -102,7 +97,7 @@ export function PageTransition({
     const fromIndex = resolveOrderIndex(currentLayerPathname);
     const toIndex = resolveOrderIndex(location.pathname);
     const nextVariant: TransitionVariant = getTransitionVariant
-      ? getTransitionVariant(currentLayerPathname ?? '', location.pathname)
+      ? getTransitionVariant(currentLayerPathname, location.pathname)
       : 'vertical';
 
     let nextDirection: TransitionDirection =
@@ -128,7 +123,7 @@ export function PageTransition({
           .split('/')
           .filter(Boolean)
           .filter((segment) => segment.length > 0);
-      const fromSegments = normalizeSegments(currentLayerPathname ?? '');
+      const fromSegments = normalizeSegments(currentLayerPathname);
       const toSegments = normalizeSegments(location.pathname);
       if (!fromSegments.length || !toSegments.length) return false;
       return fromSegments[0] === toSegments[0] && toSegments.length === 1;
@@ -137,9 +132,7 @@ export function PageTransition({
     setLayers((prev) => {
       const variant = transitionVariantRef.current;
       const direction = transitionDirectionRef.current;
-      const previousCurrentIndex = prev.findIndex((layer) => layer.status === 'current');
-      const resolvedCurrentIndex =
-        previousCurrentIndex >= 0 ? previousCurrentIndex : prev.length - 1;
+      const resolvedCurrentIndex = prev.findIndex((layer) => layer.status === 'current');
       const previousCurrent = prev[resolvedCurrentIndex];
       const previousStack: Layer[] = prev
         .filter((_, idx) => idx !== resolvedCurrentIndex)
@@ -147,15 +140,12 @@ export function PageTransition({
 
       const nextCurrent: Layer = { key: location.key, location, status: 'current' };
 
-      if (!previousCurrent) {
-        nextLayersRef.current = [nextCurrent];
-        return [nextCurrent];
-      }
+      const previous = previousCurrent!;
 
       if (variant === 'ios') {
         if (direction === 'forward') {
-          const exitingLayer: Layer = { ...previousCurrent, status: 'exiting' };
-          const stackedLayer: Layer = { ...previousCurrent, status: 'stacked' };
+          const exitingLayer: Layer = { ...previous, status: 'exiting' };
+          const stackedLayer: Layer = { ...previous, status: 'stacked' };
 
           nextLayersRef.current = [...previousStack, stackedLayer, nextCurrent];
           return [...previousStack, exitingLayer, nextCurrent];
@@ -177,7 +167,7 @@ export function PageTransition({
             return targetStack;
           }
 
-          const exitingLayer: Layer = { ...previousCurrent, status: 'exiting' };
+          const exitingLayer: Layer = { ...previous, status: 'exiting' };
           nextLayersRef.current = targetStack;
           return [...targetStack, exitingLayer];
         }
@@ -188,7 +178,7 @@ export function PageTransition({
         return [nextCurrent];
       }
 
-      const exitingLayer: Layer = { ...previousCurrent, status: 'exiting' };
+      const exitingLayer: Layer = { ...previous, status: 'exiting' };
 
       nextLayersRef.current = [nextCurrent];
       return [exitingLayer, nextCurrent];
@@ -209,9 +199,7 @@ export function PageTransition({
   useLayoutEffect(() => {
     if (!isAnimating) return;
 
-    if (!currentLayerRef.current) return;
-
-    const currentLayerEl = currentLayerRef.current;
+    const currentLayerEl = currentLayerRef.current!;
     const exitingLayerEl = exitingLayerRef.current;
     const transitionVariant = transitionVariantRef.current;
 
@@ -232,14 +220,9 @@ export function PageTransition({
     const exitBaseY = enterScrollOffset - exitScrollOffset;
     const activeAnimations: AnimationPlaybackControlsWithThen[] = [];
     let cancelled = false;
-    let completed = false;
     const completeTransition = () => {
-      if (completed) return;
-      completed = true;
-
-      const nextLayers = nextLayersRef.current;
+      setLayers(nextLayersRef.current!);
       nextLayersRef.current = null;
-      setLayers((prev) => nextLayers ?? prev.filter((layer) => layer.status !== 'exiting'));
       setIsAnimating(false);
 
       clearLayerStyles(currentLayerEl);
@@ -266,11 +249,6 @@ export function PageTransition({
 
       currentLayerEl.style.transform = buildIosTransform(enterFromXPercent, 0);
       currentLayerEl.style.opacity = '1';
-
-      const topLayerEl = isForward ? currentLayerEl : exitingLayerEl;
-      if (topLayerEl) {
-        topLayerEl.style.boxShadow = IOS_SHADOW_VALUE;
-      }
 
       if (exitingLayerEl) {
         activeAnimations.push(
@@ -306,25 +284,23 @@ export function PageTransition({
       );
     } else {
       // Exit animation: fade out with slight movement (runs simultaneously)
-      if (exitingLayerEl) {
-        exitingLayerEl.style.transform = buildVerticalTransform(exitBaseY);
-        activeAnimations.push(
-          animate(
-            exitingLayerEl,
-            {
-              transform: [
-                buildVerticalTransform(exitBaseY),
-                buildVerticalTransform(exitBaseY + exitToY),
-              ],
-              opacity: [1, 0],
-            },
-            {
-              duration: VERTICAL_TRANSITION_DURATION,
-              ease: easeCircOut,
-            }
-          )
-        );
-      }
+      exitingLayerEl!.style.transform = buildVerticalTransform(exitBaseY);
+      activeAnimations.push(
+        animate(
+          exitingLayerEl!,
+          {
+            transform: [
+              buildVerticalTransform(exitBaseY),
+              buildVerticalTransform(exitBaseY + exitToY),
+            ],
+            opacity: [1, 0],
+          },
+          {
+            duration: VERTICAL_TRANSITION_DURATION,
+            ease: easeCircOut,
+          }
+        )
+      );
 
       // Enter animation: fade in with slight movement (runs simultaneously)
       currentLayerEl.style.transform = buildVerticalTransform(enterFromY);
@@ -344,16 +320,12 @@ export function PageTransition({
       );
     }
 
-    if (!activeAnimations.length) {
+    void Promise.all(
+      activeAnimations.map((animation) => animation.finished.catch(() => undefined))
+    ).then(() => {
+      if (cancelled) return;
       completeTransition();
-    } else {
-      void Promise.all(
-        activeAnimations.map((animation) => animation.finished.catch(() => undefined))
-      ).then(() => {
-        if (cancelled) return;
-        completeTransition();
-      });
-    }
+    });
 
     return () => {
       cancelled = true;
@@ -364,8 +336,7 @@ export function PageTransition({
   return (
     <div className={`page-transition${isAnimating ? ' page-transition--animating' : ''}`}>
       {(() => {
-        const currentIndex = layers.findIndex((layer) => layer.status === 'current');
-        const resolvedCurrentIndex = currentIndex === -1 ? layers.length - 1 : currentIndex;
+        const resolvedCurrentIndex = layers.findIndex((layer) => layer.status === 'current');
         const keepStackedIndex = layers
           .slice(0, resolvedCurrentIndex)
           .map((layer, index) => ({ layer, index }))

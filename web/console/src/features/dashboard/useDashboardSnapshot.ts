@@ -111,6 +111,13 @@ function syncItems(rows: SyncDriftRow[]): DashboardAttentionItem[] {
       occurredAt: Date.parse(row.reported_at) || 0,
     }));
 }
+async function settle<T>(promise: Promise<T>): Promise<PromiseSettledResult<T>> {
+  try {
+    return { status: 'fulfilled', value: await promise };
+  } catch (reason) {
+    return { status: 'rejected', reason };
+  }
+}
 
 function sortAttention(items: DashboardAttentionItem[]) {
   return items.sort((left, right) => {
@@ -161,8 +168,8 @@ export function useDashboardSnapshot(
       aiproxyApi.budgetStatus(),
       aiproxyApi.syncDrift(),
     ]);
-    const [trafficResult, providerResults, attentionResults] = await Promise.allSettled([
-      trafficPromise,
+    const [trafficResult, providerResults, attentionResults] = await Promise.all([
+      settle(trafficPromise),
       providerPromise,
       attentionPromise,
     ]);
@@ -188,65 +195,46 @@ export function useDashboardSnapshot(
       }));
     }
 
-    if (providerResults.status === 'fulfilled') {
-      const rows = providerResults.value.map((result, index): DashboardProviderRow => {
-        const [id, labelKey] = providerLoaders[index];
-        return result.status === 'fulfilled'
-          ? { id, labelKey, count: result.value.length, error: '' }
-          : { id, labelKey, count: null, error: errorMessage(result.reason) };
-      });
-      const failedCount = rows.filter((row) => row.count === null).length;
-      const configuredCount = rows.reduce((sum, row) => sum + (row.count ?? 0), 0);
-      setProviders({
-        status: failedCount === rows.length ? 'error' : configuredCount === 0 ? 'empty' : 'ready',
-        data: rows,
-        error: failedCount > 0 ? 'partial_failure' : '',
-        updatedAt,
-      });
-    } else {
-      setProviders((current) => ({
-        ...current,
-        status: 'error',
-        error: errorMessage(providerResults.reason),
-        updatedAt,
-      }));
-    }
+    const rows = providerResults.map((result, index): DashboardProviderRow => {
+      const [id, labelKey] = providerLoaders[index];
+      return result.status === 'fulfilled'
+        ? { id, labelKey, count: result.value.length, error: '' }
+        : { id, labelKey, count: null, error: errorMessage(result.reason) };
+    });
+    const failedProviderCount = rows.filter((row) => row.count === null).length;
+    const configuredCount = rows.reduce((sum, row) => sum + (row.count ?? 0), 0);
+    setProviders({
+      status:
+        failedProviderCount === rows.length ? 'error' : configuredCount === 0 ? 'empty' : 'ready',
+      data: rows,
+      error: failedProviderCount > 0 ? 'partial_failure' : '',
+      updatedAt,
+    });
 
-    if (attentionResults.status === 'fulfilled') {
-      const [readinessResult, budgetResult, syncResult] = attentionResults.value;
-      const items = sortAttention([
-        ...(readinessResult.status === 'fulfilled'
-          ? readinessItems(readinessResult.value.checks, updatedAt)
-          : []),
-        ...(budgetResult.status === 'fulfilled'
-          ? budgetItems(budgetResult.value.statuses, updatedAt)
-          : []),
-        ...(syncResult.status === 'fulfilled'
-          ? syncItems(syncResult.value.reported_sync_state)
-          : []),
-      ]);
-      const failedCount = attentionResults.value.filter(
-        (result) => result.status === 'rejected'
-      ).length;
-      setAttention({
-        status:
-          failedCount === attentionResults.value.length
-            ? 'error'
-            : items.length === 0
-              ? 'empty'
-              : 'ready',
-        data: items,
-        error: failedCount > 0 ? 'partial_failure' : '',
-        updatedAt,
-      });
-    } else {
-      setAttention((current) => ({
-        ...current,
-        status: 'error',
-        error: errorMessage(attentionResults.reason),
-        updatedAt,
-      }));
-    }
+    const [readinessResult, budgetResult, syncResult] = attentionResults;
+    const items = sortAttention([
+      ...(readinessResult.status === 'fulfilled'
+        ? readinessItems(readinessResult.value.checks, updatedAt)
+        : []),
+      ...(budgetResult.status === 'fulfilled'
+        ? budgetItems(budgetResult.value.statuses, updatedAt)
+        : []),
+      ...(syncResult.status === 'fulfilled' ? syncItems(syncResult.value.reported_sync_state) : []),
+    ]);
+    const failedAttentionCount = attentionResults.filter(
+      (result) => result.status === 'rejected'
+    ).length;
+    setAttention({
+      status:
+        failedAttentionCount === attentionResults.length
+          ? 'error'
+          : items.length === 0
+            ? 'empty'
+            : 'ready',
+      data: items,
+      error: failedAttentionCount > 0 ? 'partial_failure' : '',
+      updatedAt,
+    });
     setRefreshing(false);
   }, [isConnected, now]);
 

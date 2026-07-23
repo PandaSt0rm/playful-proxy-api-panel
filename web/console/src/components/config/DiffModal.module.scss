@@ -29,10 +29,10 @@ $diff-hunk-color: #388bfd;
 
 .emptyState {
   flex: 1;
-  border: 1px dashed var(--border-color);
-  border-radius: $radius-md;
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
+  border: 1px dashed var(--rule);
+  border-radius: $radius-square;
+  background: var(--canvas);
+  color: var(--ink-muted);
   font-size: 14px;
   display: grid;
   place-items: center;
@@ -56,21 +56,21 @@ $diff-hunk-color: #388bfd;
   align-items: center;
   gap: $spacing-sm;
   padding: 10px $spacing-md;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
+  background: var(--canvas);
+  border-bottom: 1px solid var(--rule);
   flex-shrink: 0;
 }
 
 .fileIcon {
   flex-shrink: 0;
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
 }
 
 .fileName {
   font-size: 13px;
   font-weight: 600;
   font-family: $diff-mono;
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
 .fileStats {
@@ -100,7 +100,7 @@ $diff-hunk-color: #388bfd;
 .statBlock {
   width: 8px;
   height: 8px;
-  border-radius: 2px;
+  border-radius: $radius-square;
 }
 
 .statBlockAdd {
@@ -125,15 +125,15 @@ $diff-hunk-color: #388bfd;
 // ── Hunk ────────────────────────────────────────────────
 
 .hunk + .hunk {
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--rule);
 }
 
 .hunkHeader {
   display: flex;
   align-items: center;
-  background: color-mix(in srgb, $diff-hunk-color 8%, var(--bg-primary));
-  border-bottom: 1px solid color-mix(in srgb, $diff-hunk-color 12%, var(--border-color));
-  color: color-mix(in srgb, $diff-hunk-color 75%, var(--text-secondary));
+  background: color-mix(in srgb, $diff-hunk-color 8%, var(--surface-1));
+  border-bottom: 1px solid color-mix(in srgb, $diff-hunk-color 12%, var(--rule));
+  color: color-mix(in srgb, $diff-hunk-color 75%, var(--ink-muted));
   min-height: $diff-line-height;
 }
 
@@ -144,11 +144,11 @@ $diff-hunk-color: #388bfd;
   align-items: center;
   justify-content: center;
   align-self: stretch;
-  border-right: 1px solid color-mix(in srgb, $diff-hunk-color 12%, var(--border-color));
+  border-right: 1px solid color-mix(in srgb, $diff-hunk-color 12%, var(--rule));
 }
 
 .hunkExpandIcon {
-  color: color-mix(in srgb, $diff-hunk-color 70%, var(--text-tertiary));
+  color: color-mix(in srgb, $diff-hunk-color 70%, var(--ink-muted));
   opacity: 0.7;
 }
 
@@ -172,10 +172,10 @@ $diff-hunk-color: #388bfd;
   flex-shrink: 0;
   padding: 0 8px;
   text-align: right;
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
   user-select: none;
   font-variant-numeric: tabular-nums;
-  border-right: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--rule) 60%, transparent);
   box-sizing: border-box;
 }
 
@@ -206,26 +206,26 @@ $diff-hunk-color: #388bfd;
 // ── Context lines ───────────────────────────────────────
 
 .context {
-  background: var(--bg-primary);
+  background: var(--surface-1);
 
   .linePrefix {
-    color: var(--text-tertiary);
+    color: var(--ink-muted);
   }
 
   .lineText {
-    color: var(--text-primary);
+    color: var(--ink);
   }
 }
 
 // ── Deletion lines ──────────────────────────────────────
 
 .deletion {
-  background: color-mix(in srgb, $diff-del-color 8%, var(--bg-primary));
+  background: color-mix(in srgb, $diff-del-color 8%, var(--surface-1));
 
   .lineNum {
-    background: color-mix(in srgb, $diff-del-color 12%, var(--bg-primary));
-    border-right-color: color-mix(in srgb, $diff-del-color 18%, var(--border-color));
-    color: color-mix(in srgb, $diff-del-color 60%, var(--text-tertiary));
+    background: color-mix(in srgb, $diff-del-color 12%, var(--surface-1));
+    border-right-color: color-mix(in srgb, $diff-del-color 18%, var(--rule));
+    color: color-mix(in srgb, $diff-del-color 60%, var(--ink-muted));
   }
 
   .linePrefix {
@@ -233,19 +233,19 @@ $diff-hunk-color: #388bfd;
   }
 
   .lineText {
-    color: var(--text-primary);
+    color: var(--ink);
   }
 }
 
 // ── Addition lines ──────────────────────────────────────
 
 .addition {
-  background: color-mix(in srgb, $diff-add-color 8%, var(--bg-primary));
+  background: color-mix(in srgb, $diff-add-color 8%, var(--surface-1));
 
   .lineNum {
-    background: color-mix(in srgb, $diff-add-color 12%, var(--bg-primary));
-    border-right-color: color-mix(in srgb, $diff-add-color 18%, var(--border-color));
-    color: color-mix(in srgb, $diff-add-color 60%, var(--text-tertiary));
+    background: color-mix(in srgb, $diff-add-color 12%, var(--surface-1));
+    border-right-color: color-mix(in srgb, $diff-add-color 18%, var(--rule));
+    color: color-mix(in srgb, $diff-add-color 60%, var(--ink-muted));
   }
 
   .linePrefix {
@@ -253,7 +253,7 @@ $diff-hunk-color: #388bfd;
   }
 
   .lineText {
-    color: var(--text-primary);
+    color: var(--ink);
   }
 }
 

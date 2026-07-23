@@ -16,13 +16,13 @@
 .title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
 .subtitle {
   margin-top: $spacing-xs;
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
 }
 
 .sourceErrors {
@@ -33,10 +33,10 @@
 
 .sourceError {
   padding: $spacing-xs $spacing-sm;
-  border-radius: 6px;
+  border-radius: $radius-square;
   font-size: 12px;
-  background: color-mix(in srgb, var(--danger-color, #d9534f) 12%, transparent);
-  color: var(--danger-color, #d9534f);
+  background: color-mix(in srgb, var(--danger, #d9534f) 12%, transparent);
+  color: var(--danger, #d9534f);
 }
 
 .loading {
@@ -50,7 +50,7 @@
   flex-direction: column;
   align-items: flex-start;
   gap: $spacing-sm;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   font-size: 13px;
 }
 
@@ -65,7 +65,7 @@
   justify-content: space-between;
   gap: $spacing-md;
   padding: $spacing-sm 0;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--rule);
 
   &:first-child {
     border-top: none;
@@ -83,7 +83,7 @@
 .logoFallback {
   width: 28px;
   height: 28px;
-  border-radius: 6px;
+  border-radius: $radius-square;
   flex-shrink: 0;
 }
 
@@ -97,8 +97,8 @@
   justify-content: center;
   font-size: 13px;
   font-weight: 700;
-  color: var(--primary-color);
-  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  color: var(--route);
+  background: color-mix(in srgb, var(--route) 12%, transparent);
 }
 
 .identityText {
@@ -111,20 +111,20 @@
   gap: $spacing-sm;
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
 .version {
   font-size: 12px;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
 }
 
 .description {
   margin-top: 2px;
   font-size: 12px;
   line-height: 1.5;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
 }
 
 .meta {
@@ -134,7 +134,7 @@
   gap: $spacing-sm;
   margin-top: $spacing-xs;
   font-size: 11px;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
 
   code {
     font-size: 11px;
@@ -143,38 +143,38 @@
 
 .tag {
   padding: 1px 6px;
-  border-radius: 999px;
+  border-radius: $radius-square;
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  background: color-mix(in srgb, var(--text-secondary) 12%, transparent);
-  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--ink-muted) 12%, transparent);
+  color: var(--ink-muted);
 }
 
 .installType,
 .authConfigured,
 .authRequired {
   padding: 1px 6px;
-  border-radius: 999px;
+  border-radius: $radius-square;
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
 }
 
 .installType {
-  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
-  color: var(--primary-color);
+  background: color-mix(in srgb, var(--route) 12%, transparent);
+  color: var(--route);
 }
 
 .authConfigured {
-  background: color-mix(in srgb, var(--success-color, #22a06b) 12%, transparent);
-  color: var(--success-color, #22a06b);
+  background: color-mix(in srgb, var(--ok, #22a06b) 12%, transparent);
+  color: var(--ok, #22a06b);
 }
 
 .authRequired {
-  background: color-mix(in srgb, var(--warning-color, #d9822b) 14%, transparent);
-  color: var(--warning-color, #d9822b);
+  background: color-mix(in srgb, var(--caution, #d9822b) 14%, transparent);
+  color: var(--caution, #d9822b);
 }
 
 .actions {
@@ -188,11 +188,11 @@
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: $radius-square;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  background: color-mix(in srgb, var(--success-color, #22a06b) 15%, transparent);
-  color: var(--success-color, #22a06b);
+  background: color-mix(in srgb, var(--ok, #22a06b) 15%, transparent);
+  color: var(--ok, #22a06b);
 }

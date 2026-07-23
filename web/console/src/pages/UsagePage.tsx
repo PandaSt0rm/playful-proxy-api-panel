@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { AutocompleteInput } from '@/components/ui/AutocompleteInput';
+import { WorkspacePage } from '@/components/workspace/WorkspacePage';
 import { CODEX_CONFIG } from '@/components/quota';
 import {
   IconChartLine,
@@ -1659,16 +1660,16 @@ export function UsagePage() {
         : formatNumber(value);
 
   return (
-    <div className={styles.container}>
-      <div className={styles.pageHeader}>
-        <div>
-          <h1 className={styles.pageTitle}>{t('usage_statistics.title')}</h1>
-          <p className={styles.description}>{t('usage_statistics.description')}</p>
-          <div className={styles.priceSource}>
-            <IconDollarSign size={14} />
-            <span>{t('usage_statistics.model_prices_desc')}</span>
-          </div>
+    <WorkspacePage
+      title={t('usage_statistics.title')}
+      description={t('usage_statistics.description')}
+      status={
+        <div className={styles.priceSource}>
+          <IconDollarSign size={14} />
+          <span>{t('usage_statistics.model_prices_desc')}</span>
         </div>
+      }
+      actions={
         <div className={styles.headerActions}>
           <Button
             type="button"
@@ -1722,8 +1723,9 @@ export function UsagePage() {
             onChange={handleImportFile}
           />
         </div>
-      </div>
-
+      }
+      width="full"
+    >
       {error && <div className={styles.errorBox}>{error}</div>}
 
       <Card>
@@ -2364,6 +2366,6 @@ export function UsagePage() {
           </div>
         )}
       </Card>
-    </div>
+    </WorkspacePage>
   );
 }

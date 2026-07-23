@@ -51,7 +51,7 @@ function StatusLoadingIcon() {
 function StatusSuccessIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <circle cx="8" cy="8" r="8" fill="var(--success-color, #22c55e)" />
+      <circle cx="8" cy="8" r="8" fill="var(--ok, #22c55e)" />
       <path
         d="M4.5 8L7 10.5L11.5 6"
         stroke="white"
@@ -66,7 +66,7 @@ function StatusSuccessIcon() {
 function StatusErrorIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <circle cx="8" cy="8" r="8" fill="var(--danger-color, #c65746)" />
+      <circle cx="8" cy="8" r="8" fill="var(--danger, #c65746)" />
       <path
         d="M5 5L11 11M11 5L5 11"
         stroke="white"
@@ -81,7 +81,7 @@ function StatusErrorIcon() {
 function StatusIdleIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <circle cx="8" cy="8" r="7" stroke="var(--text-tertiary, #9ca3af)" strokeWidth="2" />
+      <circle cx="8" cy="8" r="7" stroke="var(--ink-muted, #9ca3af)" strokeWidth="2" />
     </svg>
   );
 }
@@ -604,13 +604,13 @@ export function AiProvidersOpenAIEditPage() {
       backAriaLabel={t('common.back')}
       hideTopBarBackButton
       hideTopBarRightAction
-      floatingAction={
-        <div className={layoutStyles.floatingActions}>
+      actionBar={
+        <div className={layoutStyles.actions}>
           <Button
             variant="secondary"
             size="sm"
             onClick={handleBack}
-            className={layoutStyles.floatingBackButton}
+            className={layoutStyles.backButton}
           >
             {t('common.back')}
           </Button>
@@ -619,7 +619,7 @@ export function AiProvidersOpenAIEditPage() {
             onClick={() => void handleSave()}
             loading={saving}
             disabled={!canSave}
-            className={layoutStyles.floatingSaveButton}
+            className={layoutStyles.saveButton}
           >
             {t('common.save')}
           </Button>
@@ -811,12 +811,12 @@ export function AiProvidersOpenAIEditPage() {
               </div>
               {testMessage && (
                 <div
-                  className={`status-badge ${
+                  className={`rf-badge ${
                     testStatus === 'error'
-                      ? 'error'
+                      ? 'rf-badge--danger'
                       : testStatus === 'success'
-                        ? 'success'
-                        : 'muted'
+                        ? 'rf-badge--ok'
+                        : 'rf-badge--neutral'
                   }`}
                 >
                   {testMessage}

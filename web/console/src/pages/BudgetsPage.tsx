@@ -6,6 +6,7 @@ import {
   type BudgetInput,
   type BudgetStatus,
 } from '@/services/api/aiproxy';
+import { validateBudgetInput } from '@/features/budgets/validation';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { SectionPanel } from '@/components/workspace/SectionPanel';
@@ -41,19 +42,6 @@ function toInput(budget: Budget): BudgetInput {
     warning_percent: budget.warning_percent,
     enabled: budget.enabled,
   };
-}
-
-function validate(input: BudgetInput) {
-  if (!input.name.trim()) return 'name';
-  if (input.scope !== 'global' && !input.match.trim()) return 'match';
-  if (!Number.isFinite(input.limit_usd) || input.limit_usd <= 0) return 'limit';
-  if (
-    !Number.isFinite(input.warning_percent) ||
-    input.warning_percent < 1 ||
-    input.warning_percent > 100
-  )
-    return 'warning';
-  return '';
 }
 
 export function BudgetsPage() {
@@ -113,7 +101,7 @@ export function BudgetsPage() {
   };
 
   const save = async () => {
-    const invalid = validate(draft);
+    const invalid = validateBudgetInput(draft);
     setValidation(invalid);
     if (invalid) return;
     setPending(true);
@@ -140,12 +128,11 @@ export function BudgetsPage() {
     }
   };
 
-  const remove = async () => {
-    if (!deleting) return;
+  const remove = async (budget: Budget) => {
     setPending(true);
     setError('');
     try {
-      await aiproxyApi.deleteBudget(deleting.id);
+      await aiproxyApi.deleteBudget(budget.id);
       setDeleting(null);
       await load();
     } catch {
@@ -386,7 +373,7 @@ export function BudgetsPage() {
         cancelLabel={t('budgets.confirm.cancel')}
         confirmLabel={t('budgets.confirm.submit')}
         onClose={() => setDeleting(null)}
-        onConfirm={() => void remove()}
+        onConfirm={() => void remove(deleting!)}
       >
         <p>{t('budgets.confirm.body', { name: deleting?.name ?? '' })}</p>
       </ConfirmationDialog>

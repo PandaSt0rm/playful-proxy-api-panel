@@ -333,13 +333,13 @@ export function AiProvidersClaudeEditPage() {
       backAriaLabel={t('common.back')}
       hideTopBarBackButton
       hideTopBarRightAction
-      floatingAction={
-        <div className={layoutStyles.floatingActions}>
+      actionBar={
+        <div className={layoutStyles.actions}>
           <Button
             variant="secondary"
             size="sm"
             onClick={handleBack}
-            className={layoutStyles.floatingBackButton}
+            className={layoutStyles.backButton}
           >
             {t('common.back')}
           </Button>
@@ -348,7 +348,7 @@ export function AiProvidersClaudeEditPage() {
             onClick={() => void handleSave()}
             loading={saving}
             disabled={!canSave}
-            className={layoutStyles.floatingSaveButton}
+            className={layoutStyles.saveButton}
           >
             {t('common.save')}
           </Button>
@@ -553,12 +553,12 @@ export function AiProvidersClaudeEditPage() {
 
               {testMessage && testResultEntries.length === 0 && (
                 <div
-                  className={`status-badge ${
+                  className={`rf-badge ${
                     testStatus === 'error'
-                      ? 'error'
+                      ? 'rf-badge--danger'
                       : testStatus === 'success'
-                        ? 'success'
-                        : 'muted'
+                        ? 'rf-badge--ok'
+                        : 'rf-badge--neutral'
                   }`}
                 >
                   {testMessage}

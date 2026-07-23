@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 import {
   normalizeTimestampForDateParse,
@@ -202,6 +202,14 @@ describe('parseTimestampMs', () => {
     const result = parseTimestampMs('  2024-01-02T03:04:05Z  ');
 
     expect(result).toBe(Date.UTC(2024, 0, 2, 3, 4, 5));
+  });
+  it('falls back to the original high-precision string when only the original parser accepts it', () => {
+    const parse = vi.spyOn(Date, 'parse');
+    parse.mockReturnValueOnce(Number.NaN).mockReturnValueOnce(1234);
+    expect(parseTimestampMs('2024-01-02T03:04:05.123456Z')).toBe(1234);
+    parse.mockReturnValueOnce(Number.NaN).mockReturnValueOnce(Number.NaN);
+    expect(Number.isNaN(parseTimestampMs('2024-01-02T03:04:05.654321Z'))).toBe(true);
+    parse.mockRestore();
   });
 });
 

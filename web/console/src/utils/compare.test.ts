@@ -217,4 +217,8 @@ describe('areModelEntriesEqual', () => {
       )
     ).toBe(false);
   });
+  it('returns false when a model entry is missing from one sparse side', () => {
+    const missing = [undefined as unknown as { name: string; alias: string }];
+    expect(areModelEntriesEqual(missing, [{ name: 'm', alias: 'a' }])).toBe(false);
+  });
 });

@@ -22,7 +22,6 @@ import {
 } from '@/stores';
 import type { Theme } from '@/types';
 import { LANGUAGE_LABEL_KEYS, LANGUAGE_ORDER } from '@/utils/constants';
-import { isSupportedLanguage } from '@/utils/language';
 
 const THEMES: readonly Theme[] = ['auto', 'white', 'light', 'dark'];
 const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -201,7 +200,6 @@ export function MainLayout() {
   }, []);
 
   const refreshAll = useCallback(async () => {
-    if (isRefreshing) return;
     setIsRefreshing(true);
     try {
       clearCache();
@@ -227,10 +225,9 @@ export function MainLayout() {
     } finally {
       setIsRefreshing(false);
     }
-  }, [clearCache, fetchConfig, isRefreshing, showNotification, t]);
+  }, [clearCache, fetchConfig, showNotification, t]);
 
   const selectLanguage = (nextLanguage: string) => {
-    if (!isSupportedLanguage(nextLanguage)) return;
     setLanguage(nextLanguage);
     setLanguageMenuOpen(false);
     setUtilityMenuOpen(false);

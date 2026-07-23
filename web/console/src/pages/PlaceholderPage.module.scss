@@ -12,7 +12,7 @@
 
   .icon {
     font-size: 64px;
-    color: var(--text-secondary);
+    color: var(--ink-muted);
     opacity: 0.5;
     margin-bottom: $spacing-lg;
   }
@@ -20,13 +20,13 @@
   h2 {
     font-size: 24px;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--ink);
     margin: 0 0 $spacing-md 0;
   }
 
   p {
     font-size: 14px;
-    color: var(--text-secondary);
+    color: var(--ink-muted);
     margin: 0;
   }
 }

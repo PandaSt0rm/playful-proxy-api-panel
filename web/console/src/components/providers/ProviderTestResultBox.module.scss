@@ -5,15 +5,15 @@
   flex-direction: column;
   gap: $spacing-xs;
   padding: $spacing-sm $spacing-md;
-  border: 1px solid var(--border-color);
-  border-radius: $radius-md;
-  background: var(--bg-secondary);
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
+  background: var(--canvas);
 }
 
 .title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   line-height: 1.5;
 }
 
@@ -22,7 +22,7 @@
   flex-direction: column;
   gap: 6px;
   padding: $spacing-xs 0;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--rule);
 
   &:first-of-type {
     border-top: 0;
@@ -43,13 +43,13 @@
 .entryLabel {
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
   white-space: nowrap;
 }
 
 .entryMeta {
   font-size: 12px;
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -71,11 +71,11 @@
   user-select: text;
 
   &.success {
-    color: var(--success-color, #22c55e);
+    color: var(--ok, #22c55e);
   }
 
   &.error {
-    color: var(--danger-color, #c65746);
+    color: var(--danger, #c65746);
   }
 }
 
@@ -90,8 +90,8 @@
   white-space: pre-wrap;
   word-break: break-word;
   user-select: text;
-  color: var(--text-primary);
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: $radius-sm;
+  color: var(--ink);
+  background: var(--surface-1);
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
 }

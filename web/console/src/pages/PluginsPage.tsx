@@ -20,6 +20,7 @@ import type {
   PluginListEntry,
   PluginListResponse,
 } from '@/types/plugins';
+import { WorkspacePage } from '@/components/workspace/WorkspacePage';
 import styles from './PluginsPage.module.scss';
 
 const getErrorMessage = (error: unknown): string => {
@@ -305,19 +306,17 @@ export function PluginsPage() {
 
   if (loading) {
     return (
-      <div className={styles.container}>
-        <h1 className={styles.pageTitle}>{t('plugins.title', { defaultValue: 'Plugins' })}</h1>
+      <WorkspacePage title={t('plugins.title', { defaultValue: 'Plugins' })}>
         <div className={styles.loadingState}>
           <LoadingSpinner />
         </div>
-      </div>
+      </WorkspacePage>
     );
   }
 
   if (error) {
     return (
-      <div className={styles.container}>
-        <h1 className={styles.pageTitle}>{t('plugins.title', { defaultValue: 'Plugins' })}</h1>
+      <WorkspacePage title={t('plugins.title', { defaultValue: 'Plugins' })}>
         <Card>
           <div className={styles.errorState}>
             <p>{error}</p>
@@ -326,13 +325,12 @@ export function PluginsPage() {
             </Button>
           </div>
         </Card>
-      </div>
+      </WorkspacePage>
     );
   }
 
   return (
-    <div className={styles.container}>
-      <h1 className={styles.pageTitle}>{t('plugins.title', { defaultValue: 'Plugins' })}</h1>
+    <WorkspacePage title={t('plugins.title', { defaultValue: 'Plugins' })}>
       <p className={styles.pageHint}>
         {t('plugins.description', {
           defaultValue:
@@ -586,6 +584,6 @@ export function PluginsPage() {
           </div>
         ) : null}
       </Modal>
-    </div>
+    </WorkspacePage>
   );
 }

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, userEvent, fireEvent } from '@/test/utils';
 import { Modal } from './Modal';
 
-const CLOSE_ANIMATION_DURATION = 350;
+const CLOSE_ANIMATION_DURATION = 160;
 
 describe('Modal', () => {
   beforeEach(() => {

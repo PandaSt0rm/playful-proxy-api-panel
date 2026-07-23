@@ -587,13 +587,13 @@ export function AiProvidersGeminiEditPage() {
       backAriaLabel={t('common.back')}
       hideTopBarBackButton
       hideTopBarRightAction
-      floatingAction={
-        <div className={layoutStyles.floatingActions}>
+      actionBar={
+        <div className={layoutStyles.actions}>
           <Button
             variant="secondary"
             size="sm"
             onClick={handleBack}
-            className={layoutStyles.floatingBackButton}
+            className={layoutStyles.backButton}
           >
             {t('common.back')}
           </Button>
@@ -602,7 +602,7 @@ export function AiProvidersGeminiEditPage() {
             onClick={handleSave}
             loading={saving}
             disabled={!canSave}
-            className={layoutStyles.floatingSaveButton}
+            className={layoutStyles.saveButton}
           >
             {t('common.save')}
           </Button>

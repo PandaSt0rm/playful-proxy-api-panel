@@ -1,4 +1,3 @@
-@use 'sass:color';
 @use '../../styles/variables.scss' as *;
 
 .splash-screen {
@@ -8,9 +7,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-primary);
+  background: var(--surface-1);
   opacity: 1;
-  transition: opacity 0.4s ease-out;
+  transition: opacity $transition-control;
 
   &.fade-out {
     opacity: 0;
@@ -25,36 +24,25 @@
   width: min(92vw, 620px);
   gap: $spacing-sm;
   text-align: center;
-  animation: splash-enter 0.28s ease-out;
+  animation: splash-enter 160ms ease-out;
 }
 
 @keyframes splash-enter {
   from {
     opacity: 0;
-    transform: scale(0.96) translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: translateY(0);
   }
 }
 
 .splash-logo {
   height: 80px;
   width: auto;
-  border-radius: $radius-lg;
-  box-shadow: $shadow-lg;
-  animation: splash-logo-pulse 0.85s ease-in-out infinite;
-}
-
-@keyframes splash-logo-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
+  border-radius: $radius-square;
+  box-shadow: none;
 }
 
 .splash-title {
@@ -65,7 +53,7 @@
   font-size: var(--splash-title-size, clamp(52px, 7.5vw, 90px));
   font-weight: 900;
   line-height: 0.9;
-  color: var(--text-primary);
+  color: var(--ink);
   margin: 0;
   letter-spacing: 0;
   text-wrap: balance;
@@ -83,12 +71,10 @@
   max-width: 100%;
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   margin: 0;
   margin-top: -4px;
-  font-family:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
-    monospace;
+  font-family: $font-mono;
   letter-spacing: 0;
   overflow-wrap: anywhere;
 
@@ -100,8 +86,8 @@
 .splash-loader {
   width: 120px;
   height: 3px;
-  background: var(--border-color);
-  border-radius: $radius-full;
+  background: var(--rule);
+  border-radius: $radius-square;
   overflow: hidden;
   margin-top: $spacing-md;
 }
@@ -109,25 +95,6 @@
 .splash-loader-bar {
   width: 100%;
   height: 100%;
-  background: var(--primary-color);
-  border-radius: $radius-full;
-  animation: splash-loading 0.68s ease-in-out infinite;
-  transform-origin: left;
-}
-
-@keyframes splash-loading {
-  0% {
-    transform: scaleX(0);
-  }
-  50% {
-    transform: scaleX(1);
-    transform-origin: left;
-  }
-  50.01% {
-    transform-origin: right;
-  }
-  100% {
-    transform: scaleX(0);
-    transform-origin: right;
-  }
+  background: var(--route);
+  border-radius: $radius-square;
 }

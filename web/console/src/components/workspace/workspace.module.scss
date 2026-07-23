@@ -61,7 +61,6 @@
 }
 
 .heading h1 {
-  font-family: var(--font-heading, 'Arial Narrow', 'Roboto Condensed', system-ui, sans-serif);
   font-size: clamp(1.75rem, 3vw, 2.4rem);
   line-height: 1.05;
   letter-spacing: -0.025em;
@@ -126,21 +125,6 @@
 
 .panelBody {
   padding: 18px;
-}
-
-.legacyBody {
-  min-width: 0;
-}
-
-.legacyBody > * {
-  width: 100%;
-  max-width: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-.legacyBody h1:first-of-type {
-  display: none;
 }
 
 @media (max-width: 768px) {

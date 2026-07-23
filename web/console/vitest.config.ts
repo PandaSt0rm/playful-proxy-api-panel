@@ -2,6 +2,7 @@ import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
+import { PANEL_COVERAGE_FILES } from './scripts/panel-coverage-scope';
 // Standalone test config — deliberately does NOT pull in the production
 // viteSingleFile/inlining pipeline. It mirrors the app's `@` alias and the
 // `__APP_VERSION__` define so modules resolve and evaluate the same way.
@@ -48,8 +49,8 @@ export default defineConfig({
       reporter: ['text-summary', 'text', 'html', 'json', 'json-summary', 'lcov'],
       reportsDirectory: './coverage',
       reportOnFailure: true,
-      include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/**/*.{test,spec}.{ts,tsx}', 'src/test/**', 'src/**/*.d.ts'],
+      include: [...PANEL_COVERAGE_FILES],
+      exclude: ['scripts/**', 'src/**/*.{test,spec}.{ts,tsx}', 'src/test/**', 'src/**/*.d.ts'],
     },
   },
 });

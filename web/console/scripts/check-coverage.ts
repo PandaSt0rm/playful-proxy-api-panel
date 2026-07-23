@@ -1,5 +1,6 @@
 import { isAbsolute, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { PANEL_COVERAGE_FILES } from './panel-coverage-scope';
 
 interface CoverageLocation {
   start: { line: number };
@@ -34,22 +35,16 @@ function normalizeSourcePath(filePath: string): string {
 }
 
 async function listProductionFiles(): Promise<string[]> {
-  const productionFiles: string[] = [];
-  const glob = new Bun.Glob('src/**/*.{ts,tsx}');
-
-  for await (const filePath of glob.scan({ cwd: consoleRoot, onlyFiles: true })) {
-    const normalizedPath = normalizeSourcePath(filePath);
-    if (
-      normalizedPath.startsWith('src/test/') ||
-      normalizedPath.endsWith('.d.ts') ||
-      /\.(?:test|spec)\.(?:ts|tsx)$/.test(normalizedPath)
-    ) {
-      continue;
-    }
-    productionFiles.push(normalizedPath);
+  const missingFiles: string[] = [];
+  for (const filePath of PANEL_COVERAGE_FILES) {
+    if (!(await Bun.file(resolve(consoleRoot, filePath)).exists())) missingFiles.push(filePath);
   }
-
-  return productionFiles.sort();
+  if (missingFiles.length > 0) {
+    throw new Error(
+      `Panel coverage scope references missing files:\n${missingFiles.map((file) => `  - ${file}`).join('\n')}`
+    );
+  }
+  return [...PANEL_COVERAGE_FILES].sort();
 }
 
 function countMetric(values: readonly number[]): CoverageMetric {
@@ -91,7 +86,9 @@ for (const filePath of productionFiles) {
 }
 
 if (suppressions.length > 0) {
-  console.error(`Coverage suppressions are prohibited:\n${suppressions.map((file) => `  - ${file}`).join('\n')}`);
+  console.error(
+    `Coverage suppressions are prohibited:\n${suppressions.map((file) => `  - ${file}`).join('\n')}`
+  );
   process.exitCode = 1;
 }
 
@@ -102,18 +99,24 @@ if (!(await Bun.file(coveragePath).exists())) {
 
 const report = (await Bun.file(coveragePath).json()) as Record<string, IstanbulFileCoverage>;
 const coveredFiles = new Map(
-  Object.entries(report).map(([filePath, coverage]) => [normalizeSourcePath(filePath), coverage]),
+  Object.entries(report).map(([filePath, coverage]) => [normalizeSourcePath(filePath), coverage])
 );
 const productionSet = new Set(productionFiles);
 const missingFiles = productionFiles.filter((filePath) => !coveredFiles.has(filePath));
-const unexpectedFiles = [...coveredFiles.keys()].filter((filePath) => !productionSet.has(filePath)).sort();
+const unexpectedFiles = [...coveredFiles.keys()]
+  .filter((filePath) => !productionSet.has(filePath))
+  .sort();
 
 if (missingFiles.length > 0) {
-  console.error(`Production files missing from coverage:\n${missingFiles.map((file) => `  - ${file}`).join('\n')}`);
+  console.error(
+    `Production files missing from coverage:\n${missingFiles.map((file) => `  - ${file}`).join('\n')}`
+  );
   process.exitCode = 1;
 }
 if (unexpectedFiles.length > 0) {
-  console.error(`Unexpected files in coverage:\n${unexpectedFiles.map((file) => `  - ${file}`).join('\n')}`);
+  console.error(
+    `Unexpected files in coverage:\n${unexpectedFiles.map((file) => `  - ${file}`).join('\n')}`
+  );
   process.exitCode = 1;
 }
 
@@ -139,13 +142,15 @@ for (const filePath of productionFiles) {
     incompleteFiles.push(
       `${filePath}: ${Object.entries(metrics)
         .map(([name, metric]) => `${name} ${formatMetric(metric)}`)
-        .join(', ')}`,
+        .join(', ')}`
     );
   }
 }
 
 if (incompleteFiles.length > 0) {
-  console.error(`Files below exact 100% coverage:\n${incompleteFiles.map((file) => `  - ${file}`).join('\n')}`);
+  console.error(
+    `Files below exact 100% coverage:\n${incompleteFiles.map((file) => `  - ${file}`).join('\n')}`
+  );
   process.exitCode = 1;
 }
 
@@ -154,7 +159,7 @@ if (incompleteAggregate) {
   console.error(
     `Aggregate coverage is below exact 100%: ${Object.entries(aggregate)
       .map(([name, metric]) => `${name} ${formatMetric(metric)}`)
-      .join(', ')}`,
+      .join(', ')}`
   );
   process.exitCode = 1;
 }

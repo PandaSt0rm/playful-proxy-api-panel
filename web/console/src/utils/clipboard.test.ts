@@ -97,4 +97,28 @@ describe('copyToClipboard', () => {
 
     expect(result).toBe(false);
   });
+  it('returns false when no document or body exists for the fallback', async () => {
+    vi.stubGlobal('navigator', {});
+    vi.stubGlobal('document', undefined);
+    expect(await copyToClipboard('server')).toBe(false);
+    vi.unstubAllGlobals();
+
+    vi.stubGlobal('navigator', {});
+    const body = vi.spyOn(document, 'body', 'get').mockReturnValue(null as unknown as HTMLElement);
+    expect(await copyToClipboard('bodyless')).toBe(false);
+    body.mockRestore();
+  });
+
+  it('still returns the copy result when restoring focus throws', async () => {
+    vi.stubGlobal('navigator', {});
+    document.execCommand = vi.fn().mockReturnValue(true) as unknown as typeof document.execCommand;
+    const input = document.createElement('input');
+    document.body.append(input);
+    input.focus();
+    vi.spyOn(input, 'focus').mockImplementation(() => {
+      throw new Error('focus failed');
+    });
+    expect(await copyToClipboard('copied')).toBe(true);
+    input.remove();
+  });
 });

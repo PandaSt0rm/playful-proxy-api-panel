@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderWithRouter, screen, userEvent, waitFor } from '@/test/utils';
+import { act, renderHook, renderWithRouter, screen, userEvent, waitFor } from '@/test/utils';
 import { DashboardPage } from './DashboardPage';
+import { useDashboardSnapshot } from '@/features/dashboard/useDashboardSnapshot';
 import { useAuthStore, useConfigStore } from '@/stores';
 import { usageApi } from '@/services/api/usage';
 import { providersApi } from '@/services/api/providers';
@@ -80,6 +81,7 @@ const event = {
   status_code: 500,
   created_at_ms: Date.parse('2026-07-23T12:00:00Z'),
 };
+const fixedNow = () => 123;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -224,5 +226,102 @@ describe('DashboardPage operational overview', () => {
 
     await waitFor(() => expect(usageApi.getStatistics).toHaveBeenCalledTimes(2));
     expect(aiproxyApi.readiness).toHaveBeenCalledTimes(2);
+  });
+  it('reports complete panel failures and normalizes non-Error provider reasons', async () => {
+    vi.mocked(usageApi.getStatistics).mockRejectedValue('offline');
+    Object.values(providersApi).forEach((loader) => vi.mocked(loader).mockRejectedValue('offline'));
+    vi.mocked(aiproxyApi.readiness).mockRejectedValue(new Error('offline'));
+    vi.mocked(aiproxyApi.budgetStatus).mockRejectedValue(new Error('offline'));
+    vi.mocked(aiproxyApi.syncDrift).mockRejectedValue(new Error('offline'));
+
+    renderWithRouter(<DashboardPage />);
+
+    expect(await screen.findByText('Traffic data is unavailable.')).toBeInTheDocument();
+    expect(screen.getAllByText('Partial data')).toHaveLength(3);
+    expect(screen.getAllByText('Unavailable')).toHaveLength(7);
+  });
+
+  it('renders provider and attention empty states when every fulfilled source is clear', async () => {
+    Object.values(providersApi).forEach((loader) =>
+      vi.mocked(loader).mockResolvedValue([] as never)
+    );
+
+    renderWithRouter(<DashboardPage />);
+
+    expect(await screen.findByText('No providers configured')).toBeInTheDocument();
+    expect(screen.getByText('No operator action required')).toBeInTheDocument();
+  });
+
+  it('filters clear signals and preserves every actionable severity and timestamp fallback', async () => {
+    vi.mocked(aiproxyApi.readiness).mockResolvedValue({
+      status: 'blocked',
+      checks: [
+        { id: 'pass', required: true, status: 'pass', summary: 'clear' },
+        { id: 'warn', required: false, status: 'warn', summary: 'warning', action_path: '' },
+      ],
+    });
+    vi.mocked(aiproxyApi.budgetStatus).mockResolvedValue({
+      statuses: [
+        { budget_id: 'clear', status: 'ok', percentage: 1, period_end: '' },
+        { budget_id: 'warn', status: 'warning', percentage: 80, period_end: '' },
+        {
+          budget_id: 'over',
+          status: 'exceeded',
+          percentage: 120,
+          period_end: '2026-07-24T00:00:00Z',
+        },
+      ],
+    } as never);
+    vi.mocked(aiproxyApi.syncDrift).mockResolvedValue({
+      stale_after_seconds: 30,
+      reported_sync_state: [
+        { hostname: 'clear', profile: 'p', tool: 'codex', status: 'synced', reported_at: '' },
+        { hostname: 'bad', profile: 'p', tool: 'codex', status: 'error', reported_at: '' },
+        { hostname: 'conflict', profile: 'p', tool: 'claude', status: 'conflict', reported_at: '' },
+        {
+          hostname: 'old',
+          profile: 'p',
+          tool: 'droid',
+          status: 'stale',
+          reported_at: '2026-07-22T00:00:00Z',
+        },
+      ],
+    } as never);
+
+    renderWithRouter(<DashboardPage />);
+
+    expect(await screen.findByText('warning')).toBeInTheDocument();
+    expect(screen.getByText('warn: 80.0%')).toBeInTheDocument();
+    expect(screen.getByText('over: 120.0%')).toBeInTheDocument();
+    expect(screen.getByText('bad · codex: error')).toBeInTheDocument();
+    expect(screen.queryByText('clear')).not.toBeInTheDocument();
+  });
+  it('normalizes a statistics response whose optional events list is absent', async () => {
+    vi.mocked(usageApi.getEvents).mockResolvedValue({ limit: 100 } as never);
+
+    renderWithRouter(<DashboardPage />);
+
+    expect(await screen.findByText('No failed requests in this window.')).toBeInTheDocument();
+  });
+
+  it('ignores an older refresh that settles after a newer request', async () => {
+    const older = Promise.withResolvers<UsageStatisticsResponse>();
+    vi.mocked(usageApi.getStatistics)
+      .mockReturnValueOnce(older.promise)
+      .mockResolvedValueOnce(statistics(4));
+    const { result } = renderHook(() => useDashboardSnapshot(true, fixedNow));
+    await waitFor(() => expect(usageApi.getStatistics).toHaveBeenCalledTimes(1));
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+    expect(result.current.traffic.data?.statistics.usage.total_requests).toBe(4);
+
+    older.resolve(statistics(99));
+    await act(async () => {
+      await older.promise;
+      await Promise.resolve();
+    });
+    expect(result.current.traffic.data?.statistics.usage.total_requests).toBe(4);
   });
 });

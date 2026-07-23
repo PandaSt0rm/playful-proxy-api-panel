@@ -16,10 +16,10 @@
   font-weight: 500;
   line-height: 1.4;
   padding: 2px 8px;
-  border: 1px solid var(--border-color);
-  border-radius: $radius-sm;
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   cursor: pointer;
   transition:
     border-color 0.15s ease,
@@ -27,8 +27,8 @@
     color 0.15s ease;
 
   &:hover:not(:disabled) {
-    border-color: var(--primary-color);
-    color: var(--primary-color);
+    border-color: var(--route);
+    color: var(--route);
   }
 
   &:disabled {
@@ -38,20 +38,20 @@
 }
 
 .chipActive {
-  background: var(--primary-color);
-  border-color: var(--primary-color);
-  color: var(--primary-contrast, #fff);
+  background: var(--route);
+  border-color: var(--route);
+  color: var(--canvas, #fff);
 
   &:hover:not(:disabled) {
-    background: var(--primary-color);
-    color: var(--primary-contrast, #fff);
+    background: var(--route);
+    color: var(--canvas, #fff);
   }
 }
 
 .payloadDot {
   width: 5px;
   height: 5px;
-  border-radius: 50%;
+  border-radius: $radius-square;
   background: currentColor;
 }
 
@@ -65,10 +65,10 @@
   flex-direction: column;
   gap: $spacing-xs;
   padding: $spacing-sm;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-primary);
-  border-radius: $radius-md;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: var(--surface-1);
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
+  box-shadow: none;
 
   @include mobile {
     left: 0;
@@ -88,7 +88,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--text-tertiary, var(--text-secondary));
+  color: var(--ink-muted, var(--ink-muted));
 }
 
 .chips {
@@ -114,7 +114,7 @@
 .payloadRowLabel {
   font-family: $font-mono;
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   text-align: right;
 }
 
@@ -123,19 +123,19 @@
   font-size: 12px;
   line-height: 1.5;
   padding: 4px $spacing-xs;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-radius: $radius-sm;
+  background: var(--canvas);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
   min-width: 0;
 
   &:focus {
     outline: none;
-    border-color: var(--primary-color);
+    border-color: var(--route);
   }
 
   &[aria-invalid='true'] {
-    border-color: var(--danger-color, #c65746);
+    border-color: var(--danger, #c65746);
   }
 
   &:disabled {
@@ -151,18 +151,18 @@
   min-height: 140px;
   resize: vertical;
   padding: $spacing-xs $spacing-sm;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-radius: $radius-sm;
+  background: var(--canvas);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
 
   &:focus {
     outline: none;
-    border-color: var(--primary-color);
+    border-color: var(--route);
   }
 
   &[aria-invalid='true'] {
-    border-color: var(--danger-color, #c65746);
+    border-color: var(--danger, #c65746);
   }
 
   &:disabled {
@@ -174,11 +174,11 @@
 .payloadError {
   font-size: 12px;
   line-height: 1.5;
-  color: var(--danger-color, #c65746);
+  color: var(--danger, #c65746);
 }
 
 .hint {
   font-size: 12px;
   line-height: 1.5;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
 }

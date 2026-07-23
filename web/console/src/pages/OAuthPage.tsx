@@ -8,6 +8,7 @@ import { useNotificationStore, useThemeStore } from '@/stores';
 import { oauthApi, type OAuthProvider } from '@/services/api/oauth';
 import { vertexApi, type VertexImportResponse } from '@/services/api/vertex';
 import { copyToClipboard } from '@/utils/clipboard';
+import { WorkspacePage } from '@/components/workspace/WorkspacePage';
 import styles from './OAuthPage.module.scss';
 import iconCodex from '@/assets/icons/codex.svg';
 import iconClaude from '@/assets/icons/claude.svg';
@@ -383,9 +384,7 @@ export function OAuthPage() {
   };
 
   return (
-    <div className={styles.container}>
-      <h1 className={styles.pageTitle}>{t('nav.oauth', { defaultValue: 'OAuth' })}</h1>
-
+    <WorkspacePage title={t('nav.oauth', { defaultValue: 'OAuth' })}>
       <div className={styles.content}>
         {PROVIDERS.map((provider) => {
           const state = states[provider.id] || {};
@@ -398,9 +397,9 @@ export function OAuthPage() {
               ? t('auth_login.login_another_account')
               : t(getAuthKey(provider.id, 'oauth_button'));
           const statusBadgeClassName = [
-            'status-badge',
-            state.status === 'success' ? 'success' : '',
-            state.status === 'error' ? 'error' : '',
+            'rf-badge',
+            state.status === 'success' ? 'rf-badge--ok' : '',
+            state.status === 'error' ? 'rf-badge--danger' : '',
           ]
             .filter(Boolean)
             .join(' ');
@@ -469,12 +468,12 @@ export function OAuthPage() {
                         </Button>
                       </div>
                       {state.callbackStatus === 'success' && state.status === 'waiting' && (
-                        <div className="status-badge success">
+                        <div className="rf-badge rf-badge--ok">
                           {t('auth_login.oauth_callback_status_success')}
                         </div>
                       )}
                       {state.callbackStatus === 'error' && (
-                        <div className="status-badge error">
+                        <div className="rf-badge rf-badge--danger">
                           {t('auth_login.oauth_callback_status_error')} {state.callbackError || ''}
                         </div>
                       )}
@@ -553,7 +552,9 @@ export function OAuthPage() {
                 onChange={handleVertexFileChange}
               />
             </div>
-            {vertexState.error && <div className="status-badge error">{vertexState.error}</div>}
+            {vertexState.error && (
+              <div className="rf-badge rf-badge--danger">{vertexState.error}</div>
+            )}
             {vertexState.result && (
               <div className={styles.connectionBox}>
                 <div className={styles.connectionLabel}>{t('vertex_import.result_title')}</div>
@@ -592,6 +593,6 @@ export function OAuthPage() {
           </div>
         </Card>
       </div>
-    </div>
+    </WorkspacePage>
   );
 }

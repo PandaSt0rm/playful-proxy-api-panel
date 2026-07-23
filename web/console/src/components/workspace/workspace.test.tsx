@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { render, screen } from '@/test/utils';
 import { SectionPanel } from './SectionPanel';
 import { WorkspacePage } from './WorkspacePage';
-import { LegacyWorkspaceRoute } from './LegacyWorkspaceRoute';
 
 describe('workspace primitives', () => {
   it('renders one route masthead with status, actions, and content', () => {
@@ -41,16 +40,5 @@ describe('workspace primitives', () => {
     expect(section).toHaveAttribute('aria-describedby', 'traffic-description');
     expect(section).toHaveTextContent('Last hour');
     expect(section).toHaveTextContent('Panel content');
-  });
-
-  it('adapts a mature route to the shared masthead and content surface', () => {
-    render(
-      <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.config" width="full">
-        <p>Legacy content</p>
-      </LegacyWorkspaceRoute>
-    );
-
-    expect(screen.getByRole('heading', { level: 1, name: 'Config' })).toBeInTheDocument();
-    expect(screen.getByText('Legacy content')).toBeInTheDocument();
   });
 });

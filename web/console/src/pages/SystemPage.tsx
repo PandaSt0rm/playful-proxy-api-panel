@@ -29,6 +29,7 @@ import iconGlm from '@/assets/icons/glm.svg';
 import iconGrok from '@/assets/icons/grok.svg';
 import iconDeepseek from '@/assets/icons/deepseek.svg';
 import iconMinimax from '@/assets/icons/minimax.svg';
+import { WorkspacePage } from '@/components/workspace/WorkspacePage';
 import styles from './SystemPage.module.scss';
 
 const MODEL_CATEGORY_ICONS: Record<string, string | { light: string; dark: string }> = {
@@ -42,6 +43,13 @@ const MODEL_CATEGORY_ICONS: Record<string, string | { light: string; dark: strin
   deepseek: iconDeepseek,
   minimax: iconMinimax,
 };
+
+const STATUS_BADGE_CLASSES = {
+  success: 'rf-badge--ok',
+  warning: 'rf-badge--caution',
+  error: 'rf-badge--danger',
+  muted: 'rf-badge--neutral',
+} as const;
 
 const parseVersionSegments = (version?: string | null) => {
   if (!version) return null;
@@ -316,8 +324,7 @@ export function SystemPage() {
   }, [auth.connectionStatus, auth.apiBase]);
 
   return (
-    <div className={styles.container}>
-      <h1 className={styles.pageTitle}>{t('system_info.title')}</h1>
+    <WorkspacePage title={t('system_info.title')}>
       <div className={styles.content}>
         <Card className={styles.aboutCard}>
           <div className={styles.aboutHeader}>
@@ -443,7 +450,9 @@ export function SystemPage() {
         >
           <p className={styles.sectionDescription}>{t('system_info.models_desc')}</p>
           {modelStatus && (
-            <div className={`status-badge ${modelStatus.type}`}>{modelStatus.message}</div>
+            <div className={`rf-badge ${STATUS_BADGE_CLASSES[modelStatus.type]}`}>
+              {modelStatus.message}
+            </div>
           )}
           {modelsError && <div className="error-box">{modelsError}</div>}
           {modelsLoading ? (
@@ -514,7 +523,9 @@ export function SystemPage() {
         }
       >
         <div className="request-log-modal">
-          <div className="status-badge warning">{t('basic_settings.request_log_warning')}</div>
+          <div className="rf-badge rf-badge--caution">
+            {t('basic_settings.request_log_warning')}
+          </div>
           <ToggleSwitch
             label={t('basic_settings.request_log_enable')}
             labelPosition="left"
@@ -527,6 +538,6 @@ export function SystemPage() {
           />
         </div>
       </Modal>
-    </div>
+    </WorkspacePage>
   );
 }

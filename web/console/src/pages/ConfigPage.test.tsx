@@ -96,7 +96,7 @@ describe('ConfigPage load', () => {
   it('shows the loaded status once the fetch resolves', async () => {
     renderWithRouter(<ConfigPage />);
 
-    // Status renders in both the header badge and the floating action bar.
+    // Status renders in both the header badge and the action bar bar.
     expect((await screen.findAllByText('Configuration loaded')).length).toBeGreaterThan(0);
   });
 

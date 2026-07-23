@@ -11,10 +11,9 @@
   flex-direction: column;
   gap: $spacing-sm;
   padding: $spacing-md;
-  border: 1px solid var(--border-color);
-  border-radius: $radius-lg;
-  background: color-mix(in srgb, var(--bg-primary) 94%, transparent);
-  backdrop-filter: blur(8px);
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
+  background: color-mix(in srgb, var(--surface-1) 94%, transparent);
 }
 
 .controlsRow {
@@ -43,7 +42,7 @@
 
 .updated {
   font-size: 13px;
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
   white-space: nowrap;
 }
 
@@ -65,38 +64,38 @@
 .providerChip:focus-visible,
 .overviewChip:focus-visible,
 .meterToggle:focus-visible {
-  outline: 2px solid var(--primary-color);
+  outline: 2px solid var(--route);
   outline-offset: 2px;
 }
 
 .providerChip {
   padding: 5px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--border-color);
+  border-radius: $radius-square;
+  border: 1px solid var(--rule);
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition:
-    background $transition-fast,
-    border-color $transition-fast,
-    color $transition-fast;
+    background $transition-control,
+    border-color $transition-control,
+    color $transition-control;
 
   &:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
+    background: var(--surface-2);
+    color: var(--ink);
   }
 }
 
 .providerChipActive {
-  background: var(--primary-color);
-  border-color: var(--primary-color);
-  color: var(--primary-contrast, #fff);
+  background: var(--route);
+  border-color: var(--route);
+  color: var(--canvas, #fff);
 
   &:hover {
-    background: var(--primary-hover);
-    color: var(--primary-contrast, #fff);
+    background: color-mix(in srgb, var(--route) 84%, var(--ink));
+    color: var(--canvas, #fff);
   }
 }
 
@@ -113,32 +112,32 @@
   align-items: baseline;
   gap: 6px;
   padding: 6px 12px;
-  border-radius: $radius-md;
-  border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
+  border-radius: $radius-square;
+  border: 1px solid var(--rule);
+  background: var(--canvas);
+  color: var(--ink-muted);
   font-size: 13px;
   cursor: pointer;
   transition:
-    border-color $transition-fast,
-    background $transition-fast,
-    box-shadow $transition-fast;
+    border-color $transition-control,
+    background $transition-control,
+    box-shadow $transition-control;
 
   &:hover {
-    border-color: var(--primary-color);
+    border-color: var(--route);
   }
 }
 
 .overviewChipActive {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 1px var(--primary-color) inset;
-  color: var(--text-primary);
+  border-color: var(--route);
+  box-shadow: none;
+  color: var(--ink);
 }
 
 .overviewCount {
   font-size: 16px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
 .overviewLabel {
@@ -150,25 +149,25 @@
   content: '';
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: $radius-square;
   align-self: center;
-  background: var(--text-tertiary);
+  background: var(--ink-muted);
 }
 
 .overview_all::before {
-  background: var(--text-tertiary);
+  background: var(--ink-muted);
 }
 .overview_ok::before {
-  background: var(--success-color, #22c55e);
+  background: var(--ok, #22c55e);
 }
 .overview_warn::before {
-  background: var(--quota-medium-color, #e0aa14);
+  background: var(--caution, #e0aa14);
 }
 .overview_critical::before {
-  background: var(--danger-color);
+  background: var(--danger);
 }
 .overview_error::before {
-  background: var(--danger-color);
+  background: var(--danger);
 }
 
 /* ------------------------------------------------------------------- Groups */
@@ -184,14 +183,14 @@
   align-items: center;
   gap: $spacing-sm;
   padding-bottom: $spacing-xs;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--rule);
 }
 
 .groupTitle {
   margin: 0;
   font-size: 16px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
 .groupCount {
@@ -201,17 +200,17 @@
   min-width: 22px;
   height: 22px;
   padding: 0 7px;
-  border-radius: 999px;
+  border-radius: $radius-square;
   font-size: 12px;
   font-weight: 600;
-  color: var(--count-badge-text);
-  background-color: var(--count-badge-bg);
+  color: var(--ink);
+  background-color: var(--surface-2);
 }
 
 .groupAttention {
   font-size: 12px;
   font-weight: 600;
-  color: var(--danger-color);
+  color: var(--danger);
 }
 
 .groupRows {
@@ -227,34 +226,34 @@
   flex-direction: column;
   gap: $spacing-sm;
   padding: $spacing-sm $spacing-md;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--rule);
   border-left-width: 3px;
-  border-left-color: var(--text-tertiary);
-  border-radius: $radius-md;
-  background: var(--bg-primary);
+  border-left-color: var(--ink-muted);
+  border-radius: $radius-square;
+  background: var(--surface-1);
   transition:
-    border-color $transition-fast,
-    box-shadow $transition-fast;
+    border-color $transition-control,
+    box-shadow $transition-control;
 
   &:hover {
-    box-shadow: $shadow-md;
+    box-shadow: none;
   }
 }
 
 .rowHealth_ok {
-  border-left-color: var(--success-color, #22c55e);
+  border-left-color: var(--ok, #22c55e);
 }
 .rowHealth_warn {
-  border-left-color: var(--quota-medium-color, #e0aa14);
+  border-left-color: var(--caution, #e0aa14);
 }
 .rowHealth_critical {
-  border-left-color: var(--danger-color);
+  border-left-color: var(--danger);
 }
 .rowHealth_error {
-  border-left-color: var(--danger-color);
+  border-left-color: var(--danger);
 }
 .rowHealth_unknown {
-  border-left-color: var(--text-tertiary);
+  border-left-color: var(--ink-muted);
 }
 
 .rowMain {
@@ -288,43 +287,43 @@
 
 .rowUpdated {
   font-size: 12px;
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
   white-space: nowrap;
 }
 
 .rowRefresh:global(.btn.btn-sm) {
   padding-inline: 9px;
-  border-radius: 999px;
+  border-radius: $radius-square;
 }
 
 .healthDot {
   width: 10px;
   height: 10px;
-  border-radius: 50%;
+  border-radius: $radius-circle;
   flex-shrink: 0;
-  background: var(--text-tertiary);
+  background: var(--ink-muted);
 }
 
 .health_ok {
-  background: var(--success-color, #22c55e);
+  background: var(--ok, #22c55e);
 }
 .health_warn {
-  background: var(--quota-medium-color, #e0aa14);
+  background: var(--caution, #e0aa14);
 }
 .health_critical {
-  background: var(--danger-color);
+  background: var(--danger);
 }
 .health_error {
-  background: var(--danger-color);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger-color) 22%, transparent);
+  background: var(--danger);
+  box-shadow: none;
 }
 .health_unknown {
-  background: var(--text-tertiary);
+  background: var(--ink-muted);
 }
 
 .typeBadge {
   padding: 3px 9px;
-  border-radius: 10px;
+  border-radius: $radius-square;
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
@@ -334,7 +333,7 @@
 .rowName {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -347,41 +346,31 @@
   align-items: center;
   gap: 5px;
   padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+  border-radius: $radius-square;
+  border: 1px solid var(--rule);
+  background: var(--canvas);
   font-size: 11px;
   white-space: nowrap;
 }
 
 .extraChipLabel {
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
 
 .extraChipValue {
-  color: var(--text-primary);
+  color: var(--ink);
   font-weight: 600;
 }
 
 .extraChipPremium {
-  border-color: rgba(217, 165, 22, 0.55);
-  background: linear-gradient(135deg, #fff9e3 0%, #ffe7a3 100%);
+  border-color: var(--rule);
+  background: var(--surface-2);
 
   .extraChipLabel,
   .extraChipValue {
-    color: #6b4b00;
-  }
-}
-
-:global([data-theme='dark']) .extraChipPremium {
-  background: linear-gradient(135deg, #4f3d0b 0%, #6e5510 100%);
-  border-color: rgba(226, 180, 50, 0.55);
-
-  .extraChipLabel,
-  .extraChipValue {
-    color: #fff0a8;
+    color: var(--ink);
   }
 }
 
@@ -391,16 +380,16 @@
 
 .rowMessage {
   font-size: 12px;
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
   padding: 2px 0;
 }
 
 .rowError {
   font-size: 12px;
-  color: var(--danger-color);
-  background-color: rgba($error-color, 0.08);
-  border: 1px solid var(--danger-color);
-  border-radius: $radius-sm;
+  color: var(--danger);
+  background-color: color-mix(in srgb, var(--danger) 8%, transparent);
+  border: 1px solid var(--danger);
+  border-radius: $radius-square;
   padding: $spacing-xs $spacing-sm;
 }
 
@@ -430,7 +419,7 @@
 .meterLabel {
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -440,7 +429,7 @@
 .meterPercent {
   font-size: 12px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--ink);
   flex-shrink: 0;
 }
 
@@ -450,12 +439,12 @@
   justify-content: space-between;
   gap: $spacing-sm;
   font-size: 11px;
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
   min-width: 0;
 }
 
 .meterAmount {
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -474,7 +463,7 @@
   padding: 4px 8px;
   border: none;
   background: none;
-  color: var(--primary-color);
+  color: var(--route);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;

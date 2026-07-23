@@ -166,46 +166,35 @@ describe('SecondaryScreenShell', () => {
     expect(ref.current).toBeInstanceOf(HTMLDivElement);
   });
 
-  it('renders the floating action into the document body via a portal', () => {
-    render(
-      <SecondaryScreenShell
-        title="Title"
-        floatingAction={<button type="button">Floating save</button>}
-      />
-    );
+  it('renders the action bar into the document body via a portal', () => {
+    render(<SecondaryScreenShell title="Title" actionBar={<button type="button">Save</button>} />);
 
-    expect(screen.getByRole('button', { name: 'Floating save' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
   });
 
-  it('does not render the floating action when the page transition layer is not current', () => {
+  it('does not render the action bar when the page transition layer is not current', () => {
     render(
       <PageTransitionLayerContext.Provider value={PAGE_TRANSITION_LAYER_CONTEXT_VALUES.stacked}>
-        <SecondaryScreenShell
-          title="Title"
-          floatingAction={<button type="button">Floating save</button>}
-        />
+        <SecondaryScreenShell title="Title" actionBar={<button type="button">Save</button>} />
       </PageTransitionLayerContext.Provider>
     );
 
-    expect(screen.queryByRole('button', { name: 'Floating save' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
   });
 
-  it('renders the floating action when the page transition layer is current', () => {
+  it('renders the action bar when the page transition layer is current', () => {
     render(
       <PageTransitionLayerContext.Provider value={PAGE_TRANSITION_LAYER_CONTEXT_VALUES.current}>
-        <SecondaryScreenShell
-          title="Title"
-          floatingAction={<button type="button">Floating save</button>}
-        />
+        <SecondaryScreenShell title="Title" actionBar={<button type="button">Save</button>} />
       </PageTransitionLayerContext.Provider>
     );
 
-    expect(screen.getByRole('button', { name: 'Floating save' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
   });
 
-  it('does not render a floating action region when floatingAction is omitted', () => {
+  it('does not render a action bar region when actionBar is omitted', () => {
     render(<SecondaryScreenShell title="Title">content</SecondaryScreenShell>);
 
-    expect(screen.queryByRole('button', { name: 'Floating save' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
   });
 });

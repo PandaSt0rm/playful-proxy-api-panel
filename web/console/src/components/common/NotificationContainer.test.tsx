@@ -220,4 +220,32 @@ describe('NotificationContainer', () => {
 
     await waitFor(() => expect(container.querySelectorAll('.notification')).toHaveLength(2));
   });
+  it('revives an exiting id without duplicating it and leaves sibling close state unchanged', () => {
+    vi.useFakeTimers();
+    const { container } = render(<NotificationContainer />);
+    act(() => {
+      seedNotifications([
+        { id: 'n1', message: 'first', type: 'info', duration: 0 },
+        { id: 'n2', message: 'second', type: 'info', duration: 0 },
+      ]);
+    });
+    act(() => {
+      fireEvent.click(screen.getAllByRole('button', { name: 'Close' })[0]);
+    });
+    expect(container.querySelectorAll('.notification')).toHaveLength(2);
+    expect(screen.getByText('first').closest('.notification')).toHaveClass('exiting');
+    expect(screen.getByText('second').closest('.notification')).toHaveClass('entering');
+
+    act(() => {
+      seedNotifications([{ id: 'n2', message: 'second', type: 'info', duration: 0 }]);
+    });
+    act(() => {
+      seedNotifications([
+        { id: 'n1', message: 'first again', type: 'info', duration: 0 },
+        { id: 'n2', message: 'second', type: 'info', duration: 0 },
+      ]);
+    });
+    expect(container.querySelectorAll('.notification')).toHaveLength(2);
+    vi.useRealTimers();
+  });
 });

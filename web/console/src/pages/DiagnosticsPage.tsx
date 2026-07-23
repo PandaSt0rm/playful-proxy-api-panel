@@ -239,13 +239,12 @@ export function DiagnosticsPage() {
     void loadHistory();
   }, [loadHistory]);
 
-  const submit = async (acknowledgeBillable: boolean) => {
-    if (!selectedCredential || pending) return;
+  const submit = async (credential: DiagnosticCredentialOption, acknowledgeBillable: boolean) => {
     setPending(true);
     setRunError('');
     try {
       const next = await aiproxyApi.diagnostics({
-        target: { kind, auth_index: selectedCredential.authIndex },
+        target: { kind, auth_index: credential.authIndex },
         check,
         ...(acknowledgeBillable ? { acknowledge_billable: true } : {}),
       });
@@ -262,9 +261,8 @@ export function DiagnosticsPage() {
   };
 
   const run = () => {
-    if (!selectedCredential || pending) return;
     if (check === 'connectivity') setConfirmOpen(true);
-    else void submit(false);
+    else void submit(selectedCredential!, false);
   };
 
   const runAgain = (historyResult: DiagnosticResult) => {
@@ -492,7 +490,7 @@ export function DiagnosticsPage() {
         cancelLabel={t('diagnostics.confirm.cancel')}
         confirmLabel={t('diagnostics.confirm.submit')}
         onClose={() => setConfirmOpen(false)}
-        onConfirm={() => void submit(true)}
+        onConfirm={() => void submit(selectedCredential!, true)}
       >
         <p>{t('diagnostics.confirm.body', { credential: selectedCredential?.label ?? '' })}</p>
       </ConfirmationDialog>

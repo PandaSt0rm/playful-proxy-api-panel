@@ -12,7 +12,7 @@
   }
 
   :global(.form-group > label) {
-    color: var(--text-secondary);
+    color: var(--ink-muted);
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.04em;
@@ -20,15 +20,15 @@
 
   :global(.input) {
     min-height: 48px;
-    border-radius: 16px;
-    background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
-    border-color: color-mix(in srgb, var(--border-color) 84%, transparent);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    border-radius: $radius-square;
+    background: color-mix(in srgb, var(--surface-1) 92%, transparent);
+    border-color: color-mix(in srgb, var(--rule) 84%, transparent);
+    box-shadow: none;
   }
 
   :global(.input:focus) {
-    background: var(--bg-primary);
-    border-color: var(--primary-color);
+    background: var(--surface-1);
+    border-color: var(--route);
   }
 
   :global(textarea.input) {
@@ -36,7 +36,7 @@
   }
 
   :global(.hint) {
-    color: var(--text-secondary);
+    color: var(--ink-muted);
     font-size: 12px;
     line-height: 1.6;
   }
@@ -44,16 +44,16 @@
   .spoofedIpNotice {
     margin: 0;
     padding: 12px 14px;
-    border-radius: 10px;
-    border-left: 3px solid var(--warning-color, #d97706);
-    background: color-mix(in srgb, var(--warning-color, #d97706) 10%, var(--bg-primary));
-    color: var(--text-secondary);
+    border-radius: $radius-square;
+    border-left: 3px solid var(--caution, #d97706);
+    background: color-mix(in srgb, var(--caution, #d97706) 10%, var(--surface-1));
+    color: var(--ink-muted);
     font-size: 13px;
     line-height: 1.55;
   }
 
   :global(.error-box) {
-    border-radius: 14px;
+    border-radius: $radius-square;
   }
 
   :global(.item-list) {
@@ -62,10 +62,10 @@
   }
 
   :global(.item-row) {
-    border-radius: 18px;
+    border-radius: $radius-square;
     padding: 14px 16px;
-    background: color-mix(in srgb, var(--bg-primary) 78%, transparent);
-    border-color: color-mix(in srgb, var(--border-color) 86%, transparent);
+    background: color-mix(in srgb, var(--surface-1) 78%, transparent);
+    border-color: color-mix(in srgb, var(--rule) 86%, transparent);
   }
 
   :global(.item-row .item-meta) {
@@ -76,10 +76,10 @@
     flex-wrap: wrap;
   }
 
-  :global(.pill) {
-    background: color-mix(in srgb, var(--bg-secondary) 84%, transparent);
-    border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-    color: var(--text-secondary);
+  :global(.rf-badge) {
+    background: color-mix(in srgb, var(--canvas) 84%, transparent);
+    border: 1px solid color-mix(in srgb, var(--rule) 84%, transparent);
+    color: var(--ink-muted);
   }
 }
 
@@ -117,7 +117,7 @@
   font-size: 10px;
   line-height: 1;
   padding: 2px;
-  color: var(--text-secondary, #999);
+  color: var(--ink-muted, #999);
   opacity: 0.5;
   transition: opacity 0.15s;
   z-index: 1;
@@ -144,35 +144,10 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  border-radius: 30px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 78%, transparent);
-  background:
-    radial-gradient(
-      circle at top right,
-      color-mix(in srgb, var(--primary-color) 12%, transparent),
-      transparent 36%
-    ),
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--bg-primary) 94%, transparent),
-      color-mix(in srgb, var(--bg-secondary) 96%, transparent)
-    );
+  border-radius: $radius-square;
+  border: 1px solid color-mix(in srgb, var(--rule) 78%, transparent);
+  background: var(--surface-1);
   padding: clamp(22px, 3vw, 30px);
-
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0 auto auto 0;
-    width: min(220px, 44vw);
-    height: min(220px, 44vw);
-    background: radial-gradient(
-      circle,
-      color-mix(in srgb, var(--primary-color) 16%, transparent),
-      transparent 72%
-    );
-    opacity: 0.6;
-    pointer-events: none;
-  }
 }
 
 .overviewHeader {
@@ -196,19 +171,19 @@
   gap: 6px;
   min-height: 34px;
   padding: 0 14px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-  background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
-  color: var(--text-secondary);
+  border-radius: $radius-square;
+  border: 1px solid color-mix(in srgb, var(--rule) 84%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 82%, transparent);
+  color: var(--ink-muted);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
 }
 
 .overviewPillWarning {
-  color: var(--warning-text);
-  border-color: var(--warning-border);
-  background: var(--warning-bg);
+  color: var(--caution);
+  border-color: color-mix(in srgb, var(--caution) 48%, var(--rule));
+  background: color-mix(in srgb, var(--caution) 12%, transparent);
 }
 
 .providerLimitEditor {
@@ -241,9 +216,9 @@
   align-items: end;
   gap: 10px;
   padding: 12px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--bg-primary) 78%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rule) 84%, transparent);
+  border-radius: $radius-square;
+  background: color-mix(in srgb, var(--surface-1) 78%, transparent);
 
   @include mobile {
     grid-template-columns: minmax(0, 1fr);
@@ -260,10 +235,10 @@
 }
 
 .emptyProviderLimits {
-  border: 1px dashed color-mix(in srgb, var(--border-color) 90%, transparent);
-  border-radius: 14px;
+  border: 1px dashed color-mix(in srgb, var(--rule) 90%, transparent);
+  border-radius: $radius-square;
   padding: 14px;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -290,9 +265,9 @@
   gap: 14px;
   width: 100%;
   padding: 14px 16px;
-  border-radius: 20px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
-  background: color-mix(in srgb, var(--bg-primary) 74%, transparent);
+  border-radius: $radius-square;
+  border: 1px solid color-mix(in srgb, var(--rule) 70%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 74%, transparent);
   text-align: left;
   transition:
     transform 0.18s ease,
@@ -301,14 +276,14 @@
 
   &:hover {
     transform: translateY(-1px);
-    border-color: color-mix(in srgb, var(--primary-color) 26%, var(--border-color));
-    background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
+    border-color: color-mix(in srgb, var(--route) 26%, var(--rule));
+    background: color-mix(in srgb, var(--surface-1) 92%, transparent);
   }
 }
 
 .overviewFocusLinkActive {
-  border-color: color-mix(in srgb, var(--primary-color) 28%, var(--border-color));
-  background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
+  border-color: color-mix(in srgb, var(--route) 28%, var(--rule));
+  background: color-mix(in srgb, var(--surface-1) 92%, transparent);
 }
 
 .focusIcon {
@@ -317,9 +292,9 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--primary-color) 10%, var(--bg-secondary));
-  color: var(--primary-hover);
+  border-radius: $radius-square;
+  background: color-mix(in srgb, var(--route) 10%, var(--canvas));
+  color: color-mix(in srgb, var(--route) 84%, var(--ink));
   flex: 0 0 auto;
 }
 
@@ -331,14 +306,14 @@
 }
 
 .focusTitle {
-  color: var(--text-primary);
+  color: var(--ink);
   font-size: 15px;
   font-weight: 700;
   line-height: 1.2;
 }
 
 .focusDescription {
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   font-size: 13px;
   line-height: 1.55;
 }
@@ -390,16 +365,16 @@
   min-width: max-content;
   flex: 0 0 auto;
   padding: 10px 14px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-  background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
-  box-shadow: 0 18px 36px -30px rgba(0, 0, 0, 0.28);
+  border-radius: $radius-square;
+  border: 1px solid color-mix(in srgb, var(--rule) 84%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 88%, transparent);
+  box-shadow: none;
   white-space: nowrap;
 }
 
 .mobileSectionNavButtonActive {
-  border-color: color-mix(in srgb, var(--primary-color) 24%, var(--border-color));
-  background: color-mix(in srgb, var(--bg-primary) 96%, transparent);
+  border-color: color-mix(in srgb, var(--route) 24%, var(--rule));
+  background: color-mix(in srgb, var(--surface-1) 96%, transparent);
 }
 
 .mobileSectionNavIndex {
@@ -409,16 +384,16 @@
   min-width: 28px;
   height: 28px;
   padding: 0 8px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
-  color: var(--text-secondary);
+  border-radius: $radius-square;
+  background: color-mix(in srgb, var(--canvas) 88%, transparent);
+  color: var(--ink-muted);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
 }
 
 .mobileSectionNavLabel {
-  color: var(--text-primary);
+  color: var(--ink);
   font-size: 13px;
   font-weight: 700;
 }
@@ -430,10 +405,10 @@
   min-width: 22px;
   height: 22px;
   padding: 0 6px;
-  border-radius: 999px;
-  background: var(--warning-bg);
-  border: 1px solid var(--warning-border);
-  color: var(--warning-text);
+  border-radius: $radius-square;
+  background: color-mix(in srgb, var(--caution) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--caution) 48%, var(--rule));
+  color: var(--caution);
   font-size: 11px;
   font-weight: 700;
 }
@@ -451,76 +426,27 @@
   }
 }
 
-.sidebarPlaceholder {
-  min-height: 1px;
-}
-
 .sidebarRail {
-  max-height: calc(100vh - var(--header-height, 64px) - 36px);
+  position: sticky;
+  top: 20px;
+  max-height: calc(100dvh - 100px);
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 12px;
-  border-radius: 26px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-  background: color-mix(in srgb, var(--bg-primary) 76%, transparent);
-  --glass-blur: 14px;
-  backdrop-filter: var(--glass-backdrop-filter);
-  -webkit-backdrop-filter: var(--glass-backdrop-filter);
-  box-shadow: 0 24px 56px -34px rgba(0, 0, 0, 0.42);
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-.floatingSidebarContainer {
-  position: fixed;
-  left: 0;
-  top: 0;
-  will-change: transform, width, max-height;
-  z-index: 45;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.18s ease;
-
-  @media (max-width: 1024px) {
-    display: none;
-  }
-}
-
-.floatingSidebarRail {
-  max-height: inherit;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 12px;
-  border-radius: 26px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-  background: color-mix(in srgb, var(--bg-primary) 96%, transparent);
-  box-shadow: 0 24px 56px -34px rgba(0, 0, 0, 0.42);
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
+  background: var(--surface-1);
+  scrollbar-gutter: stable;
 }
 
 .navList {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
 
   @media (max-width: 1024px) {
     flex-direction: row;
     overflow-x: auto;
-    padding-bottom: 4px;
-    scrollbar-width: none;
-
-    &::-webkit-scrollbar {
-      display: none;
-    }
   }
 }
 
@@ -531,36 +457,30 @@
   gap: 14px;
   width: 100%;
   padding: 14px;
-  border-radius: 20px;
-  border: 1px solid transparent;
+  border: 0;
+  border-left: 2px solid transparent;
+  border-radius: $radius-square;
   background: transparent;
   color: inherit;
   text-align: left;
   transition:
-    transform 0.18s ease,
-    background-color 0.18s ease,
-    border-color 0.18s ease;
+    background-color $transition-control,
+    border-color $transition-control;
 
   &:hover {
-    transform: translateX(2px);
-    background: color-mix(in srgb, var(--bg-secondary) 86%, transparent);
-    border-color: color-mix(in srgb, var(--border-color) 88%, transparent);
+    background: var(--surface-2);
+    border-left-color: var(--route);
   }
 
   @media (max-width: 1024px) {
     min-width: 232px;
     flex: 0 0 auto;
-
-    &:hover {
-      transform: translateY(-1px);
-    }
   }
 }
 
 .navButtonActive {
-  background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
-  border-color: color-mix(in srgb, var(--primary-color) 24%, var(--border-color));
-  box-shadow: 0 18px 36px -30px rgba(0, 0, 0, 0.32);
+  border-left-color: var(--route);
+  background: var(--surface-2);
 }
 
 .navIndex {
@@ -569,10 +489,10 @@
   justify-content: center;
   min-width: 34px;
   height: 34px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
-  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-  color: var(--text-secondary);
+  border-radius: $radius-square;
+  background: color-mix(in srgb, var(--canvas) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rule) 84%, transparent);
+  color: var(--ink-muted);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -605,19 +525,19 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--primary-hover);
+  color: color-mix(in srgb, var(--route) 84%, var(--ink));
   flex: 0 0 auto;
 }
 
 .navLabel {
-  color: var(--text-primary);
+  color: var(--ink);
   font-size: 15px;
   font-weight: 700;
   line-height: 1.2;
 }
 
 .navDescription {
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   font-size: 12px;
   line-height: 1.55;
 }
@@ -629,10 +549,10 @@
   min-width: 28px;
   height: 28px;
   padding: 0 10px;
-  border-radius: 999px;
-  background: var(--warning-bg);
-  border: 1px solid var(--warning-border);
-  color: var(--warning-text);
+  border-radius: $radius-square;
+  background: color-mix(in srgb, var(--caution) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--caution) 48%, var(--rule));
+  color: var(--caution);
   font-size: 12px;
   font-weight: 700;
   flex: 0 0 auto;
@@ -643,9 +563,9 @@
   flex-direction: column;
   min-width: 0;
   padding: clamp(20px, 3vw, 30px);
-  border-radius: 32px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-  background: color-mix(in srgb, var(--bg-primary) 76%, transparent);
+  border-radius: $radius-square;
+  border: 1px solid color-mix(in srgb, var(--rule) 84%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 76%, transparent);
 }
 
 .sectionGrid {
@@ -666,7 +586,7 @@
 
 .divider {
   height: 1px;
-  background: color-mix(in srgb, var(--border-color) 84%, transparent);
+  background: color-mix(in srgb, var(--rule) 84%, transparent);
 }
 
 .toggleRow {
@@ -675,9 +595,9 @@
   gap: 16px;
   align-items: center;
   padding: 16px 18px;
-  border-radius: 18px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
-  background: color-mix(in srgb, var(--bg-primary) 84%, transparent);
+  border-radius: $radius-square;
+  border: 1px solid color-mix(in srgb, var(--rule) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 84%, transparent);
 
   @include mobile {
     grid-template-columns: minmax(0, 1fr);
@@ -692,14 +612,14 @@
 }
 
 .toggleTitle {
-  color: var(--text-primary);
+  color: var(--ink);
   font-size: 15px;
   font-weight: 700;
   line-height: 1.2;
 }
 
 .toggleDescription {
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -712,7 +632,7 @@
 }
 
 .fieldLabel {
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -723,7 +643,7 @@
 }
 
 .fieldHint {
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   font-size: 12px;
   line-height: 1.6;
 }
@@ -737,10 +657,10 @@
   align-items: center;
   min-height: 26px;
   padding: 0 10px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
-  background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
-  color: var(--text-secondary);
+  border-radius: $radius-square;
+  border: 1px solid color-mix(in srgb, var(--rule) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 92%, transparent);
+  color: var(--ink-muted);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -751,9 +671,9 @@
   flex-direction: column;
   gap: 14px;
   padding: 18px 20px;
-  border-radius: 24px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
-  background: color-mix(in srgb, var(--bg-primary) 84%, transparent);
+  border-radius: $radius-square;
+  border: 1px solid color-mix(in srgb, var(--rule) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 84%, transparent);
 }
 
 .subsectionHeader {
@@ -764,7 +684,7 @@
 
 .subsectionTitle {
   margin: 0;
-  color: var(--text-primary);
+  color: var(--ink);
   font-size: 16px;
   font-weight: 700;
   line-height: 1.25;
@@ -772,7 +692,7 @@
 
 .subsectionDescription {
   margin: 0;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   font-size: 13px;
   line-height: 1.65;
 }
@@ -784,10 +704,10 @@
   min-width: 28px;
   height: 28px;
   padding: 0 10px;
-  border-radius: 999px;
-  background: var(--warning-bg);
-  border: 1px solid var(--warning-border);
-  color: var(--warning-text);
+  border-radius: $radius-square;
+  background: color-mix(in srgb, var(--caution) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--caution) 48%, var(--rule));
+  color: var(--caution);
   font-size: 12px;
   font-weight: 700;
 }
@@ -811,9 +731,9 @@
   flex-direction: column;
   gap: 12px;
   padding: 14px;
-  border-radius: 20px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-  background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
+  border-radius: $radius-square;
+  border: 1px solid color-mix(in srgb, var(--rule) 84%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 88%, transparent);
 }
 
 .ruleCardHeader {
@@ -825,14 +745,14 @@
 }
 
 .ruleCardTitle {
-  color: var(--text-primary);
+  color: var(--ink);
   font-size: 15px;
   font-weight: 700;
   line-height: 1.2;
 }
 
 .blockLabel {
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   font-size: 12px;
   font-weight: 700;
   line-height: 1.4;
@@ -845,12 +765,12 @@
 }
 
 .emptyState {
-  border: 1px dashed color-mix(in srgb, var(--border-color) 84%, transparent);
-  border-radius: 18px;
+  border: 1px dashed color-mix(in srgb, var(--rule) 84%, transparent);
+  border-radius: $radius-square;
   padding: 18px 16px;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   text-align: center;
-  background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
+  background: color-mix(in srgb, var(--canvas) 88%, transparent);
 }
 
 .stringList {
@@ -941,7 +861,7 @@
   .overview {
     gap: 14px;
     padding: 18px;
-    border-radius: 24px;
+    border-radius: $radius-square;
   }
 
   .overviewFocusLink {
@@ -949,13 +869,13 @@
   }
 
   .sections {
-    border-radius: 26px;
+    border-radius: $radius-square;
     padding: 16px;
   }
 
   .subsection {
     padding: 16px;
-    border-radius: 20px;
+    border-radius: $radius-square;
   }
 
   .toggleRow {

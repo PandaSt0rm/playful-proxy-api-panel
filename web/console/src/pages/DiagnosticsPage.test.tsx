@@ -132,4 +132,118 @@ describe('DiagnosticsPage', () => {
       screen.getByText('The diagnostic failed. The last successful result remains below.')
     ).toBeInTheDocument();
   });
+  it('reports complete credential failure, retries, and distinguishes partial credential data', async () => {
+    const user = userEvent.setup();
+    Object.values(providersApi).forEach((loader) =>
+      vi.mocked(loader).mockRejectedValue(new Error('offline'))
+    );
+    vi.mocked(authFilesApi.list).mockRejectedValue(new Error('offline'));
+    renderWithRouter(<DiagnosticsPage />);
+    expect(await screen.findByText('Credentials are unavailable.')).toBeInTheDocument();
+    Object.values(providersApi).forEach((loader) =>
+      vi.mocked(loader).mockResolvedValue([] as never)
+    );
+    vi.mocked(providersApi.getGeminiKeys).mockResolvedValue([{ apiKey: 'x', authIndex: 'g1' }]);
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByText('Partial credentials')).toBeInTheDocument();
+  });
+
+  it('shows setup destinations for empty provider and auth-file kinds', async () => {
+    const user = userEvent.setup();
+    Object.values(providersApi).forEach((loader) =>
+      vi.mocked(loader).mockResolvedValue([] as never)
+    );
+    renderWithRouter(<DiagnosticsPage />);
+    expect(await screen.findByRole('link', { name: 'Open setup' })).toHaveAttribute(
+      'href',
+      '/ai-providers'
+    );
+    await user.click(screen.getByRole('button', { name: 'Provider kind' }));
+    await user.click(screen.getByRole('option', { name: 'Auth file' }));
+    expect(screen.getByRole('link', { name: 'Open setup' })).toHaveAttribute('href', '/auth-files');
+  });
+
+  it('reports history failure, retries, and accepts an absent results array', async () => {
+    const user = userEvent.setup();
+    vi.mocked(aiproxyApi.diagnosticHistory)
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce({} as never)
+      .mockResolvedValue({ results: [] });
+    renderWithRouter(<DiagnosticsPage />);
+    expect(await screen.findByText('Diagnostic history is unavailable.')).toBeInTheDocument();
+    await user.click(screen.getAllByRole('button', { name: 'Retry' }).at(-1)!);
+    expect(await screen.findByText('No diagnostic history')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Refresh history' }));
+    expect(aiproxyApi.diagnosticHistory).toHaveBeenCalledTimes(3);
+  });
+
+  it('renders zero-model caution, mixed model details, tested model, and model search', async () => {
+    const user = userEvent.setup();
+    vi.mocked(aiproxyApi.diagnostics).mockResolvedValue({
+      ...result,
+      status: 'warn',
+      category: '',
+      http_status: undefined,
+      model_count: 0,
+      detail: {
+        models: ['visible', 7, 'hidden'],
+        tested_model: 'visible',
+        nested: [{ access_token: 'secret' }, 'plain'],
+      },
+    } as DiagnosticResult);
+    renderWithRouter(<DiagnosticsPage />);
+    await screen.findAllByText('Gemini prod · g1');
+    await user.click(screen.getByRole('button', { name: 'Run diagnostic' }));
+    expect(await screen.findByText('No models returned')).toBeInTheDocument();
+    expect(screen.getAllByText('visible')).toHaveLength(2);
+    await user.type(screen.getByRole('textbox', { name: 'Search models' }), 'hidden');
+    expect(screen.getAllByText('visible')).toHaveLength(1);
+    expect(screen.getByText('hidden')).toBeInTheDocument();
+    expect(screen.getAllByText('—')).not.toHaveLength(0);
+  });
+
+  it('renders fail and warning history rows, summary fallbacks, and run-again normalization', async () => {
+    const user = userEvent.setup();
+    const failed = {
+      ...result,
+      id: 'failed',
+      status: 'fail' as const,
+      http_status: undefined,
+      model_count: undefined,
+      category: 'network',
+      target: { ...result.target, kind: 'unknown-kind' },
+      check: 'connectivity' as const,
+      detail: undefined,
+    };
+    const warning = {
+      ...result,
+      id: 'warning',
+      status: 'warn' as const,
+      http_status: undefined,
+      model_count: 0,
+      category: '',
+      detail: { models: 'invalid' },
+    };
+    vi.mocked(aiproxyApi.diagnosticHistory).mockResolvedValue({
+      results: [failed, warning, result],
+    });
+    renderWithRouter(<DiagnosticsPage />);
+    const reruns = await screen.findAllByRole('button', { name: 'Run again' });
+    expect(screen.getByText('network')).toBeInTheDocument();
+    await user.click(reruns[0]);
+    expect(screen.getByRole('radio', { name: /Connectivity/ })).toBeChecked();
+    await user.click(reruns[1]);
+    expect(screen.getByRole('radio', { name: /Model catalog/ })).toBeChecked();
+  });
+  it('shows a run error without inventing a previous result when the first diagnostic fails', async () => {
+    const user = userEvent.setup();
+    vi.mocked(aiproxyApi.diagnostics).mockRejectedValue(new Error('offline'));
+    renderWithRouter(<DiagnosticsPage />);
+    await screen.findAllByText('Gemini prod · g1');
+    await user.click(screen.getByRole('button', { name: 'Run diagnostic' }));
+    expect(
+      await screen.findByText('The diagnostic failed. The last successful result remains below.')
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Previous result')).not.toBeInTheDocument();
+  });
 });

@@ -13,6 +13,7 @@ import type { BrowserContext, Page } from '@playwright/test';
  */
 
 export const VALID_KEY = 'test-management-key';
+export type SeededTheme = 'light' | 'white' | 'dark' | 'auto';
 
 // Minimal but shape-valid /config payload (snake_case as the server emits).
 const CONFIG_FIXTURE = {
@@ -34,7 +35,18 @@ const CONFIG_FIXTURE = {
 // normalizers treat as empty without crashing.
 function bodyForPath(path: string): unknown {
   if (path.endsWith('/aiproxy/readiness')) {
-    return { status: 'attention', checks: [{ id: 'fixture-warning', required: false, status: 'warn', summary: 'Review the fixture route.', action_path: '/config' }] };
+    return {
+      status: 'attention',
+      checks: [
+        {
+          id: 'fixture-warning',
+          required: false,
+          status: 'warn',
+          summary: 'Review the fixture route.',
+          action_path: '/config',
+        },
+      ],
+    };
   }
   if (path.endsWith('/aiproxy/config-revisions')) {
     return { revisions: [], next_cursor: '', current_sha256: 'fixture' };
@@ -55,20 +67,45 @@ function bodyForPath(path: string): unknown {
     return { group_by: 'provider', rows: [], limit: 20 };
   }
   if (path.endsWith('/usage/status')) {
-    return { enabled: true, path: '/data/usage.db', retention_days: 30, event_count: 0, oldest_ms: 0, newest_ms: 0 };
+    return {
+      enabled: true,
+      path: '/data/usage.db',
+      retention_days: 30,
+      event_count: 0,
+      oldest_ms: 0,
+      newest_ms: 0,
+    };
   }
   if (path.endsWith('/usage/events')) {
     return { events: [], limit: 200 };
   }
   if (path.endsWith('/usage')) {
-    return { usage: { total_requests: 0, success_count: 0, failure_count: 0, total_tokens: 0, total_input_tokens: 0, total_cached_tokens: 0, cache_hit_rate: 0, average_latency_ms: 0, average_first_byte_latency_ms: 0, tps: 0, requests_by_hour: {} }, failed_requests: 0, storage: 'sqlite' };
+    return {
+      usage: {
+        total_requests: 0,
+        success_count: 0,
+        failure_count: 0,
+        total_tokens: 0,
+        total_input_tokens: 0,
+        total_cached_tokens: 0,
+        cache_hit_rate: 0,
+        average_latency_ms: 0,
+        average_first_byte_latency_ms: 0,
+        tps: 0,
+        requests_by_hour: {},
+      },
+      failed_requests: 0,
+      storage: 'sqlite',
+    };
   }
   if (path.endsWith('/logs')) {
     return { lines: [], 'line-count': 0, 'latest-timestamp': 0 };
   }
   if (path.endsWith('/config')) return CONFIG_FIXTURE;
-  if (path.endsWith('/auth-files')) return { files: [{ name: 'fixture.json', type: 'gemini', authIndex: 'fixture-auth' }] };
-  if (path.endsWith('/gemini-api-key')) return [{ apiKey: 'fixture-secret', prefix: 'Fixture Gemini', authIndex: 'fixture-gemini' }];
+  if (path.endsWith('/auth-files'))
+    return { files: [{ name: 'fixture.json', type: 'gemini', authIndex: 'fixture-auth' }] };
+  if (path.endsWith('/gemini-api-key'))
+    return [{ apiKey: 'fixture-secret', prefix: 'Fixture Gemini', authIndex: 'fixture-gemini' }];
   if (path.endsWith('/models') || path.endsWith('/api-keys')) return [];
   return {};
 }
@@ -97,7 +134,11 @@ export async function mockManagementApi(page: Page): Promise<void> {
         ? {
             id: 'fixture-diagnostic',
             checked_at: '2026-07-23T12:00:00Z',
-            target: { kind: 'gemini-api-key', auth_index: 'fixture-gemini', label: 'Fixture Gemini' },
+            target: {
+              kind: 'gemini-api-key',
+              auth_index: 'fixture-gemini',
+              label: 'Fixture Gemini',
+            },
             check: 'models',
             status: 'pass',
             latency_ms: 12,
@@ -124,8 +165,28 @@ export async function seedEnglish(context: BrowserContext): Promise<void> {
   });
 }
 
+/** Seed the persisted theme before the application initializes. */
+export async function seedTheme(context: BrowserContext, theme: SeededTheme): Promise<void> {
+  await context.addInitScript((seededTheme) => {
+    window.localStorage.setItem(
+      'cli-proxy-theme',
+      JSON.stringify({
+        state: {
+          theme: seededTheme,
+          resolvedTheme: seededTheme === 'dark' ? 'dark' : 'light',
+        },
+        version: 0,
+      })
+    );
+  }, theme);
+}
+
 /** Log in through the UI and wait for the authenticated app shell. */
-export async function loginViaUi(page: Page, key: string = VALID_KEY, rememberPassword = false): Promise<void> {
+export async function loginViaUi(
+  page: Page,
+  key: string = VALID_KEY,
+  rememberPassword = false
+): Promise<void> {
   await page.goto('/#/login');
   const keyInput = page.locator('input[type="password"]');
   await keyInput.waitFor({ state: 'visible' });

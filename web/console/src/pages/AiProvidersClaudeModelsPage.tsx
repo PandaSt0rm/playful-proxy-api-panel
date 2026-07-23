@@ -222,13 +222,13 @@ export function AiProvidersClaudeModelsPage() {
       backAriaLabel={t('common.back')}
       hideTopBarBackButton
       hideTopBarRightAction
-      floatingAction={
-        <div className={layoutStyles.floatingActions}>
+      actionBar={
+        <div className={layoutStyles.actions}>
           <Button
             variant="secondary"
             size="sm"
             onClick={handleBack}
-            className={layoutStyles.floatingBackButton}
+            className={layoutStyles.backButton}
           >
             {t('common.back')}
           </Button>
@@ -236,7 +236,7 @@ export function AiProvidersClaudeModelsPage() {
             size="sm"
             onClick={handleApply}
             disabled={!canApply}
-            className={layoutStyles.floatingSaveButton}
+            className={layoutStyles.saveButton}
           >
             {t('ai_providers.claude_models_fetch_apply')}
           </Button>

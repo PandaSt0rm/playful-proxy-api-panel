@@ -27,14 +27,17 @@ interface RouterRenderOptions extends Omit<RenderOptions, 'wrapper'> {
   route?: string;
   /** Route pattern to mount `ui` under (enables `useParams`). Defaults to a catch-all. */
   path?: string;
+  /** Optional location state for navigation-origin behavior. */
+  state?: unknown;
 }
 
 export function renderWithRouter(
   ui: ReactElement,
-  { route = '/', path, ...options }: RouterRenderOptions = {}
+  { route = '/', path, state, ...options }: RouterRenderOptions = {}
 ) {
+  const initialEntry = state === undefined ? route : { pathname: route, state };
   return render(
-    <MemoryRouter initialEntries={[route]}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       {path ? (
         <Routes>
           <Route path={path} element={ui} />

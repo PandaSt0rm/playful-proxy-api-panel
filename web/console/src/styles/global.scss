@@ -8,13 +8,7 @@
 html {
   background: var(--canvas);
   color: var(--ink);
-  font-family:
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    'Segoe UI Variable',
-    'Segoe UI',
-    sans-serif;
+  font-family: $font-sans;
   font-size: 14px;
   line-height: 20px;
 }
@@ -24,14 +18,14 @@ body {
   background-color: var(--canvas);
   color: var(--ink);
   transition:
-    background-color 220ms ease,
-    color 140ms ease;
+    background-color $transition-control,
+    color $transition-control;
 }
 
 h1,
 h2,
 .brand-display {
-  font-family: Bahnschrift, 'Arial Narrow', 'Aptos Narrow', ui-sans-serif, system-ui, sans-serif;
+  font-family: $font-heading;
   font-weight: 600;
 }
 
@@ -42,7 +36,7 @@ h1 {
 code,
 pre,
 .data-value {
-  font-family: ui-monospace, 'Cascadia Code', 'SFMono-Regular', Consolas, monospace;
+  font-family: $font-mono;
   font-size: 12px;
   line-height: 18px;
   font-variant-numeric: tabular-nums;
@@ -77,7 +71,7 @@ body.modal-open .content {
 }
 ::-webkit-scrollbar-thumb {
   background: var(--rule);
-  border-radius: 4px;
+  border-radius: $radius-square;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--route);
@@ -100,14 +94,14 @@ body.modal-open .content {
 }
 .fade-enter-active {
   opacity: 1;
-  transition: opacity 220ms ease;
+  transition: opacity $transition-control;
 }
 .fade-exit {
   opacity: 1;
 }
 .fade-exit-active {
   opacity: 0;
-  transition: opacity 220ms ease;
+  transition: opacity $transition-control;
 }
 
 @media (max-width: 768px) {

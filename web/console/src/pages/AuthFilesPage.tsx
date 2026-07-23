@@ -8,7 +8,6 @@ import {
   useState,
   type ChangeEvent,
 } from 'react';
-import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { animate } from 'motion/mini';
@@ -60,12 +59,13 @@ import {
   type AuthFilesSortMode,
 } from '@/features/authFiles/uiState';
 import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
+import { WorkspacePage } from '@/components/workspace/WorkspacePage';
 import styles from './AuthFilesPage.module.scss';
 
 const easePower3Out = (progress: number) => 1 - (1 - progress) ** 4;
 const easePower2In = (progress: number) => progress ** 3;
-const BATCH_BAR_BASE_TRANSFORM = 'translateX(-50%)';
-const BATCH_BAR_HIDDEN_TRANSFORM = 'translateX(-50%) translateY(56px)';
+const BATCH_BAR_BASE_TRANSFORM = 'translateY(0)';
+const BATCH_BAR_HIDDEN_TRANSFORM = 'translateY(8px)';
 const DEFAULT_REGULAR_PAGE_SIZE = 9;
 const DEFAULT_COMPACT_PAGE_SIZE = 12;
 
@@ -104,7 +104,7 @@ export function AuthFilesPage() {
   const [exportingArchive, setExportingArchive] = useState(false);
   const [cleaningDisabled, setCleaningDisabled] = useState(false);
   const [uiStateHydrated, setUiStateHydrated] = useState(false);
-  const floatingBatchActionsRef = useRef<HTMLDivElement>(null);
+  const batchActionsRef = useRef<HTMLDivElement>(null);
   const batchActionAnimationRef = useRef<AnimationPlaybackControlsWithThen | null>(null);
   const previousSelectionCountRef = useRef(0);
   const selectionCountRef = useRef(0);
@@ -546,33 +546,6 @@ export function AuthFilesPage() {
     [filter, navigate]
   );
 
-  useLayoutEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const actionsEl = floatingBatchActionsRef.current;
-    if (!actionsEl) {
-      document.documentElement.style.removeProperty('--auth-files-action-bar-height');
-      return;
-    }
-
-    const updatePadding = () => {
-      const height = actionsEl.getBoundingClientRect().height;
-      document.documentElement.style.setProperty('--auth-files-action-bar-height', `${height}px`);
-    };
-
-    updatePadding();
-    window.addEventListener('resize', updatePadding);
-
-    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updatePadding);
-    ro?.observe(actionsEl);
-
-    return () => {
-      ro?.disconnect();
-      window.removeEventListener('resize', updatePadding);
-      document.documentElement.style.removeProperty('--auth-files-action-bar-height');
-    };
-  }, [batchActionBarVisible, selectionCount]);
-
   useEffect(() => {
     selectionCountRef.current = selectionCount;
     if (selectionCount > 0) {
@@ -584,7 +557,7 @@ export function AuthFilesPage() {
     if (!batchActionBarVisible) return;
     const currentCount = selectionCount;
     const previousCount = previousSelectionCountRef.current;
-    const actionsEl = floatingBatchActionsRef.current;
+    const actionsEl = batchActionsRef.current;
     if (!actionsEl) return;
 
     batchActionAnimationRef.current?.stop();
@@ -598,7 +571,7 @@ export function AuthFilesPage() {
           opacity: [0, 1],
         },
         {
-          duration: 0.28,
+          duration: 0.16,
           ease: easePower3Out,
           onComplete: () => {
             actionsEl.style.transform = BATCH_BAR_BASE_TRANSFORM;
@@ -614,7 +587,7 @@ export function AuthFilesPage() {
           opacity: [1, 0],
         },
         {
-          duration: 0.22,
+          duration: 0.16,
           ease: easePower2In,
           onComplete: () => {
             if (selectionCountRef.current === 0) {
@@ -644,7 +617,7 @@ export function AuthFilesPage() {
           const iconSrc = getAuthFileIcon(type, resolvedTheme);
           const color =
             type === 'all'
-              ? { bg: 'var(--bg-tertiary)', text: 'var(--text-primary)' }
+              ? { bg: 'var(--surface-2)', text: 'var(--ink)' }
               : getTypeColor(type, resolvedTheme);
           const buttonStyle = {
             '--filter-color': color.text,
@@ -710,12 +683,7 @@ export function AuthFilesPage() {
   })();
 
   return (
-    <div className={styles.container}>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>{t('auth_files.title')}</h1>
-        <p className={styles.description}>{t('auth_files.description')}</p>
-      </div>
-
+    <WorkspacePage title={t('auth_files.title')} description={t('auth_files.description')}>
       <Card
         title={titleNode}
         extra={
@@ -992,80 +960,77 @@ export function AuthFilesPage() {
         onChange={handlePrefixProxyChange}
       />
 
-      {batchActionBarVisible && typeof document !== 'undefined'
-        ? createPortal(
-            <div className={styles.batchActionContainer} ref={floatingBatchActionsRef}>
-              <div className={styles.batchActionBar}>
-                <div className={styles.batchActionLeft}>
-                  <span className={styles.batchSelectionText}>
-                    {t('auth_files.batch_selected', { count: selectionCount })}
-                  </span>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => selectAllVisible(pageItems)}
-                    disabled={selectablePageItems.length === 0}
-                  >
-                    {t('auth_files.batch_select_page')}
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => selectAllVisible(sorted)}
-                    disabled={selectableFilteredItems.length === 0}
-                  >
-                    {t('auth_files.batch_select_filtered')}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => invertVisibleSelection(pageItems)}
-                    disabled={selectablePageItems.length === 0}
-                  >
-                    {t('auth_files.batch_invert_page')}
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={deselectAll}>
-                    {t('auth_files.batch_deselect')}
-                  </Button>
-                </div>
-                <div className={styles.batchActionRight}>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => void batchDownload(selectedNames)}
-                    disabled={disableControls || selectedNames.length === 0}
-                  >
-                    {t('auth_files.batch_download')}
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => batchSetStatus(selectedNames, true)}
-                    disabled={batchStatusButtonsDisabled}
-                  >
-                    {t('auth_files.batch_enable')}
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => batchSetStatus(selectedNames, false)}
-                    disabled={batchStatusButtonsDisabled}
-                  >
-                    {t('auth_files.batch_disable')}
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => batchDelete(selectedNames)}
-                    disabled={disableControls || selectedNames.length === 0}
-                  >
-                    {t('common.delete')}
-                  </Button>
-                </div>
-              </div>
-            </div>,
-            document.body
-          )
-        : null}
-    </div>
+      {batchActionBarVisible && (
+        <div className={styles.batchActionContainer} ref={batchActionsRef}>
+          <div className={styles.batchActionBar}>
+            <div className={styles.batchActionLeft}>
+              <span className={styles.batchSelectionText}>
+                {t('auth_files.batch_selected', { count: selectionCount })}
+              </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => selectAllVisible(pageItems)}
+                disabled={selectablePageItems.length === 0}
+              >
+                {t('auth_files.batch_select_page')}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => selectAllVisible(sorted)}
+                disabled={selectableFilteredItems.length === 0}
+              >
+                {t('auth_files.batch_select_filtered')}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => invertVisibleSelection(pageItems)}
+                disabled={selectablePageItems.length === 0}
+              >
+                {t('auth_files.batch_invert_page')}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={deselectAll}>
+                {t('auth_files.batch_deselect')}
+              </Button>
+            </div>
+            <div className={styles.batchActionRight}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void batchDownload(selectedNames)}
+                disabled={disableControls || selectedNames.length === 0}
+              >
+                {t('auth_files.batch_download')}
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => batchSetStatus(selectedNames, true)}
+                disabled={batchStatusButtonsDisabled}
+              >
+                {t('auth_files.batch_enable')}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => batchSetStatus(selectedNames, false)}
+                disabled={batchStatusButtonsDisabled}
+              >
+                {t('auth_files.batch_disable')}
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => batchDelete(selectedNames)}
+                disabled={disableControls || selectedNames.length === 0}
+              >
+                {t('common.delete')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </WorkspacePage>
   );
 }

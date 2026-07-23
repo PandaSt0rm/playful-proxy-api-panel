@@ -21,7 +21,7 @@ interface ModalProps {
   closeDisabled?: boolean;
 }
 
-const CLOSE_ANIMATION_DURATION = 350;
+const CLOSE_ANIMATION_DURATION = 160;
 const MODAL_LOCK_CLASS = 'modal-open';
 const FOCUSABLE_SELECTOR = [
   'a[href]',
@@ -286,7 +286,7 @@ export function Modal({
         <button
           ref={closeButtonRef}
           type="button"
-          className="modal-close-floating"
+          className="modal-close"
           onClick={closeDisabled ? undefined : handleClose}
           aria-label={t('common.close')}
           disabled={closeDisabled}

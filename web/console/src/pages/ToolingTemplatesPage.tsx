@@ -30,6 +30,7 @@ import {
 } from '@/utils/toolingTemplates';
 import { SyncProfilesSection } from '@/components/sync';
 import type { ModelInfo } from '@/utils/models';
+import { WorkspacePage } from '@/components/workspace/WorkspacePage';
 import styles from './ToolingTemplatesPage.module.scss';
 
 const PLACEHOLDER_KEY_VALUE = '__placeholder__';
@@ -730,10 +731,7 @@ export function ToolingTemplatesPage() {
   const templatesError = templatesRenderError || templateMetadataError;
 
   return (
-    <div className={styles.container}>
-      <h1 className={styles.pageTitle}>
-        {t('nav.tooling_templates', { defaultValue: 'Tooling Templates' })}
-      </h1>
+    <WorkspacePage title={t('nav.tooling_templates', { defaultValue: 'Tooling Templates' })}>
       <p className={styles.pageHint}>
         {t('tooling_templates.page_hint', {
           defaultValue:
@@ -1255,6 +1253,6 @@ export function ToolingTemplatesPage() {
 
         <SyncProfilesSection />
       </div>
-    </div>
+    </WorkspacePage>
   );
 }

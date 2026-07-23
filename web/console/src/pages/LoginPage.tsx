@@ -9,7 +9,6 @@ import { IconEye, IconEyeOff } from '@/components/ui/icons';
 import { useAuthStore, useLanguageStore, useNotificationStore } from '@/stores';
 import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection';
 import { LANGUAGE_LABEL_KEYS, LANGUAGE_ORDER } from '@/utils/constants';
-import { isSupportedLanguage } from '@/utils/language';
 import { AIPROXY_MARK } from '@/assets/identity';
 import { useSplashTitleFit } from '@/hooks/useSplashTitleFit';
 import type { ApiError } from '@/types';
@@ -104,12 +103,7 @@ export function LoginPage() {
   );
   useSplashTitleFit(splashContentRef, splashTitleRef, splashTitle);
   const handleLanguageChange = useCallback(
-    (selectedLanguage: string) => {
-      if (!isSupportedLanguage(selectedLanguage)) {
-        return;
-      }
-      setLanguage(selectedLanguage);
-    },
+    (selectedLanguage: string) => setLanguage(selectedLanguage),
     [setLanguage]
   );
 

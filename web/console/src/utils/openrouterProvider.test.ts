@@ -62,4 +62,9 @@ describe('openrouterProvider', () => {
     expect(provider.baseUrl).toBe(OPENROUTER_DEFAULT_BASE_URL);
     expect(provider.models).toEqual([]);
   });
+  it('normalizes null names and recognizes a malformed URL containing the canonical host', () => {
+    expect(isOpenRouterProviderName(null)).toBe(false);
+    expect(isOpenRouterBaseUrl(null)).toBe(false);
+    expect(isOpenRouterBaseUrl('not a url openrouter.ai/path')).toBe(true);
+  });
 });

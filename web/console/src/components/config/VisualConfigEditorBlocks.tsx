@@ -302,7 +302,7 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
           {apiKeys.map((key, index) => (
             <div key={renderApiKeyIds[index] ?? `${key}-${index}`} className="item-row">
               <div className="item-meta">
-                <div className="pill">#{index + 1}</div>
+                <div className="rf-badge rf-badge--neutral">#{index + 1}</div>
                 <div className="item-title">
                   {t('config_management.visual.api_keys.input_label')}
                 </div>

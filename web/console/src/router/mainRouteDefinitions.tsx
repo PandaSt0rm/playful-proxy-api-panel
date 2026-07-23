@@ -1,5 +1,4 @@
 import { Navigate } from 'react-router-dom';
-import { LegacyWorkspaceRoute } from '@/components/workspace/LegacyWorkspaceRoute';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { AiProvidersPage } from '@/pages/AiProvidersPage';
 import { AiProvidersClaudeEditLayout } from '@/pages/AiProvidersClaudeEditLayout';
@@ -41,35 +40,19 @@ export const mainRoutes = [
   { path: '/api-keys', element: <Navigate to="/config" replace /> },
   {
     path: '/ai-providers/gemini/new',
-    element: (
-      <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-        <AiProvidersGeminiEditPage />
-      </LegacyWorkspaceRoute>
-    ),
+    element: <AiProvidersGeminiEditPage />,
   },
   {
     path: '/ai-providers/gemini/:index',
-    element: (
-      <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-        <AiProvidersGeminiEditPage />
-      </LegacyWorkspaceRoute>
-    ),
+    element: <AiProvidersGeminiEditPage />,
   },
   {
     path: '/ai-providers/codex/new',
-    element: (
-      <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-        <AiProvidersCodexEditPage />
-      </LegacyWorkspaceRoute>
-    ),
+    element: <AiProvidersCodexEditPage />,
   },
   {
     path: '/ai-providers/codex/:index',
-    element: (
-      <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-        <AiProvidersCodexEditPage />
-      </LegacyWorkspaceRoute>
-    ),
+    element: <AiProvidersCodexEditPage />,
   },
   {
     path: '/ai-providers/interactions/new',
@@ -87,19 +70,11 @@ export const mainRoutes = [
     children: [
       {
         index: true,
-        element: (
-          <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-            <AiProvidersClaudeEditPage />
-          </LegacyWorkspaceRoute>
-        ),
+        element: <AiProvidersClaudeEditPage />,
       },
       {
         path: 'models',
-        element: (
-          <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-            <AiProvidersClaudeModelsPage />
-          </LegacyWorkspaceRoute>
-        ),
+        element: <AiProvidersClaudeModelsPage />,
       },
     ],
   },
@@ -109,37 +84,21 @@ export const mainRoutes = [
     children: [
       {
         index: true,
-        element: (
-          <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-            <AiProvidersClaudeEditPage />
-          </LegacyWorkspaceRoute>
-        ),
+        element: <AiProvidersClaudeEditPage />,
       },
       {
         path: 'models',
-        element: (
-          <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-            <AiProvidersClaudeModelsPage />
-          </LegacyWorkspaceRoute>
-        ),
+        element: <AiProvidersClaudeModelsPage />,
       },
     ],
   },
   {
     path: '/ai-providers/vertex/new',
-    element: (
-      <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-        <AiProvidersVertexEditPage />
-      </LegacyWorkspaceRoute>
-    ),
+    element: <AiProvidersVertexEditPage />,
   },
   {
     path: '/ai-providers/vertex/:index',
-    element: (
-      <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-        <AiProvidersVertexEditPage />
-      </LegacyWorkspaceRoute>
-    ),
+    element: <AiProvidersVertexEditPage />,
   },
   {
     path: '/ai-providers/openai/new',
@@ -147,19 +106,11 @@ export const mainRoutes = [
     children: [
       {
         index: true,
-        element: (
-          <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-            <AiProvidersOpenAIEditPage />
-          </LegacyWorkspaceRoute>
-        ),
+        element: <AiProvidersOpenAIEditPage />,
       },
       {
         path: 'models',
-        element: (
-          <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-            <AiProvidersOpenAIModelsPage />
-          </LegacyWorkspaceRoute>
-        ),
+        element: <AiProvidersOpenAIModelsPage />,
       },
     ],
   },
@@ -169,19 +120,11 @@ export const mainRoutes = [
     children: [
       {
         index: true,
-        element: (
-          <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-            <AiProvidersOpenAIEditPage />
-          </LegacyWorkspaceRoute>
-        ),
+        element: <AiProvidersOpenAIEditPage />,
       },
       {
         path: 'models',
-        element: (
-          <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-            <AiProvidersOpenAIModelsPage />
-          </LegacyWorkspaceRoute>
-        ),
+        element: <AiProvidersOpenAIModelsPage />,
       },
     ],
   },
@@ -191,19 +134,11 @@ export const mainRoutes = [
     children: [
       {
         index: true,
-        element: (
-          <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-            <AiProvidersOpenAIEditPage />
-          </LegacyWorkspaceRoute>
-        ),
+        element: <AiProvidersOpenAIEditPage />,
       },
       {
         path: 'models',
-        element: (
-          <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-            <AiProvidersOpenAIModelsPage />
-          </LegacyWorkspaceRoute>
-        ),
+        element: <AiProvidersOpenAIModelsPage />,
       },
     ],
   },
@@ -213,19 +148,11 @@ export const mainRoutes = [
     children: [
       {
         index: true,
-        element: (
-          <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-            <AiProvidersOpenAIEditPage />
-          </LegacyWorkspaceRoute>
-        ),
+        element: <AiProvidersOpenAIEditPage />,
       },
       {
         path: 'models',
-        element: (
-          <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-            <AiProvidersOpenAIModelsPage />
-          </LegacyWorkspaceRoute>
-        ),
+        element: <AiProvidersOpenAIModelsPage />,
       },
     ],
   },
@@ -235,19 +162,11 @@ export const mainRoutes = [
     children: [
       {
         index: true,
-        element: (
-          <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-            <AiProvidersOpenAIEditPage />
-          </LegacyWorkspaceRoute>
-        ),
+        element: <AiProvidersOpenAIEditPage />,
       },
       {
         path: 'models',
-        element: (
-          <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-            <AiProvidersOpenAIModelsPage />
-          </LegacyWorkspaceRoute>
-        ),
+        element: <AiProvidersOpenAIModelsPage />,
       },
     ],
   },
@@ -257,19 +176,11 @@ export const mainRoutes = [
     children: [
       {
         index: true,
-        element: (
-          <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-            <AiProvidersOpenAIEditPage />
-          </LegacyWorkspaceRoute>
-        ),
+        element: <AiProvidersOpenAIEditPage />,
       },
       {
         path: 'models',
-        element: (
-          <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-            <AiProvidersOpenAIModelsPage />
-          </LegacyWorkspaceRoute>
-        ),
+        element: <AiProvidersOpenAIModelsPage />,
       },
     ],
   },
@@ -279,19 +190,11 @@ export const mainRoutes = [
     children: [
       {
         index: true,
-        element: (
-          <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-            <AiProvidersOpenAIEditPage />
-          </LegacyWorkspaceRoute>
-        ),
+        element: <AiProvidersOpenAIEditPage />,
       },
       {
         path: 'models',
-        element: (
-          <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-            <AiProvidersOpenAIModelsPage />
-          </LegacyWorkspaceRoute>
-        ),
+        element: <AiProvidersOpenAIModelsPage />,
       },
     ],
   },
@@ -301,125 +204,65 @@ export const mainRoutes = [
     children: [
       {
         index: true,
-        element: (
-          <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-            <AiProvidersOpenAIEditPage />
-          </LegacyWorkspaceRoute>
-        ),
+        element: <AiProvidersOpenAIEditPage />,
       },
       {
         path: 'models',
-        element: (
-          <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders" width="reading">
-            <AiProvidersOpenAIModelsPage />
-          </LegacyWorkspaceRoute>
-        ),
+        element: <AiProvidersOpenAIModelsPage />,
       },
     ],
   },
   {
     path: '/ai-providers',
-    element: (
-      <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders">
-        <AiProvidersPage />
-      </LegacyWorkspaceRoute>
-    ),
+    element: <AiProvidersPage />,
   },
   {
     path: '/ai-providers/*',
-    element: (
-      <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.aiProviders">
-        <AiProvidersPage />
-      </LegacyWorkspaceRoute>
-    ),
+    element: <AiProvidersPage />,
   },
   {
     path: '/auth-files',
-    element: (
-      <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.authFiles">
-        <AuthFilesPage />
-      </LegacyWorkspaceRoute>
-    ),
+    element: <AuthFilesPage />,
   },
   {
     path: '/auth-files/oauth-excluded',
-    element: (
-      <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.authFiles" width="reading">
-        <AuthFilesOAuthExcludedEditPage />
-      </LegacyWorkspaceRoute>
-    ),
+    element: <AuthFilesOAuthExcludedEditPage />,
   },
   {
     path: '/auth-files/oauth-model-alias',
-    element: (
-      <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.authFiles" width="reading">
-        <AuthFilesOAuthModelAliasEditPage />
-      </LegacyWorkspaceRoute>
-    ),
+    element: <AuthFilesOAuthModelAliasEditPage />,
   },
   {
     path: '/oauth',
-    element: (
-      <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.oauth">
-        <OAuthPage />
-      </LegacyWorkspaceRoute>
-    ),
+    element: <OAuthPage />,
   },
   {
     path: '/tooling-templates',
-    element: (
-      <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.toolingTemplates">
-        <ToolingTemplatesPage />
-      </LegacyWorkspaceRoute>
-    ),
+    element: <ToolingTemplatesPage />,
   },
   {
     path: '/plugins',
-    element: (
-      <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.plugins">
-        <PluginsPage />
-      </LegacyWorkspaceRoute>
-    ),
+    element: <PluginsPage />,
   },
   {
     path: '/quota',
-    element: (
-      <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.quota" width="full">
-        <QuotaPage />
-      </LegacyWorkspaceRoute>
-    ),
+    element: <QuotaPage />,
   },
   {
     path: '/usage',
-    element: (
-      <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.usage" width="full">
-        <UsagePage />
-      </LegacyWorkspaceRoute>
-    ),
+    element: <UsagePage />,
   },
   {
     path: '/config',
-    element: (
-      <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.config" width="full">
-        <ConfigPage />
-      </LegacyWorkspaceRoute>
-    ),
+    element: <ConfigPage />,
   },
   {
     path: '/logs',
-    element: (
-      <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.logs" width="full">
-        <LogsPage />
-      </LegacyWorkspaceRoute>
-    ),
+    element: <LogsPage />,
   },
   {
     path: '/system',
-    element: (
-      <LegacyWorkspaceRoute titleKey="routeFoundry.destinations.system">
-        <SystemPage />
-      </LegacyWorkspaceRoute>
-    ),
+    element: <SystemPage />,
   },
   { path: '*', element: <Navigate to="/" replace /> },
 ];

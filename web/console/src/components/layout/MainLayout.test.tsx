@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderWithRouter, screen, waitFor, userEvent } from '@/test/utils';
+import type { ReactNode } from 'react';
+import { act, fireEvent, renderWithRouter, screen, waitFor, userEvent, within } from '@/test/utils';
 import { MainLayout } from './MainLayout';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useConfigStore } from '@/stores/useConfigStore';
@@ -12,7 +13,27 @@ import i18n from '@/i18n';
 // Replace the routed page tree with a lightweight stand-in. MainLayout's
 // chrome (sidebar, header, menus) is the unit under test, not routing.
 vi.mock('@/components/common/PageTransition', () => ({
-  PageTransition: () => <div data-testid="page-content">routed-content</div>,
+  PageTransition: ({
+    render,
+    getRouteOrder,
+    getTransitionVariant,
+  }: {
+    render: (location: never) => ReactNode;
+    getRouteOrder: (pathname: string) => number | null;
+    getTransitionVariant: (from: string, to: string) => string;
+  }) => (
+    <div
+      data-testid="page-content"
+      data-order={getRouteOrder('/') ?? ''}
+      data-variant={[
+        getTransitionVariant('/', '/operations'),
+        getTransitionVariant('/auth-files', '/auth-files/a'),
+        getTransitionVariant('/ai-providers/openai', '/ai-providers/openai/models'),
+      ].join(',')}
+    >
+      {render({ pathname: '/', key: 'test' } as never)}
+    </div>
+  ),
 }));
 
 vi.mock('@/router/MainRoutes', () => ({
@@ -27,6 +48,43 @@ vi.mock('@/hooks/useHeaderRefresh', () => ({
 }));
 
 const mockedTriggerHeaderRefresh = vi.mocked(triggerHeaderRefresh);
+type MediaRecord = {
+  matches: boolean;
+  listeners: Set<() => void>;
+};
+
+function installMatchMedia(initial: (query: string) => boolean) {
+  const records = new Map<string, MediaRecord>();
+  vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => {
+    let record = records.get(query);
+    if (!record) {
+      record = { matches: initial(query), listeners: new Set() };
+      records.set(query, record);
+    }
+    return {
+      media: query,
+      get matches() {
+        return record!.matches;
+      },
+      onchange: null,
+      addEventListener: (_name: string, listener: () => void) => record!.listeners.add(listener),
+      removeEventListener: (_name: string, listener: () => void) =>
+        record!.listeners.delete(listener),
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => true,
+    } as MediaQueryList;
+  });
+  return {
+    set(query: string, matches: boolean) {
+      const record = records.get(query);
+      if (!record) throw new Error(`Unobserved media query: ${query}`);
+      record.matches = matches;
+      record.listeners.forEach((listener) => listener());
+    },
+    records,
+  };
+}
 
 beforeEach(async () => {
   localStorage.clear();
@@ -295,5 +353,185 @@ describe('MainLayout logout', () => {
     await user.click(screen.getByRole('button', { name: 'Logout' }));
 
     expect(logout).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('MainLayout responsive navigation', () => {
+  it('locks and restores the mobile viewport, traps focus, and closes on Escape', async () => {
+    installMatchMedia((query) => query === '(max-width: 768px)');
+    const user = userEvent.setup();
+    renderWithRouter(<MainLayout />);
+    const trigger = screen.getByRole('button', { name: 'Open navigation' });
+    await user.click(trigger);
+    const drawer = document.querySelector<HTMLElement>('#mobile-primary-navigation')!;
+    expect(drawer).toBeInTheDocument();
+    expect(document.body).toHaveStyle({ overflow: 'hidden' });
+    const targets = [
+      ...drawer.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      ),
+    ];
+    expect(targets[0]).toHaveFocus();
+    targets[0].focus();
+    await user.keyboard('{Shift>}{Tab}{/Shift}');
+    expect(targets.at(-1)).toHaveFocus();
+    targets.at(-1)!.focus();
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(targets[0]).toHaveFocus();
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(targets[0]).toHaveFocus();
+    Object.defineProperty(drawer, 'querySelectorAll', { configurable: true, value: () => [] });
+    fireEvent.keyDown(document, { key: 'Tab' });
+    await user.keyboard('{Escape}');
+    expect(document.querySelector('#mobile-primary-navigation')).not.toBeInTheDocument();
+    expect(document.body.style.overflow).toBe('');
+    expect(trigger).toHaveFocus();
+  });
+
+  it('closes the mobile drawer from its scrim and close button', async () => {
+    installMatchMedia((query) => query === '(max-width: 768px)');
+    const user = userEvent.setup();
+    renderWithRouter(<MainLayout />);
+    const trigger = screen.getByRole('button', { name: 'Open navigation' });
+    await user.click(trigger);
+    const closers = screen.getAllByRole('button', { name: 'Close navigation' });
+    await user.click(closers[0]);
+    expect(document.querySelector('#mobile-primary-navigation')).not.toBeInTheDocument();
+    await user.click(trigger);
+    await user.click(screen.getAllByRole('button', { name: 'Close navigation' }).at(-1)!);
+    expect(document.querySelector('#mobile-primary-navigation')).not.toBeInTheDocument();
+    await user.click(trigger);
+    const drawer = document.querySelector<HTMLElement>('#mobile-primary-navigation')!;
+    await user.click(within(drawer).getByRole('link', { name: 'Live Operations' }));
+    expect(document.querySelector('#mobile-primary-navigation')).not.toBeInTheDocument();
+  });
+
+  it('opens tablet context navigation, closes on Escape and scrim, and follows a destination', async () => {
+    installMatchMedia((query) => query.includes('min-width: 769px'));
+    const user = userEvent.setup();
+    renderWithRouter(<MainLayout />);
+    await user.click(screen.getByRole('button', { name: 'Control' }));
+    expect(document.querySelector('#tablet-context-navigation')).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(document.querySelector('#tablet-context-navigation')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Control' }));
+    await user.click(screen.getByRole('button', { name: 'Close navigation' }));
+    expect(document.querySelector('#tablet-context-navigation')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Control' }));
+    fireEvent.keyDown(document, { key: 'Enter' });
+    expect(document.querySelector('#tablet-context-navigation')).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(document.querySelector('#tablet-context-navigation')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Control' }));
+    const overlay = document.querySelector<HTMLElement>('#tablet-context-navigation')!;
+    await user.click(within(overlay).getByRole('link', { name: 'Budgets' }));
+    expect(document.querySelector('#tablet-context-navigation')).not.toBeInTheDocument();
+  });
+
+  it('reacts to media-query changes and unregisters both listeners', () => {
+    const media = installMatchMedia(() => false);
+    const rendered = renderWithRouter(<MainLayout />);
+    act(() => media.set('(max-width: 768px)', true));
+    expect(screen.getByRole('button', { name: 'Open navigation' })).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    );
+    rendered.unmount();
+    expect([...media.records.values()].every((record) => record.listeners.size === 0)).toBe(true);
+  });
+});
+
+describe('MainLayout compact utilities and route context', () => {
+  it('selects language and theme and logs out through the compact utility menu', async () => {
+    const setLanguage = vi
+      .spyOn(useLanguageStore.getState(), 'setLanguage')
+      .mockImplementation(() => {});
+    const setTheme = vi.spyOn(useThemeStore.getState(), 'setTheme').mockImplementation(() => {});
+    const logout = vi.spyOn(useAuthStore.getState(), 'logout');
+    const user = userEvent.setup();
+    renderWithRouter(<MainLayout />);
+    const utilities = screen.getByRole('button', { name: 'Utilities' });
+    await user.click(utilities);
+    await user.click(
+      within(screen.getByRole('menu', { name: 'Utilities' })).getByRole('menuitemradio', {
+        name: /Русский/,
+      })
+    );
+    expect(setLanguage).toHaveBeenCalledWith('ru');
+    await user.click(utilities);
+    await user.click(
+      within(screen.getByRole('menu', { name: 'Utilities' })).getByRole('menuitemradio', {
+        name: 'Dark',
+      })
+    );
+    expect(setTheme).toHaveBeenCalledWith('dark');
+    await user.click(utilities);
+    await user.click(
+      within(screen.getByRole('menu', { name: 'Utilities' })).getByRole('menuitem', {
+        name: 'Logout',
+      })
+    );
+    expect(logout).toHaveBeenCalled();
+  });
+
+  it('toggles desktop menus closed and closes utilities on an outside event', async () => {
+    const user = userEvent.setup();
+    renderWithRouter(<MainLayout />);
+    const language = screen.getByRole('button', { name: 'Language' });
+    await user.click(language);
+    await user.click(language);
+    expect(screen.queryByRole('menu', { name: 'Language' })).not.toBeInTheDocument();
+    const theme = screen.getByRole('button', { name: 'Theme' });
+    await user.click(theme);
+    await user.click(theme);
+    expect(screen.queryByRole('menu', { name: 'Theme' })).not.toBeInTheDocument();
+    const utilities = screen.getByRole('button', { name: 'Utilities' });
+    await user.click(utilities);
+    fireEvent.mouseDown(document.body);
+    expect(screen.queryByRole('menu', { name: 'Utilities' })).not.toBeInTheDocument();
+  });
+
+  it('renders readiness, fallback, and nested breadcrumb route labels', () => {
+    const readiness = renderWithRouter(<MainLayout />, { route: '/onboarding' });
+    expect(screen.getAllByText('Readiness')).not.toHaveLength(0);
+    readiness.unmount();
+    const fallback = renderWithRouter(<MainLayout />, { route: '/not-a-route' });
+    expect(screen.getAllByText('Overview')).not.toHaveLength(0);
+    fallback.unmount();
+    renderWithRouter(<MainLayout />, { route: '/ai-providers/gemini/new' });
+    expect(screen.getByText('New')).toBeInTheDocument();
+  });
+
+  it('executes the desktop destination close callback', async () => {
+    const user = userEvent.setup();
+    renderWithRouter(<MainLayout />);
+    await user.click(screen.getByRole('link', { name: 'Live Operations' }));
+    expect(screen.getByTestId('page-content')).toBeInTheDocument();
+  });
+});
+
+describe('MainLayout refresh failure forms', () => {
+  it.each([
+    ['plain failure', 'Refresh failed: plain failure'],
+    [{ reason: 'opaque' }, 'Refresh failed'],
+  ])('formats refresh rejection %#', async (reason, expected) => {
+    mockedTriggerHeaderRefresh.mockRejectedValueOnce(reason);
+    renderWithRouter(<MainLayout />);
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    await waitFor(() =>
+      expect(useNotificationStore.getState().notifications[0]?.message).toBe(expected)
+    );
+  });
+
+  it('absorbs an initial config fetch rejection and clears cache during manual refresh', async () => {
+    const fetchConfig = vi
+      .spyOn(useConfigStore.getState(), 'fetchConfig')
+      .mockRejectedValueOnce(new Error('startup'))
+      .mockResolvedValue({} as never);
+    const clearCache = vi.spyOn(useConfigStore.getState(), 'clearCache');
+    renderWithRouter(<MainLayout />);
+    await waitFor(() => expect(fetchConfig).toHaveBeenCalledTimes(1));
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    await waitFor(() => expect(clearCache).toHaveBeenCalled());
   });
 });

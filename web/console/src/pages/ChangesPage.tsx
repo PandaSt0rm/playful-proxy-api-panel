@@ -72,13 +72,12 @@ export function ChangesPage() {
     }
   };
 
-  const confirmRestore = async () => {
-    if (!restore) return;
+  const confirmRestore = async (revision: RevisionDetail) => {
     setPending(true);
     setError('');
     setSuccess('');
     try {
-      await aiproxyApi.restore(restore.id, current);
+      await aiproxyApi.restore(revision.id, current);
       setRestore(null);
       setSelected(null);
       setSuccess('restored');
@@ -247,7 +246,7 @@ export function ChangesPage() {
         cancelLabel={t('changes.confirm.cancel')}
         confirmLabel={t('changes.confirm.submit')}
         onClose={() => setRestore(null)}
-        onConfirm={() => void confirmRestore()}
+        onConfirm={() => void confirmRestore(restore!)}
       >
         <p>{t('changes.confirm.body')}</p>
         <code>{current}</code>

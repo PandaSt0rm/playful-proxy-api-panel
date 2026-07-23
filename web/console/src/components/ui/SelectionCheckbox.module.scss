@@ -31,48 +31,37 @@
   width: 22px;
   height: 22px;
   flex-shrink: 0;
-  border-radius: 7px;
-  border: 1px solid var(--border-color);
-  background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
-  color: var(--primary-contrast, #fff);
+  border-radius: $radius-square;
+  border: 1px solid var(--rule);
+  background: var(--surface-2);
+  color: var(--canvas);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   transition:
-    border-color $transition-fast,
-    background-color $transition-fast,
-    box-shadow $transition-fast,
-    transform $transition-fast;
+    border-color $transition-control,
+    background-color $transition-control;
 }
 
 .root:hover .box {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 16%, transparent);
-}
-
-.root:active .box {
-  transform: scale(0.95);
-}
-
-.disabled:hover .box {
-  border-color: var(--border-color);
+  border-color: var(--route);
   box-shadow: none;
 }
 
-.disabled:active .box {
-  transform: none;
+.disabled:hover .box {
+  border-color: var(--rule);
+  box-shadow: none;
 }
 
 .input:focus-visible + .box {
-  border-color: var(--primary-color);
-  box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--primary-color) 16%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--primary-color) 50%, transparent);
+  outline: 2px solid var(--route);
+  outline-offset: 2px;
+  border-color: var(--route);
 }
 
 .boxChecked {
-  border-color: var(--primary-color);
-  background: var(--primary-color);
+  border-color: var(--route);
+  background: var(--route);
 }
 
 .boxChecked svg {
@@ -81,7 +70,7 @@
 }
 
 .label {
-  color: var(--text-primary);
+  color: var(--ink);
   font-size: 14px;
   font-weight: 500;
 }

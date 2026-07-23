@@ -53,7 +53,7 @@ function seedConfig(geminiApiKeys: GeminiKeyConfig[], overrides: Partial<Config>
   getConfig.mockResolvedValue(config);
 }
 
-function getFloatingSaveButton() {
+function getSaveButton() {
   const buttons = screen.getAllByRole('button', { name: 'Save' });
   return buttons[buttons.length - 1];
 }
@@ -162,7 +162,7 @@ describe('AiProvidersGeminiEditPage - save gating', () => {
     });
     await screen.findByDisplayValue('https://x.example.com');
 
-    expect(getFloatingSaveButton()).toBeDisabled();
+    expect(getSaveButton()).toBeDisabled();
   });
 
   it('enables Save when connected on the add screen', async () => {
@@ -171,7 +171,7 @@ describe('AiProvidersGeminiEditPage - save gating', () => {
     renderWithRouter(<AiProvidersGeminiEditPage />, { route: '/ai-providers/gemini' });
     await screen.findByLabelText('API Keys:');
 
-    expect(getFloatingSaveButton()).toBeEnabled();
+    expect(getSaveButton()).toBeEnabled();
   });
 });
 
@@ -182,7 +182,7 @@ describe('AiProvidersGeminiEditPage - save contract', () => {
 
     renderWithRouter(<AiProvidersGeminiEditPage />, { route: '/ai-providers/gemini' });
     await user.type(await screen.findByLabelText('API Keys:'), 'new-key');
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() => expect(saveGeminiKeys).toHaveBeenCalledTimes(1));
     const savedList = saveGeminiKeys.mock.calls[0][0];
@@ -202,7 +202,7 @@ describe('AiProvidersGeminiEditPage - save contract', () => {
       path: GEMINI_ROUTE_PATH,
     });
     await user.type(await screen.findByLabelText('Prefix (Optional):'), 'p-');
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() => expect(saveGeminiKeys).toHaveBeenCalledTimes(1));
     const savedList = saveGeminiKeys.mock.calls[0][0];
@@ -221,7 +221,7 @@ describe('AiProvidersGeminiEditPage - save contract', () => {
 
     renderWithRouter(<AiProvidersGeminiEditPage />, { route: '/ai-providers/gemini' });
     await user.type(await screen.findByLabelText('API Keys:'), '   trimmed-key   ');
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() => expect(saveGeminiKeys).toHaveBeenCalledTimes(1));
     expect(saveGeminiKeys.mock.calls[0][0][0].apiKey).toBe('trimmed-key');
@@ -243,7 +243,7 @@ describe('AiProvidersGeminiEditPage - save contract', () => {
     });
     await screen.findByDisplayValue('https://x.example.com');
     await user.type(await screen.findByLabelText('API Keys:'), 'x');
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() => expect(saveGeminiKeys).toHaveBeenCalledTimes(1));
     expect(saveGeminiKeys.mock.calls[0][0][0].models).toEqual([{ name: 'gemini-pro' }]);
@@ -255,7 +255,7 @@ describe('AiProvidersGeminiEditPage - save contract', () => {
 
     renderWithRouter(<AiProvidersGeminiEditPage />, { route: '/ai-providers/gemini' });
     await user.type(await screen.findByLabelText('API Keys:'), 'k');
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() => expect(saveProviderConcurrencyDraft).toHaveBeenCalledTimes(1));
     expect(saveProviderConcurrencyDraft.mock.calls[0][0]).toEqual(
@@ -269,7 +269,7 @@ describe('AiProvidersGeminiEditPage - save contract', () => {
 
     renderWithRouter(<AiProvidersGeminiEditPage />, { route: '/ai-providers/gemini' });
     await user.type(await screen.findByLabelText('API Keys:'), 'k');
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() =>
       expect(
@@ -291,7 +291,7 @@ describe('AiProvidersGeminiEditPage - save contract', () => {
       path: GEMINI_ROUTE_PATH,
     });
     await user.type(await screen.findByLabelText('Prefix (Optional):'), 'p-');
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() =>
       expect(
@@ -311,7 +311,7 @@ describe('AiProvidersGeminiEditPage - save contract', () => {
 
     renderWithRouter(<AiProvidersGeminiEditPage />, { route: '/ai-providers/gemini' });
     await user.type(await screen.findByLabelText('API Keys:'), 'k');
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() =>
       expect(

@@ -28,7 +28,7 @@ function ResultStatusIcon({ status }: { status: ProviderTestResultEntry['status'
   if (status === 'success') {
     return (
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <circle cx="8" cy="8" r="8" fill="var(--success-color, #22c55e)" />
+        <circle cx="8" cy="8" r="8" fill="var(--ok, #22c55e)" />
         <path
           d="M4.5 8L7 10.5L11.5 6"
           stroke="white"
@@ -41,7 +41,7 @@ function ResultStatusIcon({ status }: { status: ProviderTestResultEntry['status'
   }
   return (
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="8" cy="8" r="8" fill="var(--danger-color, #c65746)" />
+      <circle cx="8" cy="8" r="8" fill="var(--danger, #c65746)" />
       <path
         d="M5 5L11 11M11 5L5 11"
         stroke="white"

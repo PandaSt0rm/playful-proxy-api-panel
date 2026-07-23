@@ -47,7 +47,7 @@ function seedConfig(vertexApiKeys: ProviderKeyConfig[], overrides: Partial<Confi
   getConfig.mockResolvedValue(config);
 }
 
-function getFloatingSaveButton() {
+function getSaveButton() {
   const buttons = screen.getAllByRole('button', { name: 'Save' });
   return buttons[buttons.length - 1];
 }
@@ -166,7 +166,7 @@ describe('AiProvidersVertexEditPage - save gating', () => {
     });
     await screen.findByDisplayValue('https://x.example.com');
 
-    expect(getFloatingSaveButton()).toBeDisabled();
+    expect(getSaveButton()).toBeDisabled();
   });
 
   it('enables Save when connected on the add screen', async () => {
@@ -175,7 +175,7 @@ describe('AiProvidersVertexEditPage - save gating', () => {
     renderWithRouter(<AiProvidersVertexEditPage />, { route: '/ai-providers/vertex' });
     await screen.findByLabelText('API Key:');
 
-    expect(getFloatingSaveButton()).toBeEnabled();
+    expect(getSaveButton()).toBeEnabled();
   });
 });
 
@@ -189,7 +189,7 @@ describe('AiProvidersVertexEditPage - save contract', () => {
 
     renderWithRouter(<AiProvidersVertexEditPage />, { route: '/ai-providers/vertex' });
     await user.type(await screen.findByLabelText('API Key:'), 'new-key');
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() => expect(saveVertexConfigs).toHaveBeenCalledTimes(1));
     expect(saveVertexConfigs.mock.calls[0][0]).toEqual([
@@ -211,7 +211,7 @@ describe('AiProvidersVertexEditPage - save contract', () => {
       path: VERTEX_ROUTE_PATH,
     });
     await user.type(await screen.findByLabelText('Prefix (Optional):'), 'p-');
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() => expect(saveVertexConfigs).toHaveBeenCalledTimes(1));
     const savedList = saveVertexConfigs.mock.calls[0][0];
@@ -228,7 +228,7 @@ describe('AiProvidersVertexEditPage - save contract', () => {
 
     renderWithRouter(<AiProvidersVertexEditPage />, { route: '/ai-providers/vertex' });
     await user.type(await screen.findByLabelText('API Key:'), '   trimmed-key   ');
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() => expect(saveVertexConfigs).toHaveBeenCalledTimes(1));
     const payload = saveVertexConfigs.mock.calls[0][0][0];
@@ -253,7 +253,7 @@ describe('AiProvidersVertexEditPage - save contract', () => {
     });
     await screen.findByDisplayValue('https://x.example.com');
     await user.type(await screen.findByLabelText('API Key:'), 'x');
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() => expect(saveVertexConfigs).toHaveBeenCalledTimes(1));
     expect(saveVertexConfigs.mock.calls[0][0][0].models).toEqual([
@@ -267,7 +267,7 @@ describe('AiProvidersVertexEditPage - save contract', () => {
 
     renderWithRouter(<AiProvidersVertexEditPage />, { route: '/ai-providers/vertex' });
     await user.type(await screen.findByLabelText('API Key:'), 'k');
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() => expect(saveProviderConcurrencyDraft).toHaveBeenCalledTimes(1));
     expect(saveProviderConcurrencyDraft.mock.calls[0][0]).toEqual(
@@ -281,7 +281,7 @@ describe('AiProvidersVertexEditPage - save contract', () => {
 
     renderWithRouter(<AiProvidersVertexEditPage />, { route: '/ai-providers/vertex' });
     await user.type(await screen.findByLabelText('API Key:'), 'k');
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() =>
       expect(
@@ -304,7 +304,7 @@ describe('AiProvidersVertexEditPage - save contract', () => {
       path: VERTEX_ROUTE_PATH,
     });
     await user.type(await screen.findByLabelText('Prefix (Optional):'), 'p-');
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() =>
       expect(
@@ -324,7 +324,7 @@ describe('AiProvidersVertexEditPage - save contract', () => {
 
     renderWithRouter(<AiProvidersVertexEditPage />, { route: '/ai-providers/vertex' });
     await user.type(await screen.findByLabelText('API Key:'), 'k');
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() =>
       expect(

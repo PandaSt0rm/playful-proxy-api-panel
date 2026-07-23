@@ -57,7 +57,7 @@ function seedConfig(codexApiKeys: ProviderKeyConfig[], overrides: Partial<Config
   getConfig.mockResolvedValue(config);
 }
 
-function getFloatingSaveButton() {
+function getSaveButton() {
   // The shell renders [Back, Save] in a portal; Save is the last button.
   const buttons = screen.getAllByRole('button', { name: 'Save' });
   return buttons[buttons.length - 1];
@@ -160,7 +160,7 @@ describe('AiProvidersCodexEditPage - save gating', () => {
     renderWithRouter(<AiProvidersCodexEditPage />, { route: '/ai-providers/codex' });
     await screen.findByLabelText('Base URL (Required):');
 
-    expect(getFloatingSaveButton()).toBeDisabled();
+    expect(getSaveButton()).toBeDisabled();
   });
 
   it('enables Save once a base URL is entered', async () => {
@@ -173,7 +173,7 @@ describe('AiProvidersCodexEditPage - save gating', () => {
       'https://new.example.com'
     );
 
-    expect(getFloatingSaveButton()).toBeEnabled();
+    expect(getSaveButton()).toBeEnabled();
   });
 
   it('disables Save when the connection is not connected', async () => {
@@ -186,7 +186,7 @@ describe('AiProvidersCodexEditPage - save gating', () => {
     });
     await screen.findByDisplayValue('https://x.example.com');
 
-    expect(getFloatingSaveButton()).toBeDisabled();
+    expect(getSaveButton()).toBeDisabled();
   });
 });
 
@@ -201,7 +201,7 @@ describe('AiProvidersCodexEditPage - save contract', () => {
       'https://added.example.com'
     );
     await user.type(screen.getByLabelText('API Key:'), 'new-key');
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() => expect(saveCodexConfigs).toHaveBeenCalledTimes(1));
     expect(saveCodexConfigs.mock.calls[0][0]).toEqual([
@@ -223,7 +223,7 @@ describe('AiProvidersCodexEditPage - save contract', () => {
     });
     // Make index 0 dirty by typing into its empty prefix field, then save.
     await user.type(await screen.findByLabelText('Prefix (Optional):'), 'p-');
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() => expect(saveCodexConfigs).toHaveBeenCalledTimes(1));
     const savedList = saveCodexConfigs.mock.calls[0][0];
@@ -243,7 +243,7 @@ describe('AiProvidersCodexEditPage - save contract', () => {
       await screen.findByLabelText('Base URL (Required):'),
       '   https://trimmed.example.com   '
     );
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() => expect(saveCodexConfigs).toHaveBeenCalledTimes(1));
     const payload = saveCodexConfigs.mock.calls[0][0][0];
@@ -267,7 +267,7 @@ describe('AiProvidersCodexEditPage - save contract', () => {
     });
     await screen.findByDisplayValue('https://x.example.com');
     // Trigger a save without touching the model (alias === name).
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() => expect(saveCodexConfigs).toHaveBeenCalledTimes(1));
     expect(saveCodexConfigs.mock.calls[0][0][0].models).toEqual([{ name: 'gpt-4' }]);
@@ -279,7 +279,7 @@ describe('AiProvidersCodexEditPage - save contract', () => {
 
     renderWithRouter(<AiProvidersCodexEditPage />, { route: '/ai-providers/codex' });
     await user.type(await screen.findByLabelText('Base URL (Required):'), 'https://x.example.com');
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() => expect(saveProviderConcurrencyDraft).toHaveBeenCalledTimes(1));
     expect(saveProviderConcurrencyDraft.mock.calls[0][0]).toEqual(
@@ -293,7 +293,7 @@ describe('AiProvidersCodexEditPage - save contract', () => {
 
     renderWithRouter(<AiProvidersCodexEditPage />, { route: '/ai-providers/codex' });
     await user.type(await screen.findByLabelText('Base URL (Required):'), 'https://x.example.com');
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() =>
       expect(
@@ -313,7 +313,7 @@ describe('AiProvidersCodexEditPage - save contract', () => {
 
     renderWithRouter(<AiProvidersCodexEditPage />, { route: '/ai-providers/codex' });
     await user.type(await screen.findByLabelText('Base URL (Required):'), 'https://x.example.com');
-    await user.click(getFloatingSaveButton());
+    await user.click(getSaveButton());
 
     await waitFor(() =>
       expect(

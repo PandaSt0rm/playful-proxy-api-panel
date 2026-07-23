@@ -12,7 +12,7 @@
   left: 0;
   z-index: 3;
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   padding: 0 4px;
   margin-bottom: 8px;
 }
@@ -76,45 +76,46 @@
 .columnHeader {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   text-transform: uppercase;
   margin-bottom: 8px;
   padding: 0 4px;
 }
 
 .item {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
+  background: var(--surface-1);
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
   padding: 10px 14px;
   font-size: 13px;
-  color: var(--text-primary);
+  color: var(--ink);
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
   max-width: 280px;
   position: relative;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition:
+    color $transition-control,
+    background-color $transition-control,
+    border-color $transition-control;
+  box-shadow: none;
 
   &:hover {
-    border-color: var(--primary-color);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border-color: var(--route);
     z-index: 10;
   }
 
   &.dropTarget {
-    background-color: var(--bg-secondary);
-    border-color: var(--primary-color);
+    background-color: var(--canvas);
+    border-color: var(--route);
     border-width: 2px;
   }
 
   &.selected {
-    border-color: var(--primary-color);
-    background-color: var(--bg-secondary);
-    box-shadow: 0 0 0 2px rgba($primary-color, 0.18);
+    border-color: var(--route);
+    background-color: var(--canvas);
+    box-shadow: none;
   }
 }
 
@@ -143,17 +144,17 @@
     align-items: center;
     justify-content: center;
     border: none;
-    background: var(--bg-secondary);
-    border-radius: 4px;
+    background: var(--canvas);
+    border-radius: $radius-square;
     cursor: pointer;
-    color: var(--text-secondary);
+    color: var(--ink-muted);
     transition:
       background-color 0.15s,
       color 0.15s;
 
     &:hover {
-      background: var(--border-color);
-      color: var(--text-primary);
+      background: var(--rule);
+      color: var(--ink);
     }
   }
 
@@ -200,7 +201,7 @@
 .dot {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
+  border-radius: $radius-circle;
   position: absolute;
   top: 50%;
   margin-top: -3px;
@@ -208,7 +209,7 @@
 
   &.dotLeft {
     left: -3px;
-    background: var(--text-tertiary);
+    background: var(--ink-muted);
   }
 }
 
@@ -219,9 +220,9 @@
 .providerBadge {
   font-size: 11px;
   padding: 2px 6px;
-  border-radius: 4px;
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
+  border-radius: $radius-square;
+  background: var(--canvas);
+  color: var(--ink-muted);
   margin-right: 8px;
   font-weight: 500;
 }
@@ -235,19 +236,19 @@
 
 .itemCount {
   font-size: 11px;
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
   margin-left: 8px;
-  background: var(--bg-secondary);
+  background: var(--canvas);
   padding: 1px 6px;
-  border-radius: 10px;
+  border-radius: $radius-square;
 }
 
 .contextMenu {
   position: fixed;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: var(--surface-1);
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
+  box-shadow: none;
   z-index: 9999;
   min-width: 120px;
   overflow: hidden;
@@ -256,7 +257,7 @@
   .menuItem {
     padding: 8px 12px;
     font-size: 13px;
-    color: var(--text-primary);
+    color: var(--ink);
     cursor: pointer;
     transition: background-color 0.1s;
     display: flex;
@@ -264,14 +265,14 @@
     gap: 8px;
 
     &:hover {
-      background-color: var(--bg-secondary);
+      background-color: var(--canvas);
     }
 
     &.danger {
-      color: var(--error-color);
+      color: var(--danger);
 
       &:hover {
-        background-color: var(--bg-error-light);
+        background-color: color-mix(in srgb, var(--danger) 12%, transparent);
       }
     }
   }
@@ -279,7 +280,7 @@
   .menuDivider {
     height: 1px;
     margin: 4px 0;
-    background: var(--border-color);
+    background: var(--rule);
     padding: 0;
     cursor: default;
     pointer-events: none;
@@ -287,7 +288,7 @@
 }
 
 .settingsEmpty {
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
   font-size: 13px;
   text-align: center;
   padding: $spacing-lg 0;
@@ -305,9 +306,9 @@
   gap: $spacing-md;
   align-items: center;
   padding: $spacing-sm $spacing-md;
-  border: 1px solid var(--border-color);
-  border-radius: $radius-md;
-  background: var(--bg-secondary);
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
+  background: var(--canvas);
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
@@ -320,7 +321,7 @@
   align-items: center;
   gap: $spacing-xs;
   font-size: 13px;
-  color: var(--text-primary);
+  color: var(--ink);
   min-width: 0;
 }
 
@@ -333,7 +334,7 @@
 }
 
 .settingsArrow {
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
 }
 
 .settingsActions {
@@ -344,18 +345,18 @@
 
 .settingsLabel {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
 }
 
 .settingsDelete {
   border: 0;
   background: transparent;
-  color: var(--error-color);
+  color: var(--danger);
   padding: 6px;
-  border-radius: 6px;
+  border-radius: $radius-square;
   cursor: pointer;
 
   &:hover {
-    background: var(--bg-error-light);
+    background: color-mix(in srgb, var(--danger) 12%, transparent);
   }
 }

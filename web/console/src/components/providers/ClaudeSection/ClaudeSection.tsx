@@ -197,7 +197,10 @@ export function ClaudeSection({
                   </div>
                 )}
                 {configDisabled && (
-                  <div className="status-badge warning" style={{ marginTop: 8, marginBottom: 0 }}>
+                  <div
+                    className="rf-badge rf-badge--caution"
+                    style={{ marginTop: 8, marginBottom: 0 }}
+                  >
                     {t('ai_providers.config_disabled_badge')}
                   </div>
                 )}

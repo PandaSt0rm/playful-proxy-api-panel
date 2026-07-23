@@ -13,11 +13,9 @@
   gap: $spacing-md;
   align-items: start;
   padding: $spacing-lg;
-  border: 1px solid color-mix(in srgb, var(--border-color) 86%, transparent);
-  border-radius: $radius-lg;
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--bg-primary) 94%, transparent), transparent),
-    color-mix(in srgb, var(--bg-secondary) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rule) 86%, transparent);
+  border-radius: $radius-square;
+  background: var(--surface-1);
 
   @include mobile {
     grid-template-columns: 1fr;
@@ -27,7 +25,7 @@
 
 .pageTitle {
   margin: 0;
-  color: var(--text-primary);
+  color: var(--ink);
   font-size: 28px;
   font-weight: 750;
   line-height: 1.2;
@@ -36,7 +34,7 @@
 .description {
   margin: $spacing-xs 0 0;
   max-width: 760px;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   font-size: 14px;
   line-height: 1.6;
 }
@@ -48,10 +46,10 @@
   margin-top: $spacing-sm;
   min-height: 28px;
   padding: 0 10px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
-  border-radius: $radius-full;
-  color: var(--text-secondary);
-  background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rule) 82%, transparent);
+  border-radius: $radius-square;
+  color: var(--ink-muted);
+  background: color-mix(in srgb, var(--surface-1) 88%, transparent);
   font-size: 12px;
   font-weight: 600;
 }
@@ -87,15 +85,16 @@
 
 .errorBox {
   padding: $spacing-md;
-  border: 1px solid var(--danger-color);
-  border-radius: $radius-md;
-  color: var(--danger-color);
-  background-color: rgba($error-color, 0.1);
+  border: 1px solid var(--danger);
+  border-radius: $radius-square;
+  color: var(--danger);
+  background-color: color-mix(in srgb, var(--danger) 10%, transparent);
   font-size: 14px;
 }
 
 .controlPanel {
   display: grid;
+  min-width: 0;
   grid-template-columns: minmax(220px, 1.2fr) minmax(140px, 0.6fr) minmax(140px, 0.6fr) minmax(
       240px,
       1fr
@@ -108,7 +107,7 @@
   }
 
   @include mobile {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -123,7 +122,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: var(--text-secondary);
+    color: var(--ink-muted);
     font-size: 12px;
     font-weight: 750;
   }
@@ -133,19 +132,19 @@
     width: 100%;
     min-height: 38px;
     padding: 0 11px;
-    border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-    border-radius: $radius-md;
-    color: var(--text-primary);
-    background: var(--bg-primary);
+    border: 1px solid color-mix(in srgb, var(--rule) 84%, transparent);
+    border-radius: $radius-square;
+    color: var(--ink);
+    background: var(--surface-1);
     font-size: 13px;
     outline: none;
     transition:
-      border-color $transition-fast,
-      box-shadow $transition-fast;
+      border-color $transition-control,
+      box-shadow $transition-control;
 
     &:focus {
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 16%, transparent);
+      border-color: var(--route);
+      box-shadow: none;
     }
   }
 }
@@ -162,10 +161,10 @@
   gap: 8px;
   min-height: 118px;
   padding: $spacing-md;
-  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-  border-radius: $radius-lg;
-  background: color-mix(in srgb, var(--bg-primary) 86%, transparent);
-  box-shadow: 0 14px 32px -30px rgba(0, 0, 0, 0.55);
+  border: 1px solid color-mix(in srgb, var(--rule) 84%, transparent);
+  border-radius: $radius-square;
+  background: color-mix(in srgb, var(--surface-1) 86%, transparent);
+  box-shadow: none;
 }
 
 .metricHeader {
@@ -183,21 +182,21 @@
   width: 28px;
   height: 28px;
   flex: 0 0 auto;
-  border-radius: $radius-md;
-  color: var(--primary-color);
-  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  border-radius: $radius-square;
+  color: var(--route);
+  background: color-mix(in srgb, var(--route) 12%, transparent);
 }
 
 .metricLabel {
   min-width: 0;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   font-size: 12px;
   font-weight: 650;
   line-height: 1.4;
 }
 
 .metricValue {
-  color: var(--text-primary);
+  color: var(--ink);
   font-size: 26px;
   font-weight: 760;
   line-height: 1.15;
@@ -206,7 +205,7 @@
 }
 
 .metricSub {
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
   font-size: 12px;
   line-height: 1.45;
 }
@@ -214,16 +213,16 @@
 .emptyState,
 .emptyInline,
 .emptyCell {
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   font-size: 14px;
 }
 
 .emptyState {
   padding: $spacing-lg;
-  border: 1px dashed var(--border-color);
-  border-radius: $radius-md;
+  border: 1px dashed var(--rule);
+  border-radius: $radius-square;
   text-align: center;
-  background: color-mix(in srgb, var(--bg-secondary) 72%, transparent);
+  background: color-mix(in srgb, var(--canvas) 72%, transparent);
 }
 
 .insightGrid {
@@ -265,12 +264,12 @@
   min-width: 0;
   min-height: 112px;
   padding: $spacing-sm;
-  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
-  border-radius: $radius-md;
-  background: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rule) 82%, transparent);
+  border-radius: $radius-square;
+  background: color-mix(in srgb, var(--canvas) 70%, transparent);
 
   strong {
-    color: var(--text-primary);
+    color: var(--ink);
     font-size: 22px;
     line-height: 1.1;
     font-variant-numeric: tabular-nums;
@@ -278,7 +277,7 @@
 
   span {
     min-width: 0;
-    color: var(--text-tertiary);
+    color: var(--ink-muted);
     font-size: 12px;
     line-height: 1.35;
     overflow-wrap: anywhere;
@@ -286,7 +285,7 @@
 }
 
 .activityWindowLabel {
-  color: var(--text-secondary) !important;
+  color: var(--ink-muted) !important;
   font-weight: 750;
 }
 
@@ -315,7 +314,7 @@
 
   > span {
     writing-mode: vertical-rl;
-    color: var(--text-tertiary);
+    color: var(--ink-muted);
     font-size: 10px;
     font-weight: 650;
     transform: rotate(180deg);
@@ -330,24 +329,20 @@
   height: 94px;
   min-width: 14px;
   overflow: hidden;
-  border-radius: $radius-sm;
-  background: color-mix(in srgb, var(--bg-hover) 55%, transparent);
+  border-radius: $radius-square;
+  background: color-mix(in srgb, var(--surface-2) 55%, transparent);
 }
 
 .activityBarFill {
   display: block;
   width: 100%;
   min-height: 4px;
-  border-radius: inherit;
-  background: linear-gradient(
-    180deg,
-    var(--primary-color),
-    color-mix(in srgb, var(--primary-color) 70%, #22c55e)
-  );
+  border-radius: $radius-square;
+  background: var(--route);
 }
 
 .activityBarWarning .activityBarFill {
-  background: linear-gradient(180deg, $warning-color, $error-color);
+  background: var(--caution);
 }
 
 .healthSummary {
@@ -365,12 +360,12 @@
 
   span,
   small {
-    color: var(--text-secondary);
+    color: var(--ink-muted);
     font-size: 12px;
   }
 
   strong {
-    color: var(--text-primary);
+    color: var(--ink);
     font-size: 30px;
     line-height: 1.05;
     font-variant-numeric: tabular-nums;
@@ -386,22 +381,22 @@
   width: 100%;
   height: 12px;
   overflow: hidden;
-  border-radius: $radius-full;
-  background: color-mix(in srgb, var(--bg-hover) 70%, transparent);
+  border-radius: $radius-square;
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
 
   span {
     display: block;
     min-width: 0;
-    transition: width $transition-fast;
+    transition: width $transition-control;
   }
 }
 
 .healthSuccess {
-  background: $success-color;
+  background: var(--ok);
 }
 
 .healthFailure {
-  background: $error-color;
+  background: var(--danger);
 }
 
 .compactFacts {
@@ -416,9 +411,9 @@
   div {
     min-width: 0;
     padding: $spacing-sm;
-    border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
-    border-radius: $radius-md;
-    background: color-mix(in srgb, var(--bg-secondary) 64%, transparent);
+    border: 1px solid color-mix(in srgb, var(--rule) 82%, transparent);
+    border-radius: $radius-square;
+    background: color-mix(in srgb, var(--canvas) 64%, transparent);
   }
 
   span,
@@ -430,13 +425,13 @@
 
   span {
     margin-bottom: 5px;
-    color: var(--text-tertiary);
+    color: var(--ink-muted);
     font-size: 12px;
     font-weight: 650;
   }
 
   strong {
-    color: var(--text-primary);
+    color: var(--ink);
     font-size: 15px;
     line-height: 1.35;
     font-variant-numeric: tabular-nums;
@@ -465,7 +460,7 @@
   min-width: 0;
 
   strong {
-    color: var(--text-primary);
+    color: var(--ink);
     font-size: 13px;
     font-variant-numeric: tabular-nums;
   }
@@ -476,7 +471,7 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   font-size: 13px;
   font-weight: 700;
 }
@@ -485,25 +480,25 @@
   width: 10px;
   height: 10px;
   flex: 0 0 auto;
-  border-radius: $radius-full;
+  border-radius: $radius-square;
 }
 
 .breakdownTrack {
   height: 9px;
   overflow: hidden;
-  border-radius: $radius-full;
-  background: color-mix(in srgb, var(--bg-hover) 72%, transparent);
+  border-radius: $radius-square;
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
 }
 
 .breakdownFill {
   display: block;
   height: 100%;
   min-width: 3px;
-  border-radius: inherit;
+  border-radius: $radius-square;
 }
 
 .breakdownPercent {
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
   font-size: 12px;
   font-weight: 700;
   text-align: right;
@@ -541,7 +536,7 @@
 
   h3 {
     margin: 0 0 $spacing-sm;
-    color: var(--text-secondary);
+    color: var(--ink-muted);
     font-size: 13px;
     font-weight: 760;
   }
@@ -553,7 +548,7 @@
   gap: 6px;
   min-width: 0;
   padding: 9px 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 70%, transparent);
 
   &:last-child {
     border-bottom: 0;
@@ -567,7 +562,7 @@
   min-width: 0;
 
   small {
-    color: var(--text-tertiary);
+    color: var(--ink-muted);
     font-size: 12px;
   }
 }
@@ -575,19 +570,15 @@
 .topListBar {
   height: 6px;
   overflow: hidden;
-  border-radius: $radius-full;
-  background: color-mix(in srgb, var(--bg-hover) 72%, transparent);
+  border-radius: $radius-square;
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
 
   span {
     display: block;
     height: 100%;
     min-width: 4px;
-    border-radius: inherit;
-    background: linear-gradient(
-      90deg,
-      var(--primary-color),
-      color-mix(in srgb, var(--primary-color) 55%, #22c55e)
-    );
+    border-radius: $radius-square;
+    background: var(--route);
   }
 }
 
@@ -606,14 +597,16 @@
 
 .segmentedControl {
   display: inline-flex;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   align-items: center;
   gap: 4px;
-  max-width: 100%;
-  padding: 4px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-  border-radius: $radius-full;
-  background: color-mix(in srgb, var(--bg-secondary) 78%, transparent);
   overflow-x: auto;
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--rule) 84%, transparent);
+  border-radius: $radius-square;
+  background: var(--surface-1);
   scrollbar-width: none;
 
   &::-webkit-scrollbar {
@@ -624,19 +617,19 @@
     @include button-reset;
     min-height: 30px;
     padding: 0 12px;
-    border-radius: $radius-full;
-    color: var(--text-secondary);
+    border-radius: $radius-square;
+    color: var(--ink-muted);
     font-size: 12px;
     font-weight: 700;
     white-space: nowrap;
     transition:
-      color $transition-fast,
-      background-color $transition-fast,
-      border-color $transition-fast;
+      color $transition-control,
+      background-color $transition-control,
+      border-color $transition-control;
 
     &:hover {
-      color: var(--text-primary);
-      background: color-mix(in srgb, var(--bg-hover) 84%, transparent);
+      color: var(--ink);
+      background: color-mix(in srgb, var(--surface-2) 84%, transparent);
     }
   }
 
@@ -650,20 +643,18 @@
 }
 
 .segmentActive {
-  color: var(--text-primary) !important;
-  background: var(--bg-primary) !important;
-  box-shadow: 0 8px 20px -18px rgba(0, 0, 0, 0.6);
+  color: var(--ink) !important;
+  background: var(--surface-1) !important;
+  box-shadow: none;
 }
 
 .chartFrame {
   width: 100%;
   overflow-x: auto;
   padding: $spacing-md;
-  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
-  border-radius: $radius-lg;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--bg-primary) 90%, transparent), transparent),
-    color-mix(in srgb, var(--bg-secondary) 64%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rule) 82%, transparent);
+  border-radius: $radius-square;
+  background: var(--surface-2);
 }
 
 .lineChart {
@@ -674,26 +665,26 @@
 }
 
 .chartArea {
-  fill: color-mix(in srgb, var(--primary-color) 13%, transparent);
+  fill: color-mix(in srgb, var(--route) 13%, transparent);
   stroke: none;
 }
 
 .chartLine {
   fill: none;
-  stroke: var(--primary-color);
+  stroke: var(--route);
   stroke-width: 3;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .chartPoint {
-  fill: var(--bg-primary);
-  stroke: var(--primary-color);
+  fill: var(--surface-1);
+  stroke: var(--route);
   stroke-width: 2;
 }
 
 .chartLabel {
-  fill: var(--text-tertiary);
+  fill: var(--ink-muted);
   font-size: 11px;
   font-weight: 600;
 }
@@ -712,26 +703,26 @@
   th,
   td {
     padding: 11px 12px;
-    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--rule) 76%, transparent);
     text-align: left;
     vertical-align: middle;
     white-space: nowrap;
   }
 
   th {
-    color: var(--text-secondary);
+    color: var(--ink-muted);
     font-size: 12px;
     font-weight: 700;
-    background: color-mix(in srgb, var(--bg-secondary) 72%, transparent);
+    background: color-mix(in srgb, var(--canvas) 72%, transparent);
   }
 
   td {
-    color: var(--text-primary);
+    color: var(--ink);
     font-variant-numeric: tabular-nums;
   }
 
   tbody tr:hover {
-    background: color-mix(in srgb, var(--bg-hover) 74%, transparent);
+    background: color-mix(in srgb, var(--surface-2) 74%, transparent);
   }
 }
 
@@ -746,7 +737,7 @@
   max-width: 240px;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--text-tertiary);
+  color: var(--ink-muted);
   font-size: 12px;
 }
 
@@ -763,7 +754,7 @@
   max-width: 280px;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--text-secondary) !important;
+  color: var(--ink-muted) !important;
 }
 
 .emptyCell {
@@ -777,19 +768,19 @@
   align-items: center;
   min-height: 24px;
   padding: 2px 8px;
-  border-radius: $radius-full;
+  border-radius: $radius-square;
   font-size: 12px;
   font-weight: 700;
 }
 
 .statusOk {
-  color: var(--success-color);
-  background: rgba($success-color, 0.1);
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 10%, transparent);
 }
 
 .statusFailed {
-  color: var(--danger-color);
-  background: rgba($error-color, 0.1);
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
 }
 
 .statusPill {
@@ -797,9 +788,9 @@
   align-items: center;
   min-height: 24px;
   padding: 2px 8px;
-  border-radius: $radius-full;
-  color: var(--text-secondary);
-  background: color-mix(in srgb, var(--bg-hover) 74%, transparent);
+  border-radius: $radius-square;
+  color: var(--ink-muted);
+  background: color-mix(in srgb, var(--surface-2) 74%, transparent);
   font-size: 12px;
   font-weight: 700;
 }
@@ -824,20 +815,20 @@
 .managementPanel {
   min-width: 0;
   padding: $spacing-md;
-  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
-  border-radius: $radius-lg;
-  background: color-mix(in srgb, var(--bg-primary) 86%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rule) 82%, transparent);
+  border-radius: $radius-square;
+  background: color-mix(in srgb, var(--surface-1) 86%, transparent);
 
   h3 {
     margin: 0 0 6px;
-    color: var(--text-primary);
+    color: var(--ink);
     font-size: 15px;
     font-weight: 760;
   }
 
   p {
     margin: 0 0 $spacing-md;
-    color: var(--text-secondary);
+    color: var(--ink-muted);
     font-size: 13px;
     line-height: 1.45;
   }
@@ -857,7 +848,7 @@
 
 .panelHint {
   margin: $spacing-sm 0 0 !important;
-  color: var(--text-tertiary) !important;
+  color: var(--ink-muted) !important;
   font-size: 12px !important;
 }
 
@@ -872,16 +863,16 @@
     width: 100%;
     min-height: 38px;
     padding: 0 11px;
-    border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-    border-radius: $radius-md;
-    color: var(--text-primary);
-    background: var(--bg-primary);
+    border: 1px solid color-mix(in srgb, var(--rule) 84%, transparent);
+    border-radius: $radius-square;
+    color: var(--ink);
+    background: var(--surface-1);
     font-size: 13px;
     outline: none;
 
     &:focus {
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 16%, transparent);
+      border-color: var(--route);
+      box-shadow: none;
     }
   }
 
@@ -914,10 +905,10 @@
   span {
     min-height: 28px;
     padding: 0 9px;
-    border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
-    border-radius: $radius-full;
-    color: var(--text-secondary);
-    background: color-mix(in srgb, var(--bg-secondary) 74%, transparent);
+    border: 1px solid color-mix(in srgb, var(--rule) 80%, transparent);
+    border-radius: $radius-square;
+    color: var(--ink-muted);
+    background: color-mix(in srgb, var(--canvas) 74%, transparent);
     font-size: 12px;
     font-weight: 650;
   }
@@ -926,8 +917,8 @@
     cursor: pointer;
 
     &:hover {
-      color: var(--text-primary);
-      border-color: var(--primary-color);
+      color: var(--ink);
+      border-color: var(--route);
     }
   }
 }
@@ -945,9 +936,9 @@
   align-items: start;
   min-width: 0;
   padding: $spacing-sm;
-  border: 1px solid color-mix(in srgb, var(--border-color) 78%, transparent);
-  border-radius: $radius-md;
-  background: color-mix(in srgb, var(--bg-secondary) 62%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rule) 78%, transparent);
+  border-radius: $radius-square;
+  background: color-mix(in srgb, var(--canvas) 62%, transparent);
 
   @include tablet {
     grid-template-columns: 1fr;
@@ -967,12 +958,12 @@
   }
 
   strong {
-    color: var(--text-primary);
+    color: var(--ink);
     font-size: 13px;
   }
 
   span {
-    color: var(--text-tertiary);
+    color: var(--ink-muted);
     font-size: 12px;
   }
 }
@@ -995,13 +986,13 @@
 
   span {
     margin-bottom: 4px;
-    color: var(--text-tertiary);
+    color: var(--ink-muted);
     font-size: 11px;
     font-weight: 700;
   }
 
   strong {
-    color: var(--text-primary);
+    color: var(--ink);
     font-size: 12px;
     overflow-wrap: anywhere;
   }
@@ -1029,7 +1020,7 @@
   min-width: 0;
 
   small {
-    color: var(--text-tertiary);
+    color: var(--ink-muted);
     font-size: 11px;
   }
 }
@@ -1045,14 +1036,14 @@
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: var(--text-secondary);
+    color: var(--ink-muted);
     font-size: 12px;
     font-weight: 700;
     white-space: nowrap;
   }
 
   strong {
-    color: var(--text-primary);
+    color: var(--ink);
     font-size: 12px;
     font-variant-numeric: tabular-nums;
   }
@@ -1061,24 +1052,20 @@
 .quotaTrack {
   height: 7px;
   overflow: hidden;
-  border-radius: $radius-full;
-  background: color-mix(in srgb, var(--bg-hover) 72%, transparent);
+  border-radius: $radius-square;
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
 
   span {
     display: block;
     height: 100%;
     min-width: 3px;
-    border-radius: inherit;
-    background: linear-gradient(
-      90deg,
-      var(--primary-color),
-      color-mix(in srgb, var(--primary-color) 55%, #22c55e)
-    );
+    border-radius: $radius-square;
+    background: var(--route);
   }
 }
 
 .quotaMessage {
-  color: var(--text-secondary);
+  color: var(--ink-muted);
   font-size: 12px;
   line-height: 1.45;
 }
@@ -1109,12 +1096,12 @@
   align-items: center;
   min-width: 0;
   padding: 9px 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 70%, transparent);
 
   strong {
     min-width: 0;
     overflow-wrap: anywhere;
-    color: var(--text-primary);
+    color: var(--ink);
     font-size: 13px;
   }
 
@@ -1125,11 +1112,11 @@
     justify-content: center;
     width: 30px;
     height: 30px;
-    border-radius: $radius-md;
-    color: var(--danger-color);
+    border-radius: $radius-square;
+    color: var(--danger);
 
     &:hover {
-      background: rgba($error-color, 0.1);
+      background: color-mix(in srgb, var(--danger) 10%, transparent);
     }
   }
 

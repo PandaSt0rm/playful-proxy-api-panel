@@ -1,0 +1,72 @@
+@use '../../styles/variables' as *;
+
+.field {
+  position: relative;
+}
+
+.input {
+  padding-right: 40px;
+}
+
+.disclosure {
+  position: absolute;
+  inset: 0 0 0 auto;
+  display: flex;
+  width: 40px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.disclosure:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.chevron {
+  margin-left: 4px;
+  opacity: 0.7;
+}
+
+.dropdown {
+  position: absolute;
+  z-index: $z-dropdown;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--rule);
+  background: var(--surface-1);
+}
+
+.option {
+  display: flex;
+  min-height: 44px;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8px 12px 8px 10px;
+  border-left: 2px solid transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.option:hover,
+.optionHighlighted {
+  border-left-color: var(--route);
+  background: var(--surface-2);
+}
+
+.optionValue {
+  font-weight: 500;
+}
+
+.optionLabel {
+  color: var(--ink-muted);
+  font-size: 0.85em;
+}
