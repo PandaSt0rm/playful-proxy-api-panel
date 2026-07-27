@@ -26,6 +26,10 @@ import {
   getProviderConcurrencyOverride,
   parseConcurrencyLimitDraft,
 } from '@/utils/upstreamConcurrency';
+import {
+  ProviderDebugAction,
+  buildSingleKeyTarget,
+} from '@/components/providerDebug';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
 
 type LocationState = { fromAiProviders?: boolean } | null;
@@ -348,6 +352,18 @@ export function AiProvidersVertexEditPage() {
     updateConfigValue,
   ]);
 
+  // Built from the draft form so the bench debugs what is on screen, saved or not.
+  const debugTarget = useMemo(
+    () =>
+      buildSingleKeyTarget({
+        providerLabel: 'Vertex',
+        family: 'generic',
+        routedKind: 'vertex-api-key',
+        form,
+      }),
+    [form]
+  );
+
   return (
     <SecondaryScreenShell
       ref={swipeRef}
@@ -463,6 +479,7 @@ export function AiProvidersVertexEditPage() {
           </>
         )}
       </Card>
+      <ProviderDebugAction target={debugTarget} />
     </SecondaryScreenShell>
   );
 }

@@ -24,6 +24,10 @@ import {
   type ProviderTestResultEntry,
 } from '@/components/providers';
 import type { ClaudeEditOutletContext } from './AiProvidersClaudeEditLayout';
+import {
+  ProviderDebugAction,
+  buildSingleKeyTarget,
+} from '@/components/providerDebug';
 import styles from './AiProvidersPage.module.scss';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
 
@@ -322,6 +326,18 @@ export function AiProvidersClaudeEditPage() {
     t,
     testModel,
   ]);
+
+  // Built from the draft form so the bench debugs what is on screen, saved or not.
+  const debugTarget = useMemo(
+    () =>
+      buildSingleKeyTarget({
+        providerLabel: 'Claude',
+        family: 'claude',
+        routedKind: 'claude-api-key',
+        form,
+      }),
+    [form]
+  );
 
   return (
     <SecondaryScreenShell
@@ -726,6 +742,7 @@ export function AiProvidersClaudeEditPage() {
           </div>
         )}
       </Card>
+      <ProviderDebugAction target={debugTarget} />
     </SecondaryScreenShell>
   );
 }

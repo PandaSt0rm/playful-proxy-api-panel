@@ -41,16 +41,20 @@ vi.mock('@/components/ui/Modal', () => ({
     title,
     onClose,
     className,
+    width,
     children,
   }: {
     open: boolean;
     title: string;
     onClose: () => void;
     className?: string;
+    // The real Modal applies `width` as an inline style, which is the only reason
+    // Drawer's size prop works at all — the mock has to reproduce that.
+    width?: number | string;
     children: React.ReactNode;
   }) =>
     open ? (
-      <div role="dialog" aria-label={title} className={className}>
+      <div role="dialog" aria-label={title} className={className} style={{ width }}>
         <button type="button" onClick={onClose}>
           Close modal
         </button>
@@ -244,9 +248,22 @@ describe('Route Foundry operator primitives', () => {
         Drawer body
       </Drawer>
     );
-    expect(screen.getByRole('dialog', { name: 'Details' })).toHaveClass('rf-drawer');
+    const drawer = screen.getByRole('dialog', { name: 'Details' });
+    expect(drawer).toHaveClass('rf-drawer');
+    expect(drawer).not.toHaveClass('rf-drawer--wide');
+    // Width has to arrive as a prop: Modal renders it inline, which beats any class rule.
+    expect(drawer).toHaveStyle({ width: '560px' });
     await user.click(screen.getByRole('button', { name: 'Close modal' }));
     expect(onClose).toHaveBeenCalledTimes(2);
+
+    rerender(
+      <Drawer open title="Details" onClose={onClose} size="wide">
+        Drawer body
+      </Drawer>
+    );
+    const wideDrawer = screen.getByRole('dialog', { name: 'Details' });
+    expect(wideDrawer).toHaveClass('rf-drawer--wide');
+    expect(wideDrawer).toHaveStyle({ width: '1080px' });
   });
 
   it('renders diff, editor, table sort metadata, and stable row fallbacks', async () => {

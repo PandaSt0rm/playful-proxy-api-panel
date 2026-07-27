@@ -700,6 +700,129 @@
     "model_select_all": "全选",
     "model_filter_empty": "暂无可筛选模型"
   },
+  "provider_debug": {
+    "open": "调试",
+    "title": "提供商调试 — {{provider}}",
+    "run": "运行检查",
+    "cancel": "取消",
+    "checks_heading": "检查项",
+    "trace_heading": "追踪",
+    "empty": "尚未运行检查。选择需要的检查项并运行。",
+    "empty_trace": "运行检查后，将在此显示通信内容。",
+    "awaiting": "选择一项已完成的检查以查看其通信内容。",
+    "key_label": "密钥 #{{index}}",
+    "key_count_other": "{{count}} 个密钥",
+    "copy_trace": "复制追踪",
+    "copy_success": "追踪已复制",
+    "copy_failed": "无法复制追踪",
+    "request_heading": "请求",
+    "response_heading": "响应",
+    "hop": {
+      "you": "你"
+    },
+    "status": {
+      "pass": "通过",
+      "warn": "警告",
+      "fail": "失败",
+      "skipped": "已跳过",
+      "pending": "等待中",
+      "running": "运行中"
+    },
+    "checks": {
+      "reachability": {
+        "label": "可达性",
+        "description": "不发送凭据，因此无效密钥不会被误认为服务中断。"
+      },
+      "auth": {
+        "label": "密钥",
+        "description": "逐个验证已配置的密钥。"
+      },
+      "catalog": {
+        "label": "模型目录",
+        "description": "比较已配置的模型与提供商实际提供的模型。"
+      },
+      "completion": {
+        "label": "补全",
+        "description": "对所选模型发送一次简短补全请求。"
+      },
+      "sse_format": {
+        "label": "流式格式",
+        "description": "检查流式响应是否为规范 SSE 并正常结束。"
+      },
+      "tools": {
+        "label": "工具调用",
+        "description": "提供一个工具，观察模型是否调用它。"
+      },
+      "json_mode": {
+        "label": "JSON 模式",
+        "description": "请求结构化输出并解析返回内容。"
+      },
+      "vision": {
+        "label": "视觉",
+        "description": "发送内联图像片段并检查是否被接受。"
+      }
+    },
+    "result": {
+      "no_base_url": "请先设置基础 URL，再运行检查。",
+      "no_key": "未配置 API 密钥，已跳过此检查。",
+      "unreachable": "无法连接到提供商 — {{detail}}",
+      "reachable": "提供商返回 HTTP {{status}}。",
+      "key_accepted": "密钥已被接受。",
+      "key_rejected": "密钥被拒绝 · {{detail}}。请检查密钥值或基础 URL。",
+      "key_inconclusive": "提供商返回 HTTP {{status}} · {{detail}}。该密钥可能仍可用于补全请求。",
+      "catalog_failed": "无法读取模型列表 · {{detail}}",
+      "catalog_empty": "提供商未返回任何模型。",
+      "catalog_drift_other": "有 {{count}} 个已配置的模型在提供商处不可用：{{models}}。提供商共提供 {{upstream}} 个。",
+      "catalog_ok": "已配置的 {{configured}} 个模型均可用，提供商共提供 {{upstream}} 个。",
+      "no_model": "未选择模型，已跳过此检查。",
+      "completion_failed": "补全失败 · {{detail}}",
+      "completion_shape": "提供商已响应，但响应中没有消息内容。",
+      "completion_ok": "补全成功，共 {{tokens}} 个令牌。",
+      "stream_failed": "流式请求失败 · {{detail}}",
+      "stream_not_sse": "响应不是服务器推送事件。该提供商可能不支持流式传输。",
+      "stream_unterminated": "收到 {{chunks}} 个数据块，但缺少 [DONE] 结束标记；流提前结束。",
+      "stream_ok": "已流式接收 {{chunks}} 个数据块并正常结束。",
+      "tools_failed": "工具调用被拒绝 · {{detail}}",
+      "tools_no_call": "工具已被接受，但模型选择不调用。",
+      "tools_ok": "模型返回了 {{count}} 次工具调用。",
+      "json_failed": "JSON 模式被拒绝 · {{detail}}",
+      "json_not_json": "JSON 模式已被接受，但回复无法解析为 JSON。",
+      "json_ok": "JSON 模式返回了有效的 JSON。",
+      "vision_failed": "图像输入被拒绝 · {{detail}}",
+      "vision_ok": "图像输入已被接受。",
+      "routed": "{{message}}（{{category}}）",
+      "routed_failed": "路由器无法执行此检查 — {{detail}}",
+      "routed_unsupported": "此检查没有对应的路由版本，已跳过。",
+      "payload_ok": "提供商已接受该请求（HTTP {{status}}）。",
+      "payload_failed": "提供商拒绝了该请求（HTTP {{status}}）。",
+      "payload_invalid": "JSON 格式无效 — {{detail}}",
+      "family_unsupported": "直连模式不支持该提供商，已跳过此检查。请改用经由路由的模式。"
+    },
+    "tabs_label": "工作台视图",
+    "tab_checks": "检查项",
+    "tab_matrix": "模型矩阵",
+    "model_label": "待测模型",
+    "billable_tag": "计费",
+    "run_matrix": "运行 {{count}} 个单元格",
+    "matrix_hint": "为每个模型与每个密钥各发送一次最小补全请求。每个单元格都会计费。",
+    "matrix_empty": "请至少添加一个模型和一个 API 密钥以构建矩阵。",
+    "matrix_model_heading": "模型",
+    "matrix_excluded": "超出本次运行的单元格上限。",
+    "matrix_capped": "已限制为 {{cap}} 个单元格；另有 {{count}} 个未运行。",
+    "confirm_title": "运行计费检查",
+    "confirm_body": "这将向提供商发送 {{count}} 个真实请求，并由其计费。",
+    "confirm_action": "运行并计费",
+    "lane_label": "执行路径",
+    "lane_direct": "直连",
+    "lane_routed": "经由路由",
+    "tab_lab": "请求实验室",
+    "lab_label": "请求体",
+    "lab_hint": "发送任意请求体并查看原始响应。每次发送都会计费。",
+    "lab_placeholder": "{ \"model\": \"…\", \"messages\": [ … ] }",
+    "lab_seed": "插入示例",
+    "lab_send": "发送请求",
+    "lab_invalid": "JSON 格式无效 — {{detail}}"
+  },
   "auth_files": {
     "title": "认证文件管理",
     "title_section": "认证文件",

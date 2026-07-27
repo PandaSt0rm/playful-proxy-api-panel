@@ -110,7 +110,13 @@
 .rf-field,
 .rf-dialog__body,
 .rf-drawer__body {
+  display: flex;
+  flex-direction: column;
+  // min-width/min-height 0 keep a monospace <pre> from forcing the flex row wider than
+  // the viewport, which the e2e suite asserts against at every breakpoint.
   min-width: 0;
+  min-height: 0;
+  height: 100%;
 }
 
 .rf-badge {
@@ -241,12 +247,24 @@
   border-top: 1px solid var(--rule);
 }
 
+// Width comes from the Drawer component's `width` prop: Modal applies it as an inline
+// style, which would override anything declared here.
 .rf-drawer {
-  width: min(560px, calc(100vw - 32px));
   margin-left: auto;
   align-self: stretch;
   max-height: 100dvh;
 }
+
+// The wide drawer hosts a full workspace, so its body fills the panel instead of
+// scrolling inside the standard 65vh modal body.
+.rf-drawer--wide {
+  .modal-body {
+    max-height: none;
+    flex: 1;
+    min-height: 0;
+  }
+}
+
 
 .rf-table-viewport {
   min-width: 0;

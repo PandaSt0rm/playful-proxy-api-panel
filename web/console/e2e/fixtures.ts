@@ -34,6 +34,23 @@ const CONFIG_FIXTURE = {
 // Per-endpoint bodies; anything unmatched returns {} which the hardened
 // normalizers treat as empty without crashing.
 function bodyForPath(path: string): unknown {
+  // The management api-call proxy, used by provider model discovery and by the provider
+  // debug bench. Shaped like the Go handler's response: upstream status, headers, and
+  // body-as-string. One deliberately long model id keeps the wire transcript wide enough
+  // to catch a `<pre>` that forgets to scroll inside its own box.
+  if (path.endsWith('/api-call')) {
+    return {
+      status_code: 200,
+      header: { 'content-type': ['application/json'], 'x-request-id': ['fixture-request'] },
+      body: JSON.stringify({
+        data: [
+          { id: 'gpt-4o' },
+          { id: 'gpt-4o-mini' },
+          { id: 'fixture/very-long-model-identifier-used-to-stress-horizontal-overflow-handling' },
+        ],
+      }),
+    };
+  }
   if (path.endsWith('/aiproxy/readiness')) {
     return {
       status: 'attention',

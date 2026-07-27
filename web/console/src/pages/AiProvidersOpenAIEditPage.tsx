@@ -25,6 +25,8 @@ import {
   ProviderTestResultBox,
   type ProviderTestResultEntry,
 } from '@/components/providers';
+import { ProviderDebugDrawer } from '@/components/providerDebug';
+import type { DebugTarget } from '@/features/providerDebug/types';
 import type { OpenAIEditOutletContext } from './AiProvidersOpenAIEditLayout';
 import type { KeyTestStatus } from '@/stores/useOpenAIEditDraftStore';
 import styles from './AiProvidersPage.module.scss';
@@ -137,6 +139,38 @@ export function AiProvidersOpenAIEditPage() {
 
   const swipeRef = useEdgeSwipeBack({ onBack: handleBack });
   const [isTestingKeys, setIsTestingKeys] = useState(false);
+  const [debugOpen, setDebugOpen] = useState(false);
+
+  // Built from the draft form, not from saved config, so the bench debugs what is on
+  // screen — including a key that has not been saved yet.
+  const debugTarget = useMemo<DebugTarget>(
+    () => ({
+      providerLabel: form.name.trim() || providerMode,
+      family: 'openai',
+      baseUrl: form.baseUrl,
+      headers: buildHeaderObject(form.headers),
+      keys: form.apiKeyEntries.map((entry) => ({
+        apiKey: entry.apiKey ?? '',
+        authIndex: entry.authIndex,
+        headers: entry.headers,
+      })),
+      models: form.modelEntries.map((entry) => entry.name).filter((name) => name.trim()),
+      // The bench defaults to whatever model the connection test is pointed at.
+      model: testModel,
+      // zai, openrouter, and ollama are presentation modes over the one
+      // openai-compatibility config list, so they all address the same server-side kind.
+      routedKind: 'openai-compatibility',
+    }),
+    [
+      form.name,
+      form.baseUrl,
+      form.headers,
+      form.apiKeyEntries,
+      form.modelEntries,
+      providerMode,
+      testModel,
+    ]
+  );
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -807,6 +841,14 @@ export function AiProvidersOpenAIEditPage() {
                   >
                     {t('ai_providers.openai_test_all_action')}
                   </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setDebugOpen(true)}
+                    disabled={disableControls}
+                  >
+                    {t('provider_debug.open')}
+                  </Button>
                 </div>
               </div>
               {testMessage && (
@@ -836,6 +878,11 @@ export function AiProvidersOpenAIEditPage() {
           </div>
         )}
       </Card>
+      <ProviderDebugDrawer
+        open={debugOpen}
+        onClose={() => setDebugOpen(false)}
+        target={debugTarget}
+      />
     </SecondaryScreenShell>
   );
 }

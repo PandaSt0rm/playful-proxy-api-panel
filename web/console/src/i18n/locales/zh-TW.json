@@ -700,6 +700,129 @@
     "model_select_all": "全選",
     "model_filter_empty": "暫無可篩選模型"
   },
+  "provider_debug": {
+    "open": "偵錯",
+    "title": "供應商偵錯 — {{provider}}",
+    "run": "執行檢查",
+    "cancel": "取消",
+    "checks_heading": "檢查項目",
+    "trace_heading": "追蹤",
+    "empty": "尚未執行檢查。選擇需要的檢查項目並執行。",
+    "empty_trace": "執行檢查後，將在此顯示通訊內容。",
+    "awaiting": "選擇一項已完成的檢查以檢視其通訊內容。",
+    "key_label": "金鑰 #{{index}}",
+    "key_count_other": "{{count}} 個金鑰",
+    "copy_trace": "複製追蹤",
+    "copy_success": "追蹤已複製",
+    "copy_failed": "無法複製追蹤",
+    "request_heading": "請求",
+    "response_heading": "回應",
+    "hop": {
+      "you": "你"
+    },
+    "status": {
+      "pass": "通過",
+      "warn": "警告",
+      "fail": "失敗",
+      "skipped": "已略過",
+      "pending": "等待中",
+      "running": "執行中"
+    },
+    "checks": {
+      "reachability": {
+        "label": "可達性",
+        "description": "不傳送憑證，因此無效金鑰不會被誤認為服務中斷。"
+      },
+      "auth": {
+        "label": "金鑰",
+        "description": "逐一驗證已設定的金鑰。"
+      },
+      "catalog": {
+        "label": "模型目錄",
+        "description": "比較已設定的模型與供應商實際提供的模型。"
+      },
+      "completion": {
+        "label": "補全",
+        "description": "對所選模型傳送一次簡短補全請求。"
+      },
+      "sse_format": {
+        "label": "串流格式",
+        "description": "檢查串流回應是否為規範 SSE 並正常結束。"
+      },
+      "tools": {
+        "label": "工具呼叫",
+        "description": "提供一個工具，觀察模型是否呼叫它。"
+      },
+      "json_mode": {
+        "label": "JSON 模式",
+        "description": "請求結構化輸出並解析回傳內容。"
+      },
+      "vision": {
+        "label": "視覺",
+        "description": "傳送內嵌影像片段並檢查是否被接受。"
+      }
+    },
+    "result": {
+      "no_base_url": "請先設定基礎 URL，再執行檢查。",
+      "no_key": "未設定 API 金鑰，已略過此檢查。",
+      "unreachable": "無法連線至供應商 — {{detail}}",
+      "reachable": "供應商回應 HTTP {{status}}。",
+      "key_accepted": "金鑰已被接受。",
+      "key_rejected": "金鑰遭拒 · {{detail}}。請檢查金鑰值或基礎 URL。",
+      "key_inconclusive": "供應商回應 HTTP {{status}} · {{detail}}。該金鑰可能仍可用於補全請求。",
+      "catalog_failed": "無法讀取模型清單 · {{detail}}",
+      "catalog_empty": "供應商未回傳任何模型。",
+      "catalog_drift_other": "有 {{count}} 個已設定的模型在供應商處無法使用：{{models}}。供應商共提供 {{upstream}} 個。",
+      "catalog_ok": "已設定的 {{configured}} 個模型皆可使用，供應商共提供 {{upstream}} 個。",
+      "no_model": "未選擇模型，已略過此檢查。",
+      "completion_failed": "補全失敗 · {{detail}}",
+      "completion_shape": "供應商已回應，但回應中沒有訊息內容。",
+      "completion_ok": "補全成功，共 {{tokens}} 個 token。",
+      "stream_failed": "串流請求失敗 · {{detail}}",
+      "stream_not_sse": "回應並非伺服器推送事件。該供應商可能不支援串流。",
+      "stream_unterminated": "收到 {{chunks}} 個資料塊，但缺少 [DONE] 結束標記；串流提前結束。",
+      "stream_ok": "已串流接收 {{chunks}} 個資料塊並正常結束。",
+      "tools_failed": "工具呼叫遭拒 · {{detail}}",
+      "tools_no_call": "工具已被接受，但模型選擇不呼叫。",
+      "tools_ok": "模型回傳了 {{count}} 次工具呼叫。",
+      "json_failed": "JSON 模式遭拒 · {{detail}}",
+      "json_not_json": "JSON 模式已被接受，但回覆無法解析為 JSON。",
+      "json_ok": "JSON 模式回傳了有效的 JSON。",
+      "vision_failed": "影像輸入遭拒 · {{detail}}",
+      "vision_ok": "影像輸入已被接受。",
+      "routed": "{{message}}（{{category}}）",
+      "routed_failed": "路由器無法執行此檢查 — {{detail}}",
+      "routed_unsupported": "此檢查沒有對應的路由版本，已略過。",
+      "payload_ok": "供應商已接受該請求（HTTP {{status}}）。",
+      "payload_failed": "供應商拒絕了該請求（HTTP {{status}}）。",
+      "payload_invalid": "JSON 格式無效 — {{detail}}",
+      "family_unsupported": "直連模式不支援該供應商，已略過此檢查。請改用經由路由的模式。"
+    },
+    "tabs_label": "工作台檢視",
+    "tab_checks": "檢查項目",
+    "tab_matrix": "模型矩陣",
+    "model_label": "待測模型",
+    "billable_tag": "計費",
+    "run_matrix": "執行 {{count}} 個儲存格",
+    "matrix_hint": "為每個模型與每個金鑰各傳送一次最小補全請求。每個儲存格都會計費。",
+    "matrix_empty": "請至少新增一個模型與一個 API 金鑰以建立矩陣。",
+    "matrix_model_heading": "模型",
+    "matrix_excluded": "超出本次執行的儲存格上限。",
+    "matrix_capped": "已限制為 {{cap}} 個儲存格；另有 {{count}} 個未執行。",
+    "confirm_title": "執行計費檢查",
+    "confirm_body": "這會向供應商傳送 {{count}} 個真實請求，並由其計費。",
+    "confirm_action": "執行並計費",
+    "lane_label": "執行路徑",
+    "lane_direct": "直連",
+    "lane_routed": "經由路由",
+    "tab_lab": "請求實驗室",
+    "lab_label": "請求內容",
+    "lab_hint": "傳送任意請求內容並檢視原始回應。每次傳送都會計費。",
+    "lab_placeholder": "{ \"model\": \"…\", \"messages\": [ … ] }",
+    "lab_seed": "插入範例",
+    "lab_send": "傳送請求",
+    "lab_invalid": "JSON 格式無效 — {{detail}}"
+  },
   "auth_files": {
     "title": "驗證檔案管理",
     "title_section": "驗證檔案",

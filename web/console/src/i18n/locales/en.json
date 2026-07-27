@@ -859,6 +859,131 @@
     "model_select_all": "Select All",
     "model_filter_empty": "No models to filter"
   },
+  "provider_debug": {
+    "open": "Debug",
+    "title": "Provider debug — {{provider}}",
+    "run": "Run checks",
+    "cancel": "Cancel",
+    "checks_heading": "Checks",
+    "trace_heading": "Trace",
+    "empty": "No checks run yet. Pick the checks you want and run them.",
+    "empty_trace": "Run the checks to see the wire exchange here.",
+    "awaiting": "Select a finished check to read its wire exchange.",
+    "key_label": "key #{{index}}",
+    "key_count_one": "{{count}} key",
+    "key_count_other": "{{count}} keys",
+    "copy_trace": "Copy trace",
+    "copy_success": "Trace copied",
+    "copy_failed": "Could not copy the trace",
+    "request_heading": "Request",
+    "response_heading": "Response",
+    "hop": {
+      "you": "you"
+    },
+    "status": {
+      "pass": "Pass",
+      "warn": "Warning",
+      "fail": "Fail",
+      "skipped": "Skipped",
+      "pending": "Pending",
+      "running": "Running"
+    },
+    "checks": {
+      "reachability": {
+        "label": "Reachability",
+        "description": "Sends no credential, so a bad key cannot look like an outage."
+      },
+      "auth": {
+        "label": "Key",
+        "description": "Checks every configured key against the provider."
+      },
+      "catalog": {
+        "label": "Model catalog",
+        "description": "Compares your configured models against what the provider offers."
+      },
+      "completion": {
+        "label": "Completion",
+        "description": "One short completion on the selected model."
+      },
+      "sse_format": {
+        "label": "Streaming format",
+        "description": "Checks the streamed response is well-formed SSE and terminates."
+      },
+      "tools": {
+        "label": "Tool calling",
+        "description": "Offers one tool and sees if the model calls it."
+      },
+      "json_mode": {
+        "label": "JSON mode",
+        "description": "Asks for structured output and parses what comes back."
+      },
+      "vision": {
+        "label": "Vision",
+        "description": "Sends an inline image part and checks it is accepted."
+      }
+    },
+    "result": {
+      "no_base_url": "Set a base URL before running checks.",
+      "no_key": "No API key is configured, so this check was skipped.",
+      "unreachable": "Could not reach the provider — {{detail}}",
+      "reachable": "Provider responded with HTTP {{status}}.",
+      "key_accepted": "Key accepted.",
+      "key_rejected": "Key rejected · {{detail}}. Check the key value or the base URL.",
+      "key_inconclusive": "Provider returned HTTP {{status}} · {{detail}}. The key may still work for completions.",
+      "catalog_failed": "Could not read the model list · {{detail}}",
+      "catalog_empty": "The provider returned no models.",
+      "catalog_drift_one": "{{count}} configured model is not offered upstream: {{models}}. The provider lists {{upstream}}.",
+      "catalog_drift_other": "{{count}} configured models are not offered upstream: {{models}}. The provider lists {{upstream}}.",
+      "catalog_ok": "All {{configured}} configured models are offered upstream, out of {{upstream}} available.",
+      "no_model": "No model is selected, so this check was skipped.",
+      "completion_failed": "Completion failed · {{detail}}",
+      "completion_shape": "The provider answered but the response had no message content.",
+      "completion_ok": "Completion succeeded, {{tokens}} tokens.",
+      "stream_failed": "Streaming request failed · {{detail}}",
+      "stream_not_sse": "The response was not server-sent events. This provider may not stream.",
+      "stream_unterminated": "Received {{chunks}} chunks but no [DONE] terminator; the stream ended early.",
+      "stream_ok": "Streamed {{chunks}} chunks and terminated cleanly.",
+      "tools_failed": "Tool calling was rejected · {{detail}}",
+      "tools_no_call": "Tools were accepted, but the model chose not to call one.",
+      "tools_ok": "Model returned {{count}} tool call(s).",
+      "json_failed": "JSON mode was rejected · {{detail}}",
+      "json_not_json": "JSON mode was accepted, but the reply did not parse as JSON.",
+      "json_ok": "JSON mode returned valid JSON.",
+      "vision_failed": "Image input was rejected · {{detail}}",
+      "vision_ok": "Image input was accepted.",
+      "routed": "{{message}} ({{category}})",
+      "routed_failed": "The router could not run this check — {{detail}}",
+      "routed_unsupported": "This check has no routed equivalent, so it was skipped.",
+      "payload_ok": "The provider accepted the payload (HTTP {{status}}).",
+      "payload_failed": "The provider rejected the payload (HTTP {{status}}).",
+      "payload_invalid": "That is not valid JSON — {{detail}}",
+      "family_unsupported": "This provider is not supported on the direct lane, so the check was skipped. Try the routed lane."
+    },
+    "tabs_label": "Bench views",
+    "tab_checks": "Checks",
+    "tab_matrix": "Model matrix",
+    "model_label": "Model under test",
+    "billable_tag": "costs",
+    "run_matrix": "Run {{count}} cells",
+    "matrix_hint": "Runs one minimal completion per model per key. Every cell is a billable request.",
+    "matrix_empty": "Add at least one model and one API key to build a matrix.",
+    "matrix_model_heading": "Model",
+    "matrix_excluded": "Outside the cell cap for this run.",
+    "matrix_capped": "Capped at {{cap}} cells; {{count}} more were not run.",
+    "confirm_title": "Run billable checks",
+    "confirm_body": "This sends {{count}} real requests to the provider and will be billed by them.",
+    "confirm_action": "Run and bill",
+    "lane_label": "Execution lane",
+    "lane_direct": "Direct",
+    "lane_routed": "Routed",
+    "tab_lab": "Payload lab",
+    "lab_label": "Request payload",
+    "lab_hint": "Send any request body and read the raw response. Each send is billable.",
+    "lab_placeholder": "{ \"model\": \"…\", \"messages\": [ … ] }",
+    "lab_seed": "Insert example",
+    "lab_send": "Send payload",
+    "lab_invalid": "That is not valid JSON — {{detail}}"
+  },
   "auth_files": {
     "title": "Auth Files Management",
     "title_section": "Auth Files",

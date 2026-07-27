@@ -32,6 +32,10 @@ import {
   parseConcurrencyLimitDraft,
 } from '@/utils/upstreamConcurrency';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
+import {
+  ProviderDebugAction,
+  buildSingleKeyTarget,
+} from '@/components/providerDebug';
 import styles from './AiProvidersPage.module.scss';
 
 type LocationState = { fromAiProviders?: boolean } | null;
@@ -577,6 +581,18 @@ export function AiProvidersGeminiEditPage() {
   const canApplyModelDiscovery =
     !disableControls && !saving && !modelDiscoveryFetching && modelDiscoverySelected.size > 0;
 
+  // Built from the draft form so the bench debugs what is on screen, saved or not.
+  const debugTarget = useMemo(
+    () =>
+      buildSingleKeyTarget({
+        providerLabel: 'Gemini',
+        family: 'gemini',
+        routedKind: 'gemini-api-key',
+        form,
+      }),
+    [form]
+  );
+
   return (
     <SecondaryScreenShell
       ref={swipeRef}
@@ -910,6 +926,7 @@ export function AiProvidersGeminiEditPage() {
           </>
         )}
       </Card>
+      <ProviderDebugAction target={debugTarget} />
     </SecondaryScreenShell>
   );
 }

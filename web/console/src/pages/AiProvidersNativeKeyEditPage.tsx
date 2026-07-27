@@ -21,6 +21,10 @@ import { providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { GeminiKeyConfig, ProviderKeyConfig } from '@/types';
 import { buildHeaderObject, headersToEntries, type HeaderEntry } from '@/utils/headers';
+import {
+  ProviderDebugAction,
+  buildSingleKeyTarget,
+} from '@/components/providerDebug';
 import styles from './AiProvidersPage.module.scss';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
 
@@ -208,6 +212,18 @@ export function AiProvidersNativeKeyEditPage({ kind }: Props) {
   const canSave =
     !disableControls && !loading && !saving && !invalidIndexParam && Boolean(form.apiKey.trim());
 
+  // Built from the draft form so the bench debugs what is on screen, saved or not.
+  const debugTarget = useMemo(
+    () =>
+      buildSingleKeyTarget({
+        providerLabel: kind === 'xai' ? 'xAI' : 'Interactions',
+        family: 'generic',
+        routedKind: kind === 'xai' ? 'xai-api-key' : 'interactions-api-key',
+        form,
+      }),
+    [form, kind]
+  );
+
   return (
     <SecondaryScreenShell
       ref={swipeRef}
@@ -354,6 +370,7 @@ export function AiProvidersNativeKeyEditPage({ kind }: Props) {
           </>
         )}
       </Card>
+      <ProviderDebugAction target={debugTarget} />
     </SecondaryScreenShell>
   );
 }

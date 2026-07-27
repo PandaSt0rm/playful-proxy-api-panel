@@ -1,0 +1,448 @@
+@use '../../styles/variables' as *;
+
+.bench {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-md;
+  padding-bottom: $spacing-md;
+  border-bottom: 1px solid var(--rule);
+  min-width: 0;
+}
+
+.checkOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-md;
+  min-width: 0;
+}
+
+.checkOption {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.checkText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.checkName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.checkDescription {
+  font-size: 12px;
+  color: var(--ink-muted);
+  line-height: 1.4;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-shrink: 0;
+}
+
+.keyCount {
+  font-size: 12px;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+// Rail and trace read as one instrument: a fixed sequence on the left, the detail for the
+// selected row on the right. minmax(0, ...) stops the monospace transcript from forcing
+// the grid wider than the viewport.
+.panes {
+  display: grid;
+  grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
+  gap: $spacing-md;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+@media (max-width: $breakpoint-tablet) {
+  .panes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.railPane,
+.tracePane {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
+  background: var(--canvas);
+}
+
+.rail {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.railRow {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  width: 100%;
+  padding: $spacing-sm $spacing-md;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  border-radius: $radius-square;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+  transition: background-color $transition-control;
+
+  &:hover:not(:disabled) {
+    background: var(--surface-2);
+  }
+
+  &:disabled {
+    cursor: default;
+    color: var(--ink-muted);
+  }
+
+  &[aria-current='true'] {
+    background: var(--surface-2);
+  }
+}
+
+// A square marker rather than a dot: it matches the flat, instrument-panel language and
+// needs no border-radius exception.
+.railMarker {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: $radius-square;
+  background: var(--ink-muted);
+
+  &[data-status='pass'] {
+    background: var(--ok);
+  }
+
+  &[data-status='warn'] {
+    background: var(--caution);
+  }
+
+  &[data-status='fail'] {
+    background: var(--danger);
+  }
+
+  &[data-status='running'] {
+    background: var(--info);
+  }
+}
+
+.railLabel {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Tabular numerals align the timings into one readable column, which is what makes the
+// rail scannable rather than ragged.
+.railTiming {
+  flex-shrink: 0;
+  font-family: $font-mono;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+}
+
+.trace {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding: $spacing-md;
+  min-width: 0;
+}
+
+.traceHeader {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  min-width: 0;
+}
+
+.traceLabel {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.traceMessage {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+// The hop chain: the one place this screen spends contrast, because "which leg was slow
+// and which leg failed" is the question a proxy console exists to answer.
+.hopChain {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+  padding: $spacing-sm;
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
+  background: var(--surface-2);
+  min-width: 0;
+}
+
+.hopNode {
+  font-family: $font-mono;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  padding: 2px $spacing-xs;
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
+  background: var(--surface-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.hopLink {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  flex: 1;
+  min-width: 48px;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--rule);
+  }
+
+  &::after {
+    // Arrowhead into the next node, drawn with borders so no image or gradient is needed.
+    flex: 0 0 auto;
+    width: 0;
+    height: 0;
+    background: transparent;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-left: 5px solid var(--rule);
+  }
+}
+
+.hopLatency {
+  font-family: $font-mono;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.wireBlock {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  min-width: 0;
+}
+
+.wireHeading {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+}
+
+// The transcript scrolls inside its own box; the page itself must never scroll sideways.
+.wire {
+  margin: 0;
+  padding: $spacing-sm;
+  border: 1px solid var(--rule);
+  border-radius: $radius-square;
+  background: var(--surface-2);
+  color: var(--ink);
+  font-family: $font-mono;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+  overflow-x: auto;
+  min-width: 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.wireResponse {
+  color: var(--ink-muted);
+}
+
+.empty {
+  margin: 0;
+  padding: $spacing-md;
+  font-size: 13px;
+  color: var(--ink-muted);
+  line-height: 1.5;
+}
+
+.modelSelect {
+  min-width: 180px;
+}
+
+// Marks a check that spends provider tokens, so the cost is visible at the point of
+// selection rather than only in the confirmation.
+.billableTag {
+  margin-left: $spacing-xs;
+  padding: 0 4px;
+  border: 1px solid var(--caution);
+  border-radius: $radius-square;
+  color: var(--caution);
+  font-family: $font-mono;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+// The matrix scrolls inside its own box; the page must never scroll sideways.
+.matrixViewport {
+  overflow-x: auto;
+  min-width: 0;
+}
+
+.matrix {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12px;
+}
+
+.matrixCorner,
+.matrixKeyHeading,
+.matrixModel {
+  padding: $spacing-xs $spacing-sm;
+  border-bottom: 1px solid var(--rule);
+  font-weight: 600;
+  text-align: left;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.matrixModel {
+  color: var(--ink);
+  font-family: $font-mono;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.matrixCell {
+  padding: 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.matrixButton {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  width: 100%;
+  padding: $spacing-xs $spacing-sm;
+  border: 0;
+  border-radius: $radius-square;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: background-color $transition-control;
+
+  &:hover:not(:disabled) {
+    background: var(--surface-2);
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+
+  &[aria-current='true'] {
+    background: var(--surface-2);
+  }
+
+  &[data-status='excluded'] {
+    opacity: 0.45;
+  }
+}
+
+.matrixTiming {
+  font-family: $font-mono;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.lab {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding: $spacing-md;
+  min-width: 0;
+  height: 100%;
+}
+
+.labHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.labEditor {
+  flex: 1;
+  min-height: 220px;
+  min-width: 0;
+  font-family: $font-mono;
+  font-size: 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.labError {
+  margin: 0;
+  font-family: $font-mono;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--danger);
+}

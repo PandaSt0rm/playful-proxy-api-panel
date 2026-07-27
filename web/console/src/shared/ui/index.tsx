@@ -301,19 +301,41 @@ export function ConfirmationDialog({
   );
 }
 
+/**
+ * Widths are passed as props rather than left to CSS because `Modal` applies its `width`
+ * prop as an inline style, which beats any class rule. Before this, `.rf-drawer`'s width
+ * declaration never applied and every drawer rendered at Modal's 520px default.
+ *
+ * Plain pixel values, not `min()` clamps: Modal already sets `max-width: 100%` and the
+ * overlay carries padding, so narrow viewports clamp on their own.
+ */
+const DRAWER_WIDTHS = {
+  default: 560,
+  /** Wide enough for a two-pane workspace such as the provider debug bench. */
+  wide: 1080,
+} as const;
+
 export function Drawer({
   open,
   title,
   children,
   onClose,
+  size = 'default',
 }: {
   open: boolean;
   title: string;
   children: ReactNode;
   onClose: () => void;
+  size?: keyof typeof DRAWER_WIDTHS;
 }) {
   return (
-    <Modal open={open} title={title} onClose={onClose} className="rf-drawer">
+    <Modal
+      open={open}
+      title={title}
+      onClose={onClose}
+      className={size === 'wide' ? 'rf-drawer rf-drawer--wide' : 'rf-drawer'}
+      width={DRAWER_WIDTHS[size]}
+    >
       <div className="rf-drawer__body">{children}</div>
     </Modal>
   );
