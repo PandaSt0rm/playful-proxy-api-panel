@@ -32,7 +32,7 @@ async function openBenchWithDraftConfig(page: Page): Promise<void> {
   await page.goto('/#/ai-providers/openai/new');
   await page.getByLabel('Base URL:').fill('https://api.example.com/v1');
   await page.getByPlaceholder('sk-... key').first().fill(LIVE_KEY);
-  await page.getByRole('button', { name: 'Debug' }).click();
+  await page.getByRole('button', { name: 'Debug', exact: true }).click();
   await expect(page.getByRole('dialog', { name: /Provider debug/ })).toBeVisible();
 }
 
@@ -107,7 +107,7 @@ test.describe('provider debug bench', () => {
   test('reports a missing base url instead of calling the provider', async ({ page }) => {
     await page.goto('/#/ai-providers/openai/new');
     await page.getByPlaceholder('sk-... key').first().fill(LIVE_KEY);
-    await page.getByRole('button', { name: 'Debug' }).click();
+    await page.getByRole('button', { name: 'Debug', exact: true }).click();
 
     await page.getByRole('button', { name: 'Run checks' }).click();
     await expect(page.getByRole('button', { name: 'Run checks' })).toBeEnabled();

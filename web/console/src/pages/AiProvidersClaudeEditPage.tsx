@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
@@ -10,19 +10,9 @@ import { ModelInputList } from '@/components/ui/ModelInputList';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
-import { apiCallApi, getApiCallErrorMessage, getApiErrorDetail } from '@/services/api';
-import { useConfigStore, useNotificationStore } from '@/stores';
-import { buildHeaderObject } from '@/utils/headers';
-import {
-  buildClaudeMessagesEndpoint,
-  formatApiCallResultDetail,
-  parseTextList,
-} from '@/components/providers/utils';
-import {
-  ProviderConcurrencyInput,
-  ProviderTestResultBox,
-  type ProviderTestResultEntry,
-} from '@/components/providers';
+import { useConfigStore } from '@/stores';
+import { parseTextList } from '@/components/providers/utils';
+import { ProviderConcurrencyInput } from '@/components/providers';
 import type { ClaudeEditOutletContext } from './AiProvidersClaudeEditLayout';
 import {
   ProviderDebugAction,
@@ -31,33 +21,11 @@ import {
 import styles from './AiProvidersPage.module.scss';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
 
-const CLAUDE_TEST_TIMEOUT_MS = 30_000;
-const DEFAULT_ANTHROPIC_VERSION = '2023-06-01';
 
-const getErrorMessage = (err: unknown) => {
-  if (err instanceof Error) return err.message;
-  if (typeof err === 'string') return err;
-  return '';
-};
-
-const hasHeader = (headers: Record<string, string>, name: string) => {
-  const target = name.toLowerCase();
-  return Object.keys(headers).some((key) => key.toLowerCase() === target);
-};
-
-const resolveBearerTokenFromAuthorization = (headers: Record<string, string>): string => {
-  const entry = Object.entries(headers).find(([key]) => key.toLowerCase() === 'authorization');
-  if (!entry) return '';
-  const value = String(entry[1] ?? '').trim();
-  if (!value) return '';
-  const match = value.match(/^Bearer\s+(.+)$/i);
-  return match?.[1]?.trim() || '';
-};
 
 export function AiProvidersClaudeEditPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { showNotification } = useNotificationStore();
   const config = useConfigStore((state) => state.config);
   const {
     hasIndexParam,
@@ -70,12 +38,6 @@ export function AiProvidersClaudeEditPage() {
     setForm,
     testModel,
     setTestModel,
-    testStatus,
-    setTestStatus,
-    testMessage,
-    setTestMessage,
-    testResult,
-    setTestResult,
     availableModels,
     concurrencyLimit,
     setConcurrencyLimit,
@@ -89,7 +51,6 @@ export function AiProvidersClaudeEditPage() {
     : t('ai_providers.claude_add_modal_title');
 
   const swipeRef = useEdgeSwipeBack({ onBack: handleBack });
-  const [isTesting, setIsTesting] = useState(false);
   const lastCloakConfigRef = useRef<typeof form.cloak>(null);
 
   useEffect(() => {
@@ -113,7 +74,6 @@ export function AiProvidersClaudeEditPage() {
     !saving &&
     !invalidIndexParam &&
     !invalidIndex &&
-    !isTesting &&
     !concurrencyLimitError;
 
   const modelSelectOptions = useMemo(() => {
@@ -148,184 +108,11 @@ export function AiProvidersClaudeEditPage() {
     return 'auto';
   }, [form.cloak?.mode]);
 
-  const connectivityConfigSignature = useMemo(() => {
-    const headersSignature = form.headers
-      .map((entry) => `${entry.key.trim()}:${entry.value.trim()}`)
-      .join('|');
-    const modelsSignature = form.modelEntries
-      .map((entry) => `${entry.name.trim()}:${entry.alias.trim()}`)
-      .join('|');
-    return [
-      form.apiKey.trim(),
-      form.baseUrl?.trim() ?? '',
-      testModel.trim(),
-      headersSignature,
-      modelsSignature,
-    ].join('||');
-  }, [form.apiKey, form.baseUrl, form.headers, form.modelEntries, testModel]);
-
-  const previousConnectivityConfigRef = useRef(connectivityConfigSignature);
-
-  useEffect(() => {
-    if (previousConnectivityConfigRef.current === connectivityConfigSignature) {
-      return;
-    }
-    previousConnectivityConfigRef.current = connectivityConfigSignature;
-    setTestStatus('idle');
-    setTestMessage('');
-    setTestResult(null);
-  }, [connectivityConfigSignature, setTestMessage, setTestResult, setTestStatus]);
-
   const openClaudeModelDiscovery = () => {
     navigate('models');
   };
 
-  const testResultEntries: ProviderTestResultEntry[] =
-    (testStatus === 'success' || testStatus === 'error') && testResult
-      ? [
-          {
-            id: 'claude-test',
-            status: testStatus,
-            message: testMessage,
-            meta: [
-              testResult.statusCode ? `HTTP ${testResult.statusCode}` : '',
-              testResult.durationMs !== undefined ? `${testResult.durationMs} ms` : '',
-              testResult.model ?? '',
-            ]
-              .filter(Boolean)
-              .join(' · '),
-            detail: testResult.detail,
-          },
-        ]
-      : [];
 
-  const runClaudeConnectivityTest = useCallback(async () => {
-    if (isTesting) return;
-
-    const modelName = testModel.trim() || availableModels[0] || '';
-    if (!modelName) {
-      const message = t('ai_providers.claude_test_model_required');
-      setTestStatus('error');
-      setTestMessage(message);
-      showNotification(message, 'error');
-      return;
-    }
-
-    const customHeaders = buildHeaderObject(form.headers);
-    const apiKey = form.apiKey.trim();
-    const hasApiKeyHeader = hasHeader(customHeaders, 'x-api-key');
-    const apiKeyFromAuthorization = resolveBearerTokenFromAuthorization(customHeaders);
-    const resolvedApiKey = apiKey || apiKeyFromAuthorization;
-
-    if (!resolvedApiKey && !hasApiKeyHeader) {
-      const message = t('ai_providers.claude_test_key_required');
-      setTestStatus('error');
-      setTestMessage(message);
-      showNotification(message, 'error');
-      return;
-    }
-
-    const endpoint = buildClaudeMessagesEndpoint(form.baseUrl ?? '');
-    if (!endpoint) {
-      const message = t('ai_providers.claude_test_endpoint_invalid');
-      setTestStatus('error');
-      setTestMessage(message);
-      showNotification(message, 'error');
-      return;
-    }
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...customHeaders,
-    };
-
-    if (!hasHeader(headers, 'anthropic-version')) {
-      headers['anthropic-version'] = DEFAULT_ANTHROPIC_VERSION;
-    }
-    if (!Object.prototype.hasOwnProperty.call(headers, 'Anthropic-Version')) {
-      headers['Anthropic-Version'] = headers['anthropic-version'] ?? DEFAULT_ANTHROPIC_VERSION;
-    }
-
-    if (!hasApiKeyHeader && resolvedApiKey) {
-      headers['x-api-key'] = resolvedApiKey;
-    }
-    if (!Object.prototype.hasOwnProperty.call(headers, 'X-Api-Key') && resolvedApiKey) {
-      headers['X-Api-Key'] = resolvedApiKey;
-    }
-
-    setIsTesting(true);
-    setTestStatus('loading');
-    setTestMessage(t('ai_providers.claude_test_running'));
-    setTestResult(null);
-
-    const startedAt = performance.now();
-    try {
-      const result = await apiCallApi.request(
-        {
-          method: 'POST',
-          url: endpoint,
-          header: headers,
-          data: JSON.stringify({
-            model: modelName,
-            max_tokens: 8,
-            messages: [{ role: 'user', content: 'Hi' }],
-          }),
-        },
-        { timeout: CLAUDE_TEST_TIMEOUT_MS }
-      );
-
-      const durationMs = Math.round(performance.now() - startedAt);
-      setTestResult({
-        detail: formatApiCallResultDetail(result),
-        statusCode: result.statusCode,
-        durationMs,
-        model: modelName,
-      });
-
-      if (result.statusCode < 200 || result.statusCode >= 300) {
-        const message = `${t('ai_providers.claude_test_failed')}: ${getApiCallErrorMessage(result)}`;
-        setTestStatus('error');
-        setTestMessage(message);
-        showNotification(message, 'error');
-        return;
-      }
-
-      const message = t('ai_providers.claude_test_success');
-      setTestStatus('success');
-      setTestMessage(message);
-      showNotification(message, 'success');
-    } catch (err: unknown) {
-      const durationMs = Math.round(performance.now() - startedAt);
-      const message = getErrorMessage(err);
-      const errorCode =
-        typeof err === 'object' && err !== null && 'code' in err
-          ? String((err as { code?: string }).code)
-          : '';
-      const isTimeout = errorCode === 'ECONNABORTED' || message.toLowerCase().includes('timeout');
-      const resolvedMessage = isTimeout
-        ? t('ai_providers.claude_test_timeout', { seconds: CLAUDE_TEST_TIMEOUT_MS / 1000 })
-        : `${t('ai_providers.claude_test_failed')}: ${message || t('common.unknown_error')}`;
-      const errorDetail = getApiErrorDetail(err);
-      setTestStatus('error');
-      setTestMessage(resolvedMessage);
-      setTestResult({ durationMs, model: modelName, detail: errorDetail || undefined });
-      showNotification(resolvedMessage, 'error');
-    } finally {
-      setIsTesting(false);
-    }
-  }, [
-    availableModels,
-    form.apiKey,
-    form.baseUrl,
-    form.headers,
-    isTesting,
-    setTestMessage,
-    setTestResult,
-    setTestStatus,
-    showNotification,
-    t,
-    testModel,
-  ]);
 
   // Built from the draft form so the bench debugs what is on screen, saved or not.
   const debugTarget = useMemo(
@@ -382,7 +169,7 @@ export function AiProvidersClaudeEditPage() {
               label={t('ai_providers.claude_add_modal_key_label')}
               value={form.apiKey}
               onChange={(e) => setForm((prev) => ({ ...prev, apiKey: e.target.value }))}
-              disabled={saving || disableControls || isTesting}
+              disabled={saving || disableControls}
             />
             <Input
               label={t('ai_providers.priority_label')}
@@ -398,7 +185,7 @@ export function AiProvidersClaudeEditPage() {
                   priority: parsed !== undefined && Number.isFinite(parsed) ? parsed : undefined,
                 }));
               }}
-              disabled={saving || disableControls || isTesting}
+              disabled={saving || disableControls}
             />
             <Input
               label={t('ai_providers.prefix_label')}
@@ -406,25 +193,25 @@ export function AiProvidersClaudeEditPage() {
               value={form.prefix ?? ''}
               onChange={(e) => setForm((prev) => ({ ...prev, prefix: e.target.value }))}
               hint={t('ai_providers.prefix_hint')}
-              disabled={saving || disableControls || isTesting}
+              disabled={saving || disableControls}
             />
             <Input
               label={t('ai_providers.claude_add_modal_url_label')}
               value={form.baseUrl ?? ''}
               onChange={(e) => setForm((prev) => ({ ...prev, baseUrl: e.target.value }))}
-              disabled={saving || disableControls || isTesting}
+              disabled={saving || disableControls}
             />
             <Input
               label={t('ai_providers.claude_add_modal_proxy_label')}
               value={form.proxyUrl ?? ''}
               onChange={(e) => setForm((prev) => ({ ...prev, proxyUrl: e.target.value }))}
-              disabled={saving || disableControls || isTesting}
+              disabled={saving || disableControls}
             />
             <ProviderConcurrencyInput
               providerKey="claude"
               value={concurrencyLimit}
               config={config?.upstreamConcurrency}
-              disabled={saving || disableControls || isTesting}
+              disabled={saving || disableControls}
               error={concurrencyLimitError}
               onChange={setConcurrencyLimit}
             />
@@ -432,7 +219,7 @@ export function AiProvidersClaudeEditPage() {
               <ToggleSwitch
                 checked={Boolean(form.disableCooling)}
                 onChange={(disableCooling) => setForm((prev) => ({ ...prev, disableCooling }))}
-                disabled={saving || disableControls || isTesting}
+                disabled={saving || disableControls}
                 ariaLabel={t('auth_files.disable_cooling_label')}
                 label={t('auth_files.disable_cooling_label')}
               />
@@ -444,7 +231,7 @@ export function AiProvidersClaudeEditPage() {
                 onChange={(experimentalCCHSigning) =>
                   setForm((prev) => ({ ...prev, experimentalCCHSigning }))
                 }
-                disabled={saving || disableControls || isTesting}
+                disabled={saving || disableControls}
                 ariaLabel={t('ai_providers.claude_experimental_cch_signing_label', {
                   defaultValue: 'Experimental CCH signing',
                 })}
@@ -467,7 +254,7 @@ export function AiProvidersClaudeEditPage() {
               valuePlaceholder={t('common.custom_headers_value_placeholder')}
               removeButtonTitle={t('common.delete')}
               removeButtonAriaLabel={t('common.delete')}
-              disabled={saving || disableControls || isTesting}
+              disabled={saving || disableControls}
             />
 
             <div className={styles.modelConfigSection}>
@@ -485,7 +272,7 @@ export function AiProvidersClaudeEditPage() {
                         modelEntries: [...prev.modelEntries, { name: '', alias: '' }],
                       }))
                     }
-                    disabled={saving || disableControls || isTesting}
+                    disabled={saving || disableControls}
                   >
                     {t('ai_providers.claude_models_add_btn')}
                   </Button>
@@ -493,7 +280,7 @@ export function AiProvidersClaudeEditPage() {
                     variant="secondary"
                     size="sm"
                     onClick={openClaudeModelDiscovery}
-                    disabled={saving || disableControls || isTesting}
+                    disabled={saving || disableControls}
                   >
                     {t('ai_providers.claude_models_fetch_button')}
                   </Button>
@@ -507,7 +294,7 @@ export function AiProvidersClaudeEditPage() {
                 onChange={(entries) => setForm((prev) => ({ ...prev, modelEntries: entries }))}
                 namePlaceholder={t('common.model_name_placeholder')}
                 aliasPlaceholder={t('common.model_alias_placeholder')}
-                disabled={saving || disableControls || isTesting}
+                disabled={saving || disableControls}
                 hideAddButton
                 className={styles.modelInputList}
                 rowClassName={styles.modelInputRow}
@@ -517,73 +304,31 @@ export function AiProvidersClaudeEditPage() {
                 removeButtonAriaLabel={t('common.delete')}
               />
 
+              {/* Provider debug bench: replaces the single-prompt connection test. */}
               <div className={styles.modelTestPanel}>
                 <div className={styles.modelTestMeta}>
                   <label className={styles.modelTestLabel}>
-                    {t('ai_providers.claude_test_title')}
+                    {t('provider_debug.panel_title')}
                   </label>
-                  <span className={styles.modelTestHint}>{t('ai_providers.claude_test_hint')}</span>
+                  <span className={styles.modelTestHint}>{t('provider_debug.panel_hint')}</span>
                 </div>
                 <div className={styles.modelTestControls}>
                   <Select
                     value={testModel}
                     options={modelSelectOptions}
-                    onChange={(value) => {
-                      setTestModel(value);
-                      setTestStatus('idle');
-                      setTestMessage('');
-                    }}
+                    onChange={setTestModel}
                     placeholder={
                       availableModels.length
-                        ? t('ai_providers.claude_test_select_placeholder')
+                        ? t('provider_debug.default_model_placeholder')
                         : t('ai_providers.claude_test_select_empty')
                     }
                     className={styles.openaiTestSelect}
-                    ariaLabel={t('ai_providers.claude_test_title')}
-                    disabled={
-                      saving ||
-                      disableControls ||
-                      isTesting ||
-                      testStatus === 'loading' ||
-                      availableModels.length === 0
-                    }
+                    ariaLabel={t('provider_debug.default_model_label')}
+                    disabled={saving || disableControls || availableModels.length === 0}
                   />
-                  <Button
-                    variant={testStatus === 'error' ? 'danger' : 'secondary'}
-                    size="sm"
-                    onClick={() => void runClaudeConnectivityTest()}
-                    loading={testStatus === 'loading'}
-                    disabled={
-                      saving ||
-                      disableControls ||
-                      isTesting ||
-                      testStatus === 'loading' ||
-                      availableModels.length === 0
-                    }
-                    className={styles.modelTestAllButton}
-                  >
-                    {t('ai_providers.claude_test_action')}
-                  </Button>
+                  <ProviderDebugAction target={debugTarget} disabled={disableControls} />
                 </div>
               </div>
-
-              {testMessage && testResultEntries.length === 0 && (
-                <div
-                  className={`rf-badge ${
-                    testStatus === 'error'
-                      ? 'rf-badge--danger'
-                      : testStatus === 'success'
-                        ? 'rf-badge--ok'
-                        : 'rf-badge--neutral'
-                  }`}
-                >
-                  {testMessage}
-                </div>
-              )}
-              <ProviderTestResultBox
-                title={t('ai_providers.test_results_title')}
-                entries={testResultEntries}
-              />
             </div>
 
             <div className="form-group">
@@ -594,7 +339,7 @@ export function AiProvidersClaudeEditPage() {
                 value={form.excludedText}
                 onChange={(e) => setForm((prev) => ({ ...prev, excludedText: e.target.value }))}
                 rows={4}
-                disabled={saving || disableControls || isTesting}
+                disabled={saving || disableControls}
               />
               <div className="hint">{t('ai_providers.excluded_models_hint')}</div>
             </div>
@@ -634,7 +379,7 @@ export function AiProvidersClaudeEditPage() {
                         };
                       })
                     }
-                    disabled={saving || disableControls || isTesting}
+                    disabled={saving || disableControls}
                     ariaLabel={t('ai_providers.claude_cloak_toggle_aria')}
                     label={t('ai_providers.claude_cloak_toggle_label')}
                   />
@@ -659,7 +404,7 @@ export function AiProvidersClaudeEditPage() {
                         }))
                       }
                       ariaLabel={t('ai_providers.claude_cloak_mode_label')}
-                      disabled={saving || disableControls || isTesting}
+                      disabled={saving || disableControls}
                     />
                     <div className="hint">{t('ai_providers.claude_cloak_mode_hint')}</div>
                   </div>
@@ -677,7 +422,7 @@ export function AiProvidersClaudeEditPage() {
                           },
                         }))
                       }
-                      disabled={saving || disableControls || isTesting}
+                      disabled={saving || disableControls}
                       ariaLabel={t('ai_providers.claude_cloak_strict_label')}
                     />
                     <div className="hint">{t('ai_providers.claude_cloak_strict_hint')}</div>
@@ -700,7 +445,7 @@ export function AiProvidersClaudeEditPage() {
                           },
                         }))
                       }
-                      disabled={saving || disableControls || isTesting}
+                      disabled={saving || disableControls}
                       ariaLabel={t('ai_providers.claude_cloak_cache_user_id_label', {
                         defaultValue: 'Cache Claude user_id',
                       })}
@@ -730,7 +475,7 @@ export function AiProvidersClaudeEditPage() {
                         }));
                       }}
                       rows={3}
-                      disabled={saving || disableControls || isTesting}
+                      disabled={saving || disableControls}
                     />
                     <div className="hint">
                       {t('ai_providers.claude_cloak_sensitive_words_hint')}

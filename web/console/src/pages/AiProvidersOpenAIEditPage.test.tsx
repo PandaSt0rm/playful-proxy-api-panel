@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MemoryRouter, Routes, Route, Outlet } from 'react-router-dom';
-import { render, screen, waitFor, userEvent } from '@/test/utils';
+import { render, screen, userEvent } from '@/test/utils';
 import type { OpenAIEditOutletContext } from './AiProvidersOpenAIEditLayout';
 import type { OpenAIFormState } from '@/components/providers/types';
 import type { ApiKeyEntry } from '@/types';
@@ -220,269 +220,23 @@ describe('AiProvidersOpenAIEditPage', () => {
     expect(showNotification).toHaveBeenCalledWith('Please enter a valid Base URL first', 'error');
   });
 
-  it('disables Test All Keys when no models are configured', () => {
-    renderPage(
-      buildContext({
-        form: buildForm({
-          baseUrl: 'https://api.example.com/v1',
-          modelEntries: [{ name: '', alias: '' }],
-          apiKeyEntries: [buildKeyEntry({ apiKey: 'sk-key-1' })],
-        }),
-        availableModels: [],
-      })
-    );
-
-    expect(screen.getByRole('button', { name: 'Test All Keys' })).toBeDisabled();
-  });
-
-  it('disables Test All Keys when no testable api key is present', () => {
-    renderPage(
-      buildContext({
-        form: buildForm({
-          baseUrl: 'https://api.example.com/v1',
-          modelEntries: [{ name: 'gpt-4o', alias: '' }],
-          apiKeyEntries: [buildKeyEntry({ apiKey: '' })],
-        }),
-        testModel: 'gpt-4o',
-        availableModels: ['gpt-4o'],
-      })
-    );
-
-    expect(screen.getByRole('button', { name: 'Test All Keys' })).toBeDisabled();
-  });
-
-  it('sends one POST per valid key to the chat/completions endpoint on Test All Keys', async () => {
+  it('offers the debug bench in place of the old connection test', async () => {
     const user = userEvent.setup();
-    apiCallRequest.mockResolvedValue({ statusCode: 200, header: {}, bodyText: '', body: null });
     renderPage(testableContext());
 
-    await user.click(screen.getByRole('button', { name: 'Test All Keys' }));
+    // The single-prompt "Test All Keys" control is gone; its slot is the bench entry.
+    expect(screen.queryByRole('button', { name: /Test All Keys/ })).not.toBeInTheDocument();
+    expect(screen.getByText('Provider debug')).toBeInTheDocument();
 
-    await waitFor(() => expect(apiCallRequest).toHaveBeenCalledTimes(1));
-    const [request] = apiCallRequest.mock.calls[0];
-    expect(request.method).toBe('POST');
-    expect(request.url).toBe('https://api.example.com/v1/chat/completions');
+    await user.click(screen.getByRole('button', { name: 'Debug' }));
+    expect(screen.getByRole('dialog', { name: /Provider debug/ })).toBeInTheDocument();
   });
 
-  it('builds the chat-completion request body with the test model and 5 max_tokens', async () => {
-    const user = userEvent.setup();
-    apiCallRequest.mockResolvedValue({ statusCode: 200, header: {}, bodyText: '', body: null });
+  it('keeps the persisted default debug model selectable', () => {
+    // testModel round-trips to the `test-model` config key and is shown in the provider
+    // list, so the picker outlives the connection test it used to belong to.
     renderPage(testableContext());
-
-    await user.click(screen.getByRole('button', { name: 'Test All Keys' }));
-
-    await waitFor(() => expect(apiCallRequest).toHaveBeenCalledTimes(1));
-    const [request] = apiCallRequest.mock.calls[0];
-    expect(JSON.parse(request.data)).toEqual({
-      model: 'gpt-4o',
-      messages: [{ role: 'user', content: 'Hi' }],
-      stream: false,
-      max_tokens: 5,
-    });
-  });
-
-  it('sets the Authorization header from the api key when no custom auth header exists', async () => {
-    const user = userEvent.setup();
-    apiCallRequest.mockResolvedValue({ statusCode: 200, header: {}, bodyText: '', body: null });
-    renderPage(testableContext());
-
-    await user.click(screen.getByRole('button', { name: 'Test All Keys' }));
-
-    await waitFor(() => expect(apiCallRequest).toHaveBeenCalledTimes(1));
-    const [request] = apiCallRequest.mock.calls[0];
-    expect(request.header.Authorization).toBe('Bearer sk-key-1');
-  });
-
-  it('forwards the entry authIndex to the api call when set', async () => {
-    const user = userEvent.setup();
-    apiCallRequest.mockResolvedValue({ statusCode: 200, header: {}, bodyText: '', body: null });
-    renderPage(
-      testableContext({
-        form: buildForm({
-          name: 'My Provider',
-          baseUrl: 'https://api.example.com/v1',
-          modelEntries: [{ name: 'gpt-4o', alias: '' }],
-          apiKeyEntries: [buildKeyEntry({ apiKey: 'sk-key-1', authIndex: '7' })],
-        }),
-        testModel: 'gpt-4o',
-        availableModels: ['gpt-4o'],
-      })
-    );
-
-    await user.click(screen.getByRole('button', { name: 'Test All Keys' }));
-
-    await waitFor(() => expect(apiCallRequest).toHaveBeenCalledTimes(1));
-    const [request] = apiCallRequest.mock.calls[0];
-    expect(request.authIndex).toBe('7');
-  });
-
-  it('shows the all-keys-passed notification when every key test succeeds', async () => {
-    const user = userEvent.setup();
-    apiCallRequest.mockResolvedValue({ statusCode: 200, header: {}, bodyText: '', body: null });
-    renderPage(testableContext());
-
-    await user.click(screen.getByRole('button', { name: 'Test All Keys' }));
-
-    await waitFor(() =>
-      expect(showNotification).toHaveBeenCalledWith('All 1 keys passed the test', 'success')
-    );
-  });
-
-  it('shows the all-keys-failed notification when every key test fails', async () => {
-    const user = userEvent.setup();
-    apiCallRequest.mockResolvedValue({ statusCode: 500, header: {}, bodyText: '', body: null });
-    renderPage(testableContext());
-
-    await user.click(screen.getByRole('button', { name: 'Test All Keys' }));
-
-    await waitFor(() =>
-      expect(showNotification).toHaveBeenCalledWith('All 1 keys failed the test', 'error')
-    );
-  });
-
-  it('runs a single-key test and sends exactly one request when the per-row Test is clicked', async () => {
-    const user = userEvent.setup();
-    apiCallRequest.mockResolvedValue({ statusCode: 200, header: {}, bodyText: '', body: null });
-    renderPage(testableContext());
-
-    await user.click(screen.getByRole('button', { name: 'Test', exact: true }));
-
-    await waitFor(() => expect(apiCallRequest).toHaveBeenCalledTimes(1));
-    const [request] = apiCallRequest.mock.calls[0];
-    expect(request.url).toBe('https://api.example.com/v1/chat/completions');
-  });
-
-  it('disables the per-row Test button when the row has no api key', () => {
-    renderPage(
-      buildContext({
-        form: buildForm({
-          baseUrl: 'https://api.example.com/v1',
-          modelEntries: [{ name: 'gpt-4o', alias: '' }],
-          apiKeyEntries: [buildKeyEntry({ apiKey: '' })],
-        }),
-        availableModels: ['gpt-4o'],
-      })
-    );
-
-    expect(screen.getByRole('button', { name: 'Test', exact: true })).toBeDisabled();
-  });
-
-  it('renders the test message status badge text from the context', () => {
-    renderPage(buildContext({ testMessage: 'All 3 keys passed the test', testStatus: 'success' }));
-
-    expect(screen.getByText('All 3 keys passed the test')).toBeInTheDocument();
-  });
-
-  it('stores the full response detail when a single-key test succeeds', async () => {
-    const user = userEvent.setup();
-    const setDraftKeyTestStatus = vi.fn();
-    const responseBody = { choices: [{ message: { role: 'assistant', content: 'Hello!' } }] };
-    apiCallRequest.mockResolvedValue({
-      statusCode: 200,
-      header: {},
-      bodyText: JSON.stringify(responseBody),
-      body: responseBody,
-    });
-    renderPage(testableContext({ setDraftKeyTestStatus }));
-
-    await user.click(screen.getByRole('button', { name: 'Test', exact: true }));
-
-    await waitFor(() =>
-      expect(setDraftKeyTestStatus).toHaveBeenCalledWith(
-        0,
-        expect.objectContaining({
-          status: 'success',
-          detail: JSON.stringify(responseBody, null, 2),
-          statusCode: 200,
-          model: 'gpt-4o',
-          durationMs: expect.any(Number),
-        })
-      )
-    );
-  });
-
-  it('stores the full error body when a single-key test gets a non-2xx response', async () => {
-    const user = userEvent.setup();
-    const setDraftKeyTestStatus = vi.fn();
-    const errorBody = { error: { message: 'Unknown Model, please check the model code.' } };
-    apiCallRequest.mockResolvedValue({
-      statusCode: 400,
-      header: {},
-      bodyText: JSON.stringify(errorBody),
-      body: errorBody,
-    });
-    renderPage(testableContext({ setDraftKeyTestStatus }));
-
-    await user.click(screen.getByRole('button', { name: 'Test', exact: true }));
-
-    await waitFor(() =>
-      expect(setDraftKeyTestStatus).toHaveBeenCalledWith(
-        0,
-        expect.objectContaining({
-          status: 'error',
-          message: 'api error 400',
-          detail: JSON.stringify(errorBody, null, 2),
-          statusCode: 400,
-        })
-      )
-    );
-  });
-
-  it('stores the transport failure detail when a single-key test rejects without a response', async () => {
-    const user = userEvent.setup();
-    const setDraftKeyTestStatus = vi.fn();
-    apiCallRequest.mockRejectedValue(
-      Object.assign(new Error('request failed'), {
-        details: {
-          error: 'request failed',
-          detail: 'Post "https://bifrost.local/v1/chat/completions": dial tcp: connection refused',
-        },
-      })
-    );
-    renderPage(testableContext({ setDraftKeyTestStatus }));
-
-    await user.click(screen.getByRole('button', { name: 'Test', exact: true }));
-
-    await waitFor(() =>
-      expect(setDraftKeyTestStatus).toHaveBeenCalledWith(
-        0,
-        expect.objectContaining({
-          status: 'error',
-          detail: 'Post "https://bifrost.local/v1/chat/completions": dial tcp: connection refused',
-          model: 'gpt-4o',
-          durationMs: expect.any(Number),
-        })
-      )
-    );
-  });
-
-  it('renders the per-key test results box with the full response from the context', () => {
-    renderPage(
-      testableContext({
-        keyTestStatuses: [
-          {
-            status: 'error',
-            message: '400 Unknown Model, please check the model code.',
-            detail: '{\n  "error": "Unknown Model"\n}',
-            statusCode: 400,
-            durationMs: 245,
-            model: 'gpt-4o',
-          },
-        ],
-      })
-    );
-
-    expect(screen.getByText('Test Results')).toBeInTheDocument();
-    expect(screen.getByText('Key #1')).toBeInTheDocument();
-    expect(screen.getByText('HTTP 400 · 245 ms · gpt-4o')).toBeInTheDocument();
-    expect(screen.getByText('400 Unknown Model, please check the model code.')).toBeInTheDocument();
-    expect(screen.getByText(/"error": "Unknown Model"/)).toBeInTheDocument();
-  });
-
-  it('does not render the test results box while all key statuses are idle', () => {
-    renderPage(testableContext({ keyTestStatuses: [{ status: 'idle', message: '' }] }));
-
-    expect(screen.queryByText('Test Results')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Default debug model')).toBeInTheDocument();
   });
 
   it('disables the per-row delete button when only one key entry exists', () => {

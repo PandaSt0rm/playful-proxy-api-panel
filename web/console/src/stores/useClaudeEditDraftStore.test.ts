@@ -64,9 +64,6 @@ describe('useClaudeEditDraftStore acquireDraft', () => {
       baseline: null,
       form: EMPTY_FORM,
       testModel: '',
-      testStatus: 'idle',
-      testMessage: '',
-      testResult: null,
     });
   });
 
@@ -166,9 +163,6 @@ describe('useClaudeEditDraftStore ensureDraft', () => {
       baseline: null,
       form: EMPTY_FORM,
       testModel: '',
-      testStatus: 'idle',
-      testMessage: '',
-      testResult: null,
     });
   });
 
@@ -180,11 +174,11 @@ describe('useClaudeEditDraftStore ensureDraft', () => {
 
   it('preserves an existing draft instead of replacing it', () => {
     get().acquireDraft('claude:0');
-    get().setDraftTestMessage('claude:0', 'hello');
+    get().setDraftTestModel('claude:0', 'hello');
 
     get().ensureDraft('claude:0');
 
-    expect(get().drafts['claude:0'].testMessage).toBe('hello');
+    expect(get().drafts['claude:0'].testModel).toBe('hello');
   });
 
   it('ignores an empty key', () => {
@@ -202,9 +196,6 @@ describe('useClaudeEditDraftStore initDraft', () => {
       baseline,
       form: { ...EMPTY_FORM, apiKey: 'sk-ant-123' },
       testModel: 'claude-3',
-      testStatus: 'idle',
-      testMessage: '',
-      testResult: null,
     });
 
     expect(get().drafts['claude:0']).toEqual({
@@ -212,9 +203,6 @@ describe('useClaudeEditDraftStore initDraft', () => {
       baseline,
       form: { ...EMPTY_FORM, apiKey: 'sk-ant-123' },
       testModel: 'claude-3',
-      testStatus: 'idle',
-      testMessage: '',
-      testResult: null,
     });
   });
 
@@ -223,18 +211,12 @@ describe('useClaudeEditDraftStore initDraft', () => {
       baseline: buildBaseline({ apiKey: 'first' }),
       form: EMPTY_FORM,
       testModel: 'first-model',
-      testStatus: 'idle',
-      testMessage: '',
-      testResult: null,
     });
 
     get().initDraft('claude:0', {
       baseline: buildBaseline({ apiKey: 'second' }),
       form: EMPTY_FORM,
       testModel: 'second-model',
-      testStatus: 'idle',
-      testMessage: '',
-      testResult: null,
     });
 
     expect(get().drafts['claude:0'].testModel).toBe('first-model');
@@ -247,9 +229,6 @@ describe('useClaudeEditDraftStore initDraft', () => {
       baseline: null,
       form: EMPTY_FORM,
       testModel: 'late-init',
-      testStatus: 'idle',
-      testMessage: '',
-      testResult: null,
     });
 
     expect(get().drafts['claude:0'].testModel).toBe('late-init');
@@ -260,9 +239,6 @@ describe('useClaudeEditDraftStore initDraft', () => {
       baseline: null,
       form: EMPTY_FORM,
       testModel: 'x',
-      testStatus: 'idle',
-      testMessage: '',
-      testResult: null,
     });
 
     expect(get().drafts).toEqual({});
@@ -354,90 +330,6 @@ describe('useClaudeEditDraftStore setDraftTestModel', () => {
 
   it('ignores an empty key', () => {
     get().setDraftTestModel('', 'x');
-
-    expect(get().drafts).toEqual({});
-  });
-});
-
-describe('useClaudeEditDraftStore setDraftTestStatus', () => {
-  it('sets the test status with a direct value', () => {
-    get().setDraftTestStatus('claude:0', 'loading');
-
-    expect(get().drafts['claude:0'].testStatus).toBe('loading');
-  });
-
-  it('applies a functional updater against the previous status', () => {
-    get().setDraftTestStatus('claude:0', 'loading');
-
-    get().setDraftTestStatus('claude:0', (prev) => (prev === 'loading' ? 'success' : 'error'));
-
-    expect(get().drafts['claude:0'].testStatus).toBe('success');
-  });
-
-  it('ignores an empty key', () => {
-    get().setDraftTestStatus('', 'error');
-
-    expect(get().drafts).toEqual({});
-  });
-});
-
-describe('useClaudeEditDraftStore setDraftTestMessage', () => {
-  it('sets the test message with a direct value', () => {
-    get().setDraftTestMessage('claude:0', 'all good');
-
-    expect(get().drafts['claude:0'].testMessage).toBe('all good');
-  });
-
-  it('applies a functional updater against the previous message', () => {
-    get().setDraftTestMessage('claude:0', 'ok');
-
-    get().setDraftTestMessage('claude:0', (prev) => `${prev}!`);
-
-    expect(get().drafts['claude:0'].testMessage).toBe('ok!');
-  });
-
-  it('ignores an empty key', () => {
-    get().setDraftTestMessage('', 'x');
-
-    expect(get().drafts).toEqual({});
-  });
-});
-
-describe('useClaudeEditDraftStore setDraftTestResult', () => {
-  it('sets the test result with a direct value', () => {
-    get().setDraftTestResult('claude:0', {
-      detail: '{"ok":true}',
-      statusCode: 200,
-      durationMs: 120,
-      model: 'claude-3',
-    });
-
-    expect(get().drafts['claude:0'].testResult).toEqual({
-      detail: '{"ok":true}',
-      statusCode: 200,
-      durationMs: 120,
-      model: 'claude-3',
-    });
-  });
-
-  it('clears the test result with null', () => {
-    get().setDraftTestResult('claude:0', { detail: 'x' });
-
-    get().setDraftTestResult('claude:0', null);
-
-    expect(get().drafts['claude:0'].testResult).toBeNull();
-  });
-
-  it('applies a functional updater against the previous result', () => {
-    get().setDraftTestResult('claude:0', { detail: 'first' });
-
-    get().setDraftTestResult('claude:0', (prev) => (prev ? { ...prev, statusCode: 200 } : null));
-
-    expect(get().drafts['claude:0'].testResult).toEqual({ detail: 'first', statusCode: 200 });
-  });
-
-  it('ignores an empty key', () => {
-    get().setDraftTestResult('', { detail: 'x' });
 
     expect(get().drafts).toEqual({});
   });

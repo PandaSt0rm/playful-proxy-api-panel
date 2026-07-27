@@ -13,18 +13,6 @@ import { create } from 'zustand';
 import type { OpenAIFormState } from '@/components/providers/types';
 import { buildApiKeyEntry } from '@/components/providers/utils';
 
-export type OpenAITestStatus = 'idle' | 'loading' | 'success' | 'error';
-
-export type KeyTestStatus = {
-  status: OpenAITestStatus;
-  message: string;
-  /** Full upstream response body. `undefined` means no HTTP response was received. */
-  detail?: string;
-  statusCode?: number;
-  durationMs?: number;
-  model?: string;
-};
-
 export type OpenAIEditBaseline = {
   name: string;
   priority: number | null;
@@ -52,9 +40,6 @@ export type OpenAIEditDraft = {
   baseline: OpenAIEditBaseline | null;
   form: OpenAIFormState;
   testModel: string;
-  testStatus: OpenAITestStatus;
-  testMessage: string;
-  keyTestStatuses: KeyTestStatus[];
 };
 
 interface OpenAIEditDraftState {
@@ -67,10 +52,6 @@ interface OpenAIEditDraftState {
   setDraftBaseline: (key: string, baseline: OpenAIEditBaseline) => void;
   setDraftForm: (key: string, action: SetStateAction<OpenAIFormState>) => void;
   setDraftTestModel: (key: string, action: SetStateAction<string>) => void;
-  setDraftTestStatus: (key: string, action: SetStateAction<OpenAITestStatus>) => void;
-  setDraftTestMessage: (key: string, action: SetStateAction<string>) => void;
-  setDraftKeyTestStatus: (draftKey: string, keyIndex: number, status: KeyTestStatus) => void;
-  resetDraftKeyTestStatuses: (draftKey: string, count: number) => void;
   clearDraft: (key: string) => void;
 }
 
@@ -93,9 +74,6 @@ const buildEmptyDraft = (): OpenAIEditDraft => ({
   baseline: null,
   form: buildEmptyForm(),
   testModel: '',
-  testStatus: 'idle',
-  testMessage: '',
-  keyTestStatuses: [],
 });
 
 export const useOpenAIEditDraftStore = create<OpenAIEditDraftState>((set, get) => ({
@@ -187,66 +165,6 @@ export const useOpenAIEditDraftStore = create<OpenAIEditDraftState>((set, get) =
         drafts: {
           ...state.drafts,
           [key]: { ...existing, initialized: true, testModel: nextValue },
-        },
-      };
-    });
-  },
-
-  setDraftTestStatus: (key, action) => {
-    if (!key) return;
-    set((state) => {
-      const existing = state.drafts[key] ?? buildEmptyDraft();
-      const nextValue = resolveAction(action, existing.testStatus);
-      return {
-        drafts: {
-          ...state.drafts,
-          [key]: { ...existing, initialized: true, testStatus: nextValue },
-        },
-      };
-    });
-  },
-
-  setDraftTestMessage: (key, action) => {
-    if (!key) return;
-    set((state) => {
-      const existing = state.drafts[key] ?? buildEmptyDraft();
-      const nextValue = resolveAction(action, existing.testMessage);
-      return {
-        drafts: {
-          ...state.drafts,
-          [key]: { ...existing, initialized: true, testMessage: nextValue },
-        },
-      };
-    });
-  },
-
-  setDraftKeyTestStatus: (draftKey, keyIndex, status) => {
-    if (!draftKey) return;
-    set((state) => {
-      const existing = state.drafts[draftKey] ?? buildEmptyDraft();
-      const nextStatuses = [...existing.keyTestStatuses];
-      nextStatuses[keyIndex] = status;
-      return {
-        drafts: {
-          ...state.drafts,
-          [draftKey]: { ...existing, initialized: true, keyTestStatuses: nextStatuses },
-        },
-      };
-    });
-  },
-
-  resetDraftKeyTestStatuses: (draftKey, count) => {
-    if (!draftKey) return;
-    set((state) => {
-      const existing = state.drafts[draftKey] ?? buildEmptyDraft();
-      return {
-        drafts: {
-          ...state.drafts,
-          [draftKey]: {
-            ...existing,
-            initialized: true,
-            keyTestStatuses: Array.from({ length: count }, () => ({ status: 'idle', message: '' })),
-          },
         },
       };
     });

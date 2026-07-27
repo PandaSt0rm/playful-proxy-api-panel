@@ -61,9 +61,6 @@ describe('useOpenAIEditDraftStore acquireDraft', () => {
       baseline: null,
       form: EMPTY_FORM,
       testModel: '',
-      testStatus: 'idle',
-      testMessage: '',
-      keyTestStatuses: [],
     });
   });
 
@@ -163,9 +160,6 @@ describe('useOpenAIEditDraftStore ensureDraft', () => {
       baseline: null,
       form: EMPTY_FORM,
       testModel: '',
-      testStatus: 'idle',
-      testMessage: '',
-      keyTestStatuses: [],
     });
   });
 
@@ -177,11 +171,11 @@ describe('useOpenAIEditDraftStore ensureDraft', () => {
 
   it('preserves an existing draft instead of replacing it', () => {
     get().acquireDraft('openai:0');
-    get().setDraftTestMessage('openai:0', 'hello');
+    get().setDraftTestModel('openai:0', 'hello');
 
     get().ensureDraft('openai:0');
 
-    expect(get().drafts['openai:0'].testMessage).toBe('hello');
+    expect(get().drafts['openai:0'].testModel).toBe('hello');
   });
 
   it('ignores an empty key', () => {
@@ -199,9 +193,6 @@ describe('useOpenAIEditDraftStore initDraft', () => {
       baseline,
       form: { ...EMPTY_FORM, name: 'My Provider' },
       testModel: 'gpt-4',
-      testStatus: 'idle',
-      testMessage: '',
-      keyTestStatuses: [],
     });
 
     expect(get().drafts['openai:0']).toEqual({
@@ -209,9 +200,6 @@ describe('useOpenAIEditDraftStore initDraft', () => {
       baseline,
       form: { ...EMPTY_FORM, name: 'My Provider' },
       testModel: 'gpt-4',
-      testStatus: 'idle',
-      testMessage: '',
-      keyTestStatuses: [],
     });
   });
 
@@ -220,18 +208,12 @@ describe('useOpenAIEditDraftStore initDraft', () => {
       baseline: buildBaseline({ name: 'first' }),
       form: EMPTY_FORM,
       testModel: 'first-model',
-      testStatus: 'idle',
-      testMessage: '',
-      keyTestStatuses: [],
     });
 
     get().initDraft('openai:0', {
       baseline: buildBaseline({ name: 'second' }),
       form: EMPTY_FORM,
       testModel: 'second-model',
-      testStatus: 'idle',
-      testMessage: '',
-      keyTestStatuses: [],
     });
 
     expect(get().drafts['openai:0'].testModel).toBe('first-model');
@@ -244,9 +226,6 @@ describe('useOpenAIEditDraftStore initDraft', () => {
       baseline: null,
       form: EMPTY_FORM,
       testModel: 'late-init',
-      testStatus: 'idle',
-      testMessage: '',
-      keyTestStatuses: [],
     });
 
     expect(get().drafts['openai:0'].testModel).toBe('late-init');
@@ -257,9 +236,6 @@ describe('useOpenAIEditDraftStore initDraft', () => {
       baseline: null,
       form: EMPTY_FORM,
       testModel: 'x',
-      testStatus: 'idle',
-      testMessage: '',
-      keyTestStatuses: [],
     });
 
     expect(get().drafts).toEqual({});
@@ -356,156 +332,6 @@ describe('useOpenAIEditDraftStore setDraftTestModel', () => {
   });
 });
 
-describe('useOpenAIEditDraftStore setDraftTestStatus', () => {
-  it('sets the test status with a direct value', () => {
-    get().setDraftTestStatus('openai:0', 'loading');
-
-    expect(get().drafts['openai:0'].testStatus).toBe('loading');
-  });
-
-  it('applies a functional updater against the previous status', () => {
-    get().setDraftTestStatus('openai:0', 'loading');
-
-    get().setDraftTestStatus('openai:0', (prev) => (prev === 'loading' ? 'success' : 'error'));
-
-    expect(get().drafts['openai:0'].testStatus).toBe('success');
-  });
-
-  it('ignores an empty key', () => {
-    get().setDraftTestStatus('', 'error');
-
-    expect(get().drafts).toEqual({});
-  });
-});
-
-describe('useOpenAIEditDraftStore setDraftTestMessage', () => {
-  it('sets the test message with a direct value', () => {
-    get().setDraftTestMessage('openai:0', 'all good');
-
-    expect(get().drafts['openai:0'].testMessage).toBe('all good');
-  });
-
-  it('applies a functional updater against the previous message', () => {
-    get().setDraftTestMessage('openai:0', 'ok');
-
-    get().setDraftTestMessage('openai:0', (prev) => `${prev}!`);
-
-    expect(get().drafts['openai:0'].testMessage).toBe('ok!');
-  });
-
-  it('ignores an empty key', () => {
-    get().setDraftTestMessage('', 'x');
-
-    expect(get().drafts).toEqual({});
-  });
-});
-
-describe('useOpenAIEditDraftStore setDraftKeyTestStatus', () => {
-  it('sets the status at the given index on a fresh draft', () => {
-    const status: KeyTestStatus = { status: 'success', message: 'ok' };
-
-    get().setDraftKeyTestStatus('openai:0', 0, status);
-
-    expect(get().drafts['openai:0'].keyTestStatuses[0]).toEqual(status);
-  });
-
-  it('stores the full response detail fields alongside the status', () => {
-    const status: KeyTestStatus = {
-      status: 'error',
-      message: '400 Unknown Model',
-      detail: '{"error":"Unknown Model"}',
-      statusCode: 400,
-      durationMs: 245,
-      model: 'gpt-4o',
-    };
-
-    get().setDraftKeyTestStatus('openai:0', 0, status);
-
-    expect(get().drafts['openai:0'].keyTestStatuses[0]).toEqual(status);
-  });
-
-  it('marks the draft as initialized', () => {
-    get().setDraftKeyTestStatus('openai:0', 0, { status: 'loading', message: '' });
-
-    expect(get().drafts['openai:0'].initialized).toBe(true);
-  });
-
-  it('updates only the targeted index, leaving earlier entries intact', () => {
-    get().setDraftKeyTestStatus('openai:0', 0, { status: 'success', message: 'first' });
-
-    get().setDraftKeyTestStatus('openai:0', 1, { status: 'error', message: 'second' });
-
-    expect(get().drafts['openai:0'].keyTestStatuses[0]).toEqual({
-      status: 'success',
-      message: 'first',
-    });
-  });
-
-  it('overwrites an existing entry at the same index', () => {
-    get().setDraftKeyTestStatus('openai:0', 0, { status: 'loading', message: '' });
-
-    get().setDraftKeyTestStatus('openai:0', 0, { status: 'error', message: 'failed' });
-
-    expect(get().drafts['openai:0'].keyTestStatuses[0]).toEqual({
-      status: 'error',
-      message: 'failed',
-    });
-  });
-
-  it('creates holes when assigning past the current length', () => {
-    get().setDraftKeyTestStatus('openai:0', 2, { status: 'success', message: 'idx2' });
-
-    expect(get().drafts['openai:0'].keyTestStatuses.length).toBe(3);
-  });
-
-  it('ignores an empty key', () => {
-    get().setDraftKeyTestStatus('', 0, { status: 'success', message: 'ok' });
-
-    expect(get().drafts).toEqual({});
-  });
-});
-
-describe('useOpenAIEditDraftStore resetDraftKeyTestStatuses', () => {
-  it('builds an array of idle statuses of the requested length', () => {
-    get().resetDraftKeyTestStatuses('openai:0', 3);
-
-    expect(get().drafts['openai:0'].keyTestStatuses).toEqual([
-      { status: 'idle', message: '' },
-      { status: 'idle', message: '' },
-      { status: 'idle', message: '' },
-    ]);
-  });
-
-  it('produces an empty array for a count of zero', () => {
-    get().resetDraftKeyTestStatuses('openai:0', 0);
-
-    expect(get().drafts['openai:0'].keyTestStatuses).toEqual([]);
-  });
-
-  it('discards previously-set per-key statuses', () => {
-    get().setDraftKeyTestStatus('openai:0', 0, { status: 'success', message: 'old' });
-
-    get().resetDraftKeyTestStatuses('openai:0', 2);
-
-    expect(get().drafts['openai:0'].keyTestStatuses).toEqual([
-      { status: 'idle', message: '' },
-      { status: 'idle', message: '' },
-    ]);
-  });
-
-  it('marks the draft as initialized', () => {
-    get().resetDraftKeyTestStatuses('openai:0', 1);
-
-    expect(get().drafts['openai:0'].initialized).toBe(true);
-  });
-
-  it('ignores an empty key', () => {
-    get().resetDraftKeyTestStatuses('', 2);
-
-    expect(get().drafts).toEqual({});
-  });
-});
-
 describe('useOpenAIEditDraftStore clearDraft', () => {
   it('removes the draft entry', () => {
     get().acquireDraft('openai:0');
@@ -559,9 +385,10 @@ describe('useOpenAIEditDraftStore key isolation', () => {
   });
 
   it('does not leak a value from one key into another', () => {
-    get().setDraftKeyTestStatus('openai:0', 0, { status: 'success', message: 'a' });
-    get().setDraftKeyTestStatus('openai:1', 0, { status: 'error', message: 'b' });
+    get().setDraftTestModel('openai:0', 'model-a');
+    get().setDraftTestModel('openai:1', 'model-b');
 
-    expect(get().drafts['openai:1'].keyTestStatuses[0]).toEqual({ status: 'error', message: 'b' });
+    expect(get().drafts['openai:0'].testModel).toBe('model-a');
+    expect(get().drafts['openai:1'].testModel).toBe('model-b');
   });
 });
