@@ -680,7 +680,7 @@
     "empty_trace": "运行检查后，将在此显示通信内容。",
     "awaiting": "选择一项已完成的检查以查看其通信内容。",
     "key_label": "密钥 #{{index}}",
-    "key_count_other": "{{count}} 个密钥",
+    "key_count_other": "已配置 {{count}} 个密钥",
     "copy_trace": "复制追踪",
     "copy_success": "追踪已复制",
     "copy_failed": "无法复制追踪",

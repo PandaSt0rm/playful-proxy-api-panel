@@ -5,15 +5,11 @@
   flex-direction: column;
   gap: $spacing-md;
   min-width: 0;
-  min-height: 0;
-  height: 100%;
 }
 
 .controls {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
+  flex-direction: column;
   gap: $spacing-md;
   padding-bottom: $spacing-md;
   border-bottom: 1px solid var(--rule);
@@ -21,9 +17,12 @@
 }
 
 .checkOptions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-md;
+  // A wrapping flex row left ragged columns whose second and third items never lined up.
+  // Fixed tracks give the list a readable rhythm at any drawer width.
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: $spacing-sm $spacing-lg;
+  flex: 1;
   min-width: 0;
 }
 
@@ -57,8 +56,9 @@
 .actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: $spacing-sm;
-  flex-shrink: 0;
+  min-width: 0;
 }
 
 .keyCount {
@@ -72,11 +72,16 @@
 // the grid wider than the viewport.
 .panes {
   display: grid;
-  grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
   gap: $spacing-md;
-  flex: 1;
+  align-items: start;
   min-width: 0;
-  min-height: 0;
+}
+
+// The payload lab is an editor, not a list: squeezing it into the rail column left a tall
+// narrow box nobody can write JSON in. It gets the full width, with the response beneath.
+.panesStacked {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 @media (max-width: $breakpoint-tablet) {
@@ -88,7 +93,9 @@
 .railPane,
 .tracePane {
   min-width: 0;
-  min-height: 0;
+  // Sized to content up to a ceiling, so an unrun bench is a compact panel rather than a
+  // pair of near-empty columns half a screen tall.
+  max-height: 58vh;
   overflow: auto;
   border: 1px solid var(--rule);
   border-radius: $radius-square;
@@ -213,26 +220,24 @@
 // The hop chain: the one place this screen spends contrast, because "which leg was slow
 // and which leg failed" is the question a proxy console exists to answer.
 .hopChain {
+  // The one place this screen spends contrast. A proxy console exists to answer "which leg
+  // was slow, and which leg failed", so the request path gets an accented band of its own
+  // rather than a caption line between two paragraphs.
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: $spacing-xs;
-  padding: $spacing-sm;
-  border: 1px solid var(--rule);
-  border-radius: $radius-square;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  border-left: 2px solid var(--route);
   background: var(--surface-2);
   min-width: 0;
 }
 
 .hopNode {
   font-family: $font-mono;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--ink);
-  padding: 2px $spacing-xs;
-  border: 1px solid var(--rule);
-  border-radius: $radius-square;
-  background: var(--surface-1);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -243,23 +248,22 @@
   display: flex;
   align-items: center;
   gap: $spacing-xs;
-  flex: 1;
-  min-width: 48px;
+  flex: 0 0 auto;
 
-  &::before,
-  &::after {
+  &::before {
     content: '';
-    flex: 1;
+    // Fixed rather than flexible: stretching the connector across the pane left the
+    // latency floating in an empty gutter that read as a blank input.
+    width: 28px;
     height: 1px;
     background: var(--rule);
   }
 
   &::after {
     // Arrowhead into the next node, drawn with borders so no image or gradient is needed.
-    flex: 0 0 auto;
+    content: '';
     width: 0;
     height: 0;
-    background: transparent;
     border-top: 4px solid transparent;
     border-bottom: 4px solid transparent;
     border-left: 5px solid var(--rule);
@@ -268,9 +272,9 @@
 
 .hopLatency {
   font-family: $font-mono;
-  font-size: 11px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
-  color: var(--ink-muted);
+  color: var(--route);
   white-space: nowrap;
 }
 
@@ -321,7 +325,10 @@
 }
 
 .modelSelect {
-  min-width: 180px;
+  // The Select fills its container by default, which stretched it across the whole bench.
+  flex: 0 0 auto;
+  width: 240px;
+  max-width: 100%;
 }
 
 // Marks a check that spends provider tokens, so the cost is visible at the point of

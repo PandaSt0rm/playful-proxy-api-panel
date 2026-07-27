@@ -75,7 +75,7 @@ describe('ProviderDebugDrawer', () => {
     expect(screen.getByRole('checkbox', { name: /Reachability/ })).toBeChecked();
     expect(screen.getByRole('checkbox', { name: /Key/ })).toBeChecked();
     expect(screen.getByRole('checkbox', { name: /Model catalog/ })).toBeChecked();
-    expect(screen.getByText('2 keys')).toBeInTheDocument();
+    expect(screen.getByText('2 keys configured')).toBeInTheDocument();
   });
 
   it('says nothing has run yet before the first run', () => {

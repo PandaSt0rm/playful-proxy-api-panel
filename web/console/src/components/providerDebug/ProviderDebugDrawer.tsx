@@ -211,16 +211,11 @@ export function ProviderDebugDrawer({ open, onClose, target }: ProviderDebugDraw
     <Button variant="primary" size="sm" disabled={!units.length} onClick={handleRunChecks}>
       {t('provider_debug.run')}
     </Button>
-  ) : (
-    <Button
-      variant="primary"
-      size="sm"
-      disabled={!matrixPlan.cells.length}
-      onClick={handleRunMatrix}
-    >
+  ) : matrixPlan.cells.length ? (
+    <Button variant="primary" size="sm" onClick={handleRunMatrix}>
       {t('provider_debug.run_matrix', { count: matrixPlan.cells.length })}
     </Button>
-  );
+  ) : null;
 
   const tracePane = (
     <section className={styles.tracePane} aria-label={t('provider_debug.trace_heading')}>
@@ -357,7 +352,7 @@ export function ProviderDebugDrawer({ open, onClose, target }: ProviderDebugDraw
           ]}
         />
 
-        <div className={styles.panes}>
+        <div className={tab === 'lab' ? `${styles.panes} ${styles.panesStacked}` : styles.panes}>
           <section
             className={styles.railPane}
             aria-label={

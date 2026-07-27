@@ -680,7 +680,7 @@
     "empty_trace": "執行檢查後，將在此顯示通訊內容。",
     "awaiting": "選擇一項已完成的檢查以檢視其通訊內容。",
     "key_label": "金鑰 #{{index}}",
-    "key_count_other": "{{count}} 個金鑰",
+    "key_count_other": "已設定 {{count}} 個金鑰",
     "copy_trace": "複製追蹤",
     "copy_success": "追蹤已複製",
     "copy_failed": "無法複製追蹤",

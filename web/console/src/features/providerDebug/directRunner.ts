@@ -39,6 +39,12 @@ export interface DirectRunnerDeps {
 }
 
 /**
+ * `performance.now()` is sub-millisecond, and a raw reading renders as
+ * "13.599999994039536 ms" — which reads as a broken number, not a fast request.
+ */
+const elapsedMs = (from: number, to: number): number => Math.round(to - from);
+
+/**
  * Either the upstream answered or it did not. Modelling that as a union rather than a bag
  * of optionals means the caller cannot read a response that was never received.
  */
@@ -106,7 +112,7 @@ async function exchange(
         headers: redactHeaderEntries(toHeaderEntries(result.header)),
         body: redactSecretText(formatApiCallResultDetail(result)),
       },
-      elapsedMs: deps.now() - startedAt,
+      elapsedMs: elapsedMs(startedAt, deps.now()),
     };
   } catch (error) {
     // The management proxy answers 502 with a transport detail when the upstream request
@@ -117,7 +123,7 @@ async function exchange(
       ok: false,
       request: snapshot,
       transportError: redactSecretText(detail || fallback),
-      elapsedMs: deps.now() - startedAt,
+      elapsedMs: elapsedMs(startedAt, deps.now()),
     };
   }
 }

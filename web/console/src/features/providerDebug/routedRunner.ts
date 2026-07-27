@@ -158,7 +158,7 @@ export async function runRoutedCheck(
         key: 'provider_debug.result.routed_failed',
         params: { detail: redactSecretText(message) },
       },
-      timing: { totalMs: deps.now() - startedAt, hops: [] },
+      timing: { totalMs: Math.round(deps.now() - startedAt), hops: [] },
     };
   }
 }
@@ -246,7 +246,7 @@ export async function runRoutedPayload(
         key: 'provider_debug.result.routed_failed',
         params: { detail: redactSecretText(error instanceof Error ? error.message : String(error)) },
       },
-      timing: { totalMs: deps.now() - startedAt, hops: [] },
+      timing: { totalMs: Math.round(deps.now() - startedAt), hops: [] },
     };
   }
 }

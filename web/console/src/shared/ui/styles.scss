@@ -95,6 +95,13 @@
   border-left: 0;
 }
 
+// Without this the options render at zero width padding and their labels butt up against
+// each other, which reads as one broken string rather than a choice of views.
+.rf-segmented__option {
+  padding: 0 $spacing-md;
+  white-space: nowrap;
+}
+
 .rf-segmented__option + .rf-segmented__option,
 .rf-tabs__tab + .rf-tabs__tab {
   border-left: 1px solid var(--rule);
@@ -255,12 +262,13 @@
   max-height: 100dvh;
 }
 
-// The wide drawer hosts a full workspace, so its body fills the panel instead of
-// scrolling inside the standard 65vh modal body.
+// The wide drawer hosts a full workspace. Unlike the standard side panel it sizes to its
+// content: stretching it full-height left an unrun bench as a mostly empty box.
 .rf-drawer--wide {
+  align-self: center;
+
   .modal-body {
     max-height: none;
-    flex: 1;
     min-height: 0;
   }
 }
