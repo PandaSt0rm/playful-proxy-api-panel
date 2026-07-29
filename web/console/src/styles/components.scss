@@ -155,6 +155,20 @@ textarea {
   max-width: 360px;
 }
 
+body.modal-open .notification-container {
+  top: auto;
+  bottom: $spacing-lg;
+}
+
+@media (max-width: $breakpoint-mobile) {
+  body.modal-open .notification-container {
+    right: $spacing-md;
+    bottom: $spacing-md;
+    left: $spacing-md;
+    max-width: none;
+  }
+}
+
 @keyframes notification-enter {
   from {
     opacity: 0;

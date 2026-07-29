@@ -81,8 +81,6 @@ export const aiproxyApi = {
     }),
   diagnostics: (payload: unknown) =>
     apiClient.post<DiagnosticResult>(`${base}/diagnostics`, payload),
-  diagnosticHistory: (query: string) =>
-    apiClient.get<{ results: DiagnosticResult[] }>(`${base}/diagnostics?${query}`),
   syncDrift: (seconds = 86400) =>
     apiClient.get<{ reported_sync_state: SyncDriftRow[]; stale_after_seconds: number }>(
       `${base}/sync-drift?stale_after_seconds=${seconds}`

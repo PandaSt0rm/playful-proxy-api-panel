@@ -91,15 +91,6 @@ export const PANEL_MANIFEST: readonly PanelManifestEntry[] = [
     interaction: { role: 'button', name: 'Start Codex Login' },
   },
   {
-    id: 'diagnostics',
-    path: '/diagnostics',
-    heading: 'Diagnostics',
-    module: 'Providers',
-    destination: 'Diagnostics',
-    region: 'Target',
-    interaction: { role: 'button', name: 'Run diagnostic' },
-  },
-  {
     id: 'tooling',
     path: '/tooling-templates',
     heading: 'Tooling Templates',

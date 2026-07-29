@@ -67,6 +67,44 @@
   font-variant-numeric: tabular-nums;
 }
 
+.laneSummary {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+.planSummary {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.idlePrompt {
+  display: grid;
+  gap: $spacing-xs;
+  min-height: 112px;
+  align-content: center;
+  padding: $spacing-lg;
+  border: 1px solid var(--rule);
+  background: var(--canvas);
+
+  strong {
+    color: var(--ink);
+    font-size: 14px;
+  }
+
+  span {
+    color: var(--ink-muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+}
+
 // Rail and trace read as one instrument: a fixed sequence on the left, the detail for the
 // selected row on the right. minmax(0, ...) stops the monospace transcript from forcing
 // the grid wider than the viewport.

@@ -266,13 +266,14 @@
 // content: stretching it full-height left an unrun bench as a mostly empty box.
 .rf-drawer--wide {
   align-self: center;
+  margin-right: 0;
+  margin-left: 0;
 
   .modal-body {
     max-height: none;
     min-height: 0;
   }
 }
-
 
 .rf-table-viewport {
   min-width: 0;

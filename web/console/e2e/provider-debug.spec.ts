@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { loginViaUi, mockManagementApi, seedEnglish, seedTheme } from './fixtures';
 
 /**
- * The provider debug bench opens in a drawer, so the manifest-driven visual sweep in
+ * The provider debug bench opens in a modal, so the manifest-driven visual sweep in
  * `visual-consistency.spec.ts` never sees it — that sweep only scans routed pages in their
  * default state. These cases cover what it cannot: the bench's own layout, with a populated
  * monospace transcript, at both a wide and a narrow viewport.
@@ -65,9 +65,7 @@ test.describe('provider debug bench', () => {
     const bench = page.getByRole('dialog', { name: /Provider debug/ });
     await expect(bench.getByRole('heading', { name: 'Request' })).toBeVisible();
     await expect(bench.getByRole('heading', { name: 'Response' })).toBeVisible();
-    await expect(
-      bench.getByText(/> GET https:\/\/api\.example\.com\/v1\/models/)
-    ).toBeVisible();
+    await expect(bench.getByText(/> GET https:\/\/api\.example\.com\/v1\/models/)).toBeVisible();
     await expect(bench.getByText(/< HTTP 200/)).toBeVisible();
     await expect(bench.getByText('api.example.com', { exact: true })).toBeVisible();
   });
@@ -79,7 +77,10 @@ test.describe('provider debug bench', () => {
 
     // Open the credential-bearing check explicitly. Reachability sends no key at all, so
     // asserting on the default selection would prove nothing about masking.
-    await page.getByRole('list').getByRole('button', { name: /Key · key #1/ }).click();
+    await page
+      .getByRole('list')
+      .getByRole('button', { name: /Key · key #1/ })
+      .click();
     const bench = page.getByRole('dialog', { name: /Provider debug/ });
     await expect(bench.getByText(/> authorization: Bearer/i)).toBeVisible();
 
@@ -91,11 +92,37 @@ test.describe('provider debug bench', () => {
 
   test('keeps the bench inside the viewport with a populated transcript', async ({ page }) => {
     await openBenchWithDraftConfig(page);
+
+    const closeControl = page
+      .getByRole('dialog', { name: /Provider debug/ })
+      .getByRole('button', { name: 'Close', exact: true });
+    const closeBounds = await closeControl.boundingBox();
+    expect(closeBounds).not.toBeNull();
+    const closeControlIsReachable = await page.evaluate(
+      ({ x, y }) => {
+        const target = document.elementFromPoint(x, y);
+        const control = document.querySelector<HTMLElement>('.modal-close');
+        return Boolean(control && target && control.contains(target));
+      },
+      {
+        x: closeBounds!.x + closeBounds!.width / 2,
+        y: closeBounds!.y + closeBounds!.height / 2,
+      }
+    );
+    expect(closeControlIsReachable).toBe(true);
+
     await page.getByRole('button', { name: 'Run checks' }).click();
     await expect(page.getByRole('button', { name: 'Run checks' })).toBeEnabled();
     await expect(page.getByText(/< HTTP 200/)).toBeVisible();
 
     await assertNoViewportOverflow(page, 'bench at the project viewport');
+    const benchBounds = await page.getByRole('dialog', { name: /Provider debug/ }).boundingBox();
+    const viewport = page.viewportSize();
+    expect(benchBounds).not.toBeNull();
+    expect(viewport).not.toBeNull();
+    expect(
+      Math.abs(benchBounds!.x + benchBounds!.width / 2 - viewport!.width / 2)
+    ).toBeLessThanOrEqual(1);
 
     // The two-pane grid collapses to one column below the tablet breakpoint; a monospace
     // transcript is the classic min-width:auto blowout, so check the narrowest case too.

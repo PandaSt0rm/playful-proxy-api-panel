@@ -68,9 +68,6 @@ function bodyForPath(path: string): unknown {
   if (path.endsWith('/aiproxy/config-revisions')) {
     return { revisions: [], next_cursor: '', current_sha256: 'fixture' };
   }
-  if (path.endsWith('/aiproxy/diagnostics')) {
-    return { results: [] };
-  }
   if (path.endsWith('/aiproxy/budgets')) {
     return { budgets: [] };
   }

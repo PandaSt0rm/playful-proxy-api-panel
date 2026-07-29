@@ -63,8 +63,8 @@
   },
   "splash": {
     "title": "AIPROXY",
-    "title_line_1": "Playful Proxy",
-    "title_line_2": "API Panel",
+    "title_line_1": "AI",
+    "title_line_2": "PROXY",
     "subtitle": "aiproxy"
   },
   "auto_login": {
@@ -138,7 +138,6 @@
       "aiProviders": "AI 提供商",
       "authFiles": "认证文件",
       "oauth": "认证登录",
-      "diagnostics": "诊断",
       "toolingTemplates": "工具模板",
       "plugins": "插件",
       "budgets": "预算",
@@ -255,29 +254,223 @@
     "resume": "继续",
     "pause": "暂停",
     "refresh": "立即刷新",
-    "state": { "live": "实时", "degraded": "降级", "paused": "已暂停" },
-    "cadence": { "label": "刷新频率", "off": "关闭", "eight": "8 秒", "fifteen": "15 秒", "thirty": "30 秒" },
-    "signals": { "requests": "请求", "results": "成功 / 失败", "latency": "延迟 / 首字节", "throughput": "TPS / 令牌" },
-    "routes": { "title": "提供商路由", "description": "最近一小时的实际提供商流量。", "emptyTitle": "没有提供商路由", "emptyDescription": "记录流量后会显示提供商行。", "error": "提供商路由数据不可用。" },
-    "requests": { "title": "请求活动", "description": "最近一小时内的筛选请求事件。", "emptyTitle": "没有匹配请求", "emptyDescription": "调整筛选条件或等待新流量。", "error": "请求活动不可用。" },
-    "filters": { "search": "搜索请求", "provider": "提供商", "allProviders": "所有提供商", "model": "模型或别名", "endpoint": "端点", "status": "结果", "all": "所有结果", "success": "成功", "failed": "失败" },
-    "columns": { "time": "时间", "result": "结果", "provider": "提供商", "model": "模型", "endpoint": "端点", "source": "来源", "tokens": "令牌", "latency": "延迟 / 首字节" },
-    "logs": { "title": "应用日志", "description": "最近 500 行应用日志。存储控制保留在日志页面。", "raw": "显示原始", "parsed": "显示解析", "follow": "跟随最新", "open": "打开完整日志", "emptyTitle": "没有应用日志", "emptyDescription": "服务器输出新日志后会显示在这里。", "error": "应用日志不可用。" },
-    "details": { "title": "请求详情", "requestId": "请求 ID", "eventId": "事件哈希", "path": "路径", "auth": "认证", "source": "来源", "tokens": "输入 / 输出 / 总令牌", "timestamps": "时间戳", "latency": "延迟 / 首字节", "failure": "失败正文" }
+    "state": {
+      "live": "实时",
+      "degraded": "降级",
+      "paused": "已暂停"
+    },
+    "cadence": {
+      "label": "刷新频率",
+      "off": "关闭",
+      "eight": "8 秒",
+      "fifteen": "15 秒",
+      "thirty": "30 秒"
+    },
+    "signals": {
+      "requests": "请求",
+      "results": "成功 / 失败",
+      "latency": "延迟 / 首字节",
+      "throughput": "TPS / 令牌"
+    },
+    "routes": {
+      "title": "提供商路由",
+      "description": "最近一小时的实际提供商流量。",
+      "emptyTitle": "没有提供商路由",
+      "emptyDescription": "记录流量后会显示提供商行。",
+      "error": "提供商路由数据不可用。"
+    },
+    "requests": {
+      "title": "请求活动",
+      "description": "最近一小时内的筛选请求事件。",
+      "emptyTitle": "没有匹配请求",
+      "emptyDescription": "调整筛选条件或等待新流量。",
+      "error": "请求活动不可用。"
+    },
+    "filters": {
+      "search": "搜索请求",
+      "provider": "提供商",
+      "allProviders": "所有提供商",
+      "model": "模型或别名",
+      "endpoint": "端点",
+      "status": "结果",
+      "all": "所有结果",
+      "success": "成功",
+      "failed": "失败"
+    },
+    "columns": {
+      "time": "时间",
+      "result": "结果",
+      "provider": "提供商",
+      "model": "模型",
+      "endpoint": "端点",
+      "source": "来源",
+      "tokens": "令牌",
+      "latency": "延迟 / 首字节"
+    },
+    "logs": {
+      "title": "应用日志",
+      "description": "最近 500 行应用日志。存储控制保留在日志页面。",
+      "raw": "显示原始",
+      "parsed": "显示解析",
+      "follow": "跟随最新",
+      "open": "打开完整日志",
+      "emptyTitle": "没有应用日志",
+      "emptyDescription": "服务器输出新日志后会显示在这里。",
+      "error": "应用日志不可用。"
+    },
+    "details": {
+      "title": "请求详情",
+      "requestId": "请求 ID",
+      "eventId": "事件哈希",
+      "path": "路径",
+      "auth": "认证",
+      "source": "来源",
+      "tokens": "输入 / 输出 / 总令牌",
+      "timestamps": "时间戳",
+      "latency": "延迟 / 首字节",
+      "failure": "失败正文"
+    }
   },
-  "diagnostics": {
-    "eyebrow": "提供商", "title": "诊断", "description": "运行精确凭据的模型目录或连接检查，并查看有限历史。", "partial": "部分凭据", "retry": "重试", "refresh": "刷新历史", "run": "运行诊断", "running": "运行中", "runError": "诊断失败。下方保留上次成功结果。",
-    "kind": { "gemini-api-key": "Gemini API 密钥", "interactions-api-key": "Interactions API 密钥", "claude-api-key": "Claude API 密钥", "xai-api-key": "xAI API 密钥", "codex": "Codex", "vertex-api-key": "Vertex API 密钥", "openai-compatibility": "OpenAI 兼容", "auth-file": "认证文件" },
-    "target": { "title": "目标", "description": "选择安全的凭据引用。绝不显示密钥值。", "loading": "正在加载凭据", "error": "凭据不可用。", "kind": "提供商类型", "credential": "凭据", "select": "选择凭据", "selected": "已选目标", "emptyTitle": "此提供商没有凭据", "emptyDescription": "运行诊断前请先配置凭据。", "setup": "打开设置" },
-    "check": { "title": "检查", "description": "目录读取提供商元数据。连接检查会发送一个计费令牌。", "models": "模型目录", "modelsDescription": "获取模型目录，不发送计费确认。", "connectivity": "连接", "connectivityDescription": "发送一个令牌验证精确凭据。" },
-    "status": { "pass": "通过", "warn": "警告", "fail": "失败" },
-    "result": { "title": "当前结果", "current": "当前结果", "previous": "之前结果", "emptyTitle": "没有诊断结果", "emptyDescription": "选择目标并运行诊断。", "zeroModels": "未返回模型", "target": "目标", "check": "检查", "checked": "检查时间", "latency": "延迟", "http": "HTTP 状态", "modelCount": "模型数量", "category": "类别", "testedModel": "测试模型", "searchModels": "搜索模型" },
-    "history": { "title": "历史", "description": "所选目标最近 50 个结果。", "loading": "正在加载历史", "error": "诊断历史不可用。", "emptyTitle": "没有诊断历史", "emptyDescription": "完成的检查会显示在这里。", "time": "时间", "target": "目标", "check": "检查", "status": "状态", "latency": "延迟", "summary": "HTTP / 模型 / 类别", "runAgain": "再次运行" },
-    "confirm": { "title": "确认计费连接检查", "body": "这会使用 {{credential}} 发送一个令牌的提供商请求，可能消耗配额。", "cancel": "取消", "submit": "运行连接检查" }
+  "readiness": {
+    "eyebrow": "系统门禁",
+    "title": "就绪状态",
+    "description": "路由流量前完成必需的本地检查。",
+    "refresh": "刷新检查",
+    "loading": "正在检查",
+    "error": "就绪状态不可用。",
+    "retry": "重试",
+    "readyTitle": "可以路由",
+    "readyDescription": "所有必需检查均已通过，正在进入概览。",
+    "continue": "进入概览",
+    "checksTitle": "操作检查",
+    "open": "打开",
+    "passed": "{{count}} 个检查通过",
+    "status": {
+      "ready": "就绪",
+      "attention": "需注意",
+      "blocked": "已阻止"
+    },
+    "checkStatus": {
+      "pass": "通过",
+      "warn": "警告",
+      "fail": "失败"
+    }
   },
-  "readiness": { "eyebrow": "系统门禁", "title": "就绪状态", "description": "路由流量前完成必需的本地检查。", "refresh": "刷新检查", "loading": "正在检查", "error": "就绪状态不可用。", "retry": "重试", "readyTitle": "可以路由", "readyDescription": "所有必需检查均已通过，正在进入概览。", "continue": "进入概览", "checksTitle": "操作检查", "open": "打开", "passed": "{{count}} 个检查通过", "status": { "ready": "就绪", "attention": "需注意", "blocked": "已阻止" }, "checkStatus": { "pass": "通过", "warn": "警告", "fail": "失败" } },
-  "changes": { "eyebrow": "控制", "title": "变更历史", "description": "认证管理操作产生的脱敏配置修订。", "refresh": "刷新", "retry": "重试", "loading": "正在加载修订", "restored": "配置已恢复，修订历史已重新加载。", "emptyTitle": "没有变更记录", "emptyDescription": "下次配置变更后会产生修订。", "revisions": "修订", "filter": "筛选修订", "time": "时间", "action": "操作", "path": "管理路径", "actor": "操作者", "sha": "修订哈希", "inspector": "修订检查器", "revision": "修订", "after": "变更后哈希", "restore": "恢复此修订", "selectTitle": "选择修订", "selectDescription": "选择修订以查看脱敏差异。", "errors": { "load": "配置历史不可用。", "inspect": "无法加载此修订。", "notFound": "所选修订已不存在。", "conflict": "当前配置已更改，未执行恢复。", "restore": "恢复失败，请刷新并重新比较。" }, "confirm": { "title": "恢复配置", "body": "这会从所选快照创建新修订，当前配置必须仍匹配显示的哈希。", "cancel": "取消", "submit": "恢复" } },
-  "budgets": { "eyebrow": "控制", "title": "预算", "description": "基于权威运行使用量和定价的建议美元阈值。预算不会阻止请求。", "refresh": "刷新", "retry": "重试", "create": "创建预算", "edit": "编辑", "delete": "删除", "save": "保存预算", "enabled": "已启用", "global": "所有流量", "list": "预算控制", "emptyTitle": "没有预算", "emptyDescription": "创建建议预算以跟踪当前周期支出。", "createTitle": "创建预算", "editTitle": "编辑预算", "unpriced": "{{count}} 个未定价事件", "summary": { "active": "活动", "warning": "警告", "exceeded": "超出", "unpriced": "未定价事件" }, "columns": { "name": "预算", "scope": "范围", "spend": "支出 / 限额", "period": "周期", "status": "状态", "updated": "周期结束", "enabled": "启用" }, "scope": { "global": "全局", "provider": "提供商", "model": "模型", "api_key": "API 密钥哈希" }, "period": { "day": "天", "week": "周", "month": "月" }, "status": { "ok": "活动", "warning": "警告", "exceeded": "超出", "disabled": "已禁用", "unknown": "不可用" }, "fields": { "name": "名称", "scope": "范围", "match": "精确匹配", "period": "周期", "limit": "限额（美元）", "warning": "警告百分比" }, "validation": { "name": "请输入预算名称。", "match": "请输入精确范围匹配。", "limit": "限额必须大于零。", "warning": "警告百分比必须在 1 到 100 之间。" }, "errors": { "load": "部分预算状态不可用。", "save": "预算未保存，请检查范围、限额和唯一性。", "toggle": "预算状态未更新。", "delete": "预算未删除。" }, "confirm": { "title": "删除预算", "body": "删除“{{name}}”？这不会删除使用事件。", "cancel": "取消", "submit": "删除" } },
+  "changes": {
+    "eyebrow": "控制",
+    "title": "变更历史",
+    "description": "认证管理操作产生的脱敏配置修订。",
+    "refresh": "刷新",
+    "retry": "重试",
+    "loading": "正在加载修订",
+    "restored": "配置已恢复，修订历史已重新加载。",
+    "emptyTitle": "没有变更记录",
+    "emptyDescription": "下次配置变更后会产生修订。",
+    "revisions": "修订",
+    "filter": "筛选修订",
+    "time": "时间",
+    "action": "操作",
+    "path": "管理路径",
+    "actor": "操作者",
+    "sha": "修订哈希",
+    "inspector": "修订检查器",
+    "revision": "修订",
+    "after": "变更后哈希",
+    "restore": "恢复此修订",
+    "selectTitle": "选择修订",
+    "selectDescription": "选择修订以查看脱敏差异。",
+    "errors": {
+      "load": "配置历史不可用。",
+      "inspect": "无法加载此修订。",
+      "notFound": "所选修订已不存在。",
+      "conflict": "当前配置已更改，未执行恢复。",
+      "restore": "恢复失败，请刷新并重新比较。"
+    },
+    "confirm": {
+      "title": "恢复配置",
+      "body": "这会从所选快照创建新修订，当前配置必须仍匹配显示的哈希。",
+      "cancel": "取消",
+      "submit": "恢复"
+    }
+  },
+  "budgets": {
+    "eyebrow": "控制",
+    "title": "预算",
+    "description": "基于权威运行使用量和定价的建议美元阈值。预算不会阻止请求。",
+    "refresh": "刷新",
+    "retry": "重试",
+    "create": "创建预算",
+    "edit": "编辑",
+    "delete": "删除",
+    "save": "保存预算",
+    "enabled": "已启用",
+    "global": "所有流量",
+    "list": "预算控制",
+    "emptyTitle": "没有预算",
+    "emptyDescription": "创建建议预算以跟踪当前周期支出。",
+    "createTitle": "创建预算",
+    "editTitle": "编辑预算",
+    "unpriced": "{{count}} 个未定价事件",
+    "summary": {
+      "active": "活动",
+      "warning": "警告",
+      "exceeded": "超出",
+      "unpriced": "未定价事件"
+    },
+    "columns": {
+      "name": "预算",
+      "scope": "范围",
+      "spend": "支出 / 限额",
+      "period": "周期",
+      "status": "状态",
+      "updated": "周期结束",
+      "enabled": "启用"
+    },
+    "scope": {
+      "global": "全局",
+      "provider": "提供商",
+      "model": "模型",
+      "api_key": "API 密钥哈希"
+    },
+    "period": {
+      "day": "天",
+      "week": "周",
+      "month": "月"
+    },
+    "status": {
+      "ok": "活动",
+      "warning": "警告",
+      "exceeded": "超出",
+      "disabled": "已禁用",
+      "unknown": "不可用"
+    },
+    "fields": {
+      "name": "名称",
+      "scope": "范围",
+      "match": "精确匹配",
+      "period": "周期",
+      "limit": "限额（美元）",
+      "warning": "警告百分比"
+    },
+    "validation": {
+      "name": "请输入预算名称。",
+      "match": "请输入精确范围匹配。",
+      "limit": "限额必须大于零。",
+      "warning": "警告百分比必须在 1 到 100 之间。"
+    },
+    "errors": {
+      "load": "部分预算状态不可用。",
+      "save": "预算未保存，请检查范围、限额和唯一性。",
+      "toggle": "预算状态未更新。",
+      "delete": "预算未删除。"
+    },
+    "confirm": {
+      "title": "删除预算",
+      "body": "删除“{{name}}”？这不会删除使用事件。",
+      "cancel": "取消",
+      "submit": "删除"
+    }
+  },
   "plugins": {
     "title": "插件",
     "description": "管理插件目录中发现的动态库插件。插件是受信任的进程内代码。",
@@ -677,10 +870,14 @@
     "checks_heading": "检查项",
     "trace_heading": "追踪",
     "empty": "尚未运行检查。选择需要的检查项并运行。",
+    "ready_title": "可以开始诊断",
     "empty_trace": "运行检查后，将在此显示通信内容。",
     "awaiting": "选择一项已完成的检查以查看其通信内容。",
     "key_label": "密钥 #{{index}}",
     "key_count_other": "已配置 {{count}} 个密钥",
+    "plan_count_other": "计划运行 {{count}} 项探测",
+    "plan_billable_other": "{{count}} 次计费调用",
+    "plan_free": "无计费调用",
     "copy_trace": "复制追踪",
     "copy_success": "追踪已复制",
     "copy_failed": "无法复制追踪",

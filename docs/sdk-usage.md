@@ -1,6 +1,12 @@
 # CLI Proxy SDK Guide
 
-The `sdk/cliproxy` module exposes the proxy as a reusable Go library so external programs can embed the routing, authentication, hot‑reload, and translation layers without depending on the CLI binary.
+1. Install the module.
+2. Load `config.yaml`.
+3. Build the service.
+4. Run the service.
+5. Cancel the context to stop.
+
+The `sdk/cliproxy` module exposes the proxy as a reusable Go library. External programs can embed routing, authentication, hot-reload, and translation without the CLI binary.
 
 ## Install & Import
 
@@ -19,7 +25,7 @@ import (
 )
 ```
 
-Note the `/v6` module path.
+Note the `/v6` module path in these samples. Match the module path in the repository `go.mod` when you import.
 
 ## Minimal Embed
 
@@ -41,11 +47,13 @@ if err := svc.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
 }
 ```
 
-The service manages config/auth watching, background token refresh, and graceful shutdown. Cancel the context to stop it.
+The service manages config and auth watchers, background token refresh, and graceful shutdown. Cancel the context to stop it.
+
+Check: the process listens on the port in `config.yaml` (default `8317`).
 
 ## Server Options (middleware, routes, logs)
 
-The server accepts options via `WithServerOptions`:
+Pass server options with `WithServerOptions`:
 
 ```go
 svc, _ := cliproxy.NewBuilder().
@@ -72,17 +80,17 @@ These options mirror the internals used by the CLI server.
 
 ## Management API (when embedded)
 
-- Management endpoints are mounted only when `remote-management.secret-key` is set in `config.yaml`.
-- Remote access additionally requires `remote-management.allow-remote: true`.
+- Management endpoints mount only when `remote-management.secret-key` is set in `config.yaml`.
+- Remote access also requires `remote-management.allow-remote: true`.
 - See MANAGEMENT_API.md for endpoints. Your embedded server exposes them under `/v0/management` on the configured port.
 
-## Using the Core Auth Manager
+## Use the core auth manager
 
-The service uses a core `auth.Manager` for selection, execution, and auto‑refresh. When embedding, you can provide your own manager to customize transports or hooks:
+The service uses a core `auth.Manager` for selection, execution, and auto-refresh. When you embed, you can supply your own manager to customize transports or hooks:
 
 ```go
 core := coreauth.NewManager(coreauth.NewFileStore(cfg.AuthDir), nil, nil)
-core.SetRoundTripperProvider(myRTProvider) // per‑auth *http.Transport
+core.SetRoundTripperProvider(myRTProvider) // per-auth *http.Transport
 
 svc, _ := cliproxy.NewBuilder().
     WithConfig(cfg).
@@ -91,7 +99,7 @@ svc, _ := cliproxy.NewBuilder().
     Build()
 ```
 
-Implement a custom per‑auth transport:
+Implement a custom per-auth transport:
 
 ```go
 type myRTProvider struct{}
@@ -105,7 +113,7 @@ func (myRTProvider) RoundTripperFor(a *coreauth.Auth) http.RoundTripper {
 Programmatic execution is available on the manager:
 
 ```go
-// Non‑streaming
+// Non-streaming
 resp, err := core.Execute(ctx, []string{"gemini"}, req, opts)
 
 // Streaming
@@ -113,11 +121,13 @@ chunks, err := core.ExecuteStream(ctx, []string{"gemini"}, req, opts)
 for ch := range chunks { /* ... */ }
 ```
 
-Note: Built‑in provider executors are wired automatically when you run the `Service`. If you want to use `Manager` stand‑alone without the HTTP server, you must register your own executors that implement `auth.ProviderExecutor`.
+Note: Built-in provider executors wire automatically when you run the `Service`.
+
+If you use `Manager` alone without the HTTP server, you must register your own executors that implement `auth.ProviderExecutor`.
 
 ## Custom Client Sources
 
-Replace the default loaders if your creds live outside the local filesystem:
+Replace the default loaders if credentials live outside the local filesystem:
 
 ```go
 type memoryTokenProvider struct{}
@@ -136,7 +146,7 @@ svc, _ := cliproxy.NewBuilder().
 
 ## Hooks
 
-Observe lifecycle without patching internals:
+Observe lifecycle events. Do not patch service internals:
 
 ```go
 hooks := cliproxy.Hooks{
@@ -148,7 +158,7 @@ svc, _ := cliproxy.NewBuilder().WithConfig(cfg).WithConfigPath("config.yaml").Wi
 
 ## Shutdown
 
-`Run` defers `Shutdown`, so cancelling the parent context is enough. To stop manually:
+`Run` defers `Shutdown`, so a cancel of the parent context is enough. To stop manually:
 
 ```go
 ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -159,5 +169,5 @@ _ = svc.Shutdown(ctx)
 ## Notes
 
 - Hot reload: changes to `config.yaml` and `auths/` are picked up automatically.
-- Request logging can be toggled at runtime via the Management API.
+- The request log can be toggled at runtime via the Management API.
 - Gemini Web features (`gemini-web.*`) are honored in the embedded server.

@@ -30,15 +30,10 @@ describe('aiproxyApi contracts', () => {
     expect(apiClient.get).toHaveBeenNthCalledWith(7, '/aiproxy/budget-status');
   });
 
-  it('encodes revision paths and diagnostics history queries', async () => {
+  it('encodes revision paths', async () => {
     await aiproxyApi.revision('rev / one');
-    await aiproxyApi.diagnosticHistory('kind=auth-file&limit=50');
 
     expect(apiClient.get).toHaveBeenNthCalledWith(1, '/aiproxy/config-revisions/rev%20%2F%20one');
-    expect(apiClient.get).toHaveBeenNthCalledWith(
-      2,
-      '/aiproxy/diagnostics?kind=auth-file&limit=50'
-    );
   });
 
   it('posts restore and diagnostic request bodies', async () => {

@@ -126,14 +126,6 @@ const destinations = [
     matches: exactPath('/oauth'),
   },
   {
-    id: 'diagnostics',
-    module: 'providers',
-    path: '/diagnostics',
-    labelKey: 'routeFoundry.destinations.diagnostics',
-    icon: IconSlidersHorizontal,
-    matches: exactPath('/diagnostics'),
-  },
-  {
     id: 'tooling-templates',
     module: 'automate',
     path: '/tooling-templates',

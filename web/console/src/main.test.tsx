@@ -33,19 +33,31 @@ describe('bootstrapConsole', () => {
     expect(rootDouble.render).toHaveBeenCalledTimes(1);
     expect(document.title).toBe('AIPROXY');
     expect(document.documentElement).toHaveAttribute('translate', 'no');
-    expect(document.querySelector<HTMLLinkElement>('link[rel="icon"]')?.type).toBe('image/svg+xml');
+    const icons = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="icon"]'));
+    expect(icons.length).toBeGreaterThanOrEqual(1);
+    expect(icons.every((link) => link.type === 'image/png')).toBe(true);
   });
 
-  it('updates the existing favicon without replacing it', async () => {
-    const favicon = document.createElement('link');
-    favicon.rel = 'icon';
-    document.head.appendChild(favicon);
+  it('updates matching favicon links without duplicating type/size pairs', async () => {
+    const png32 = document.createElement('link');
+    png32.rel = 'icon';
+    png32.setAttribute('type', 'image/png');
+    png32.setAttribute('sizes', '32x32');
+    document.head.appendChild(png32);
+    const png16 = document.createElement('link');
+    png16.rel = 'icon';
+    png16.setAttribute('type', 'image/png');
+    png16.setAttribute('sizes', '16x16');
+    document.head.appendChild(png16);
     const { bootstrapConsole } = await import('./main');
 
     bootstrapConsole(document.createElement('div'));
 
-    expect(document.querySelectorAll('link[rel="icon"]')).toHaveLength(1);
-    expect(favicon.type).toBe('image/svg+xml');
+    const icons = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="icon"]'));
+    expect(icons.filter((link) => link.getAttribute('sizes') === '32x32')).toHaveLength(1);
+    expect(icons.filter((link) => link.getAttribute('sizes') === '16x16')).toHaveLength(1);
+    expect(png32.getAttribute('href')).toBeTruthy();
+    expect(png16.getAttribute('href')).toBeTruthy();
   });
 
   it('automatically mounts when the production root exists', async () => {

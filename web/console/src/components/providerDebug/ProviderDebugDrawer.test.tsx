@@ -78,9 +78,36 @@ describe('ProviderDebugDrawer', () => {
     expect(screen.getByText('2 keys configured')).toBeInTheDocument();
   });
 
+  it('shows the planned workload and cost before a run', async () => {
+    const user = userEvent.setup();
+    renderDrawer();
+
+    expect(screen.getByText('3 probes planned')).toBeInTheDocument();
+    expect(screen.getByText('No billable calls')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('checkbox', { name: /Completion/ }));
+
+    expect(screen.getByText('4 probes planned')).toBeInTheDocument();
+    expect(screen.getByText('1 billable call')).toBeInTheDocument();
+  });
+
+  it('shows the effective lane without offering an unavailable lane', () => {
+    renderDrawer(
+      buildTarget({
+        routedKind: 'auth-file',
+        keys: [{ apiKey: '', authIndex: 'saved-oauth' }],
+      })
+    );
+
+    expect(screen.getByText('Routed')).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Execution lane' })).not.toBeInTheDocument();
+  });
+
   it('says nothing has run yet before the first run', () => {
     renderDrawer();
+    expect(screen.getByText('Ready to diagnose')).toBeInTheDocument();
     expect(screen.getByText(/No checks run yet/)).toBeInTheDocument();
+    expect(screen.queryByText(/wire exchange here/)).not.toBeInTheDocument();
   });
 
   it('runs the selected checks and lists one rail row per unit', async () => {
@@ -150,9 +177,25 @@ describe('ProviderDebugDrawer', () => {
     renderDrawer();
 
     await runAndSettle(user);
-    await user.click(within(screen.getByRole('list')).getByRole('button', { name: /Reachability/ }));
+    await user.click(
+      within(screen.getByRole('list')).getByRole('button', { name: /Reachability/ })
+    );
 
     expect(screen.getByText(/Provider responded with HTTP 200/)).toBeInTheDocument();
+  });
+
+  it('clears stale evidence when the selected model changes', async () => {
+    const user = userEvent.setup();
+    renderDrawer(buildTarget({ models: ['gpt-4o', 'gpt-4o-mini'] }));
+
+    await runAndSettle(user);
+    expect(screen.getByText(/Key rejected/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Model under test' }));
+    await user.click(screen.getByRole('option', { name: 'gpt-4o-mini' }));
+
+    expect(screen.getByText('Ready to diagnose')).toBeInTheDocument();
+    expect(screen.queryByText(/Key rejected/)).not.toBeInTheDocument();
   });
 
   it('will not run with every check deselected', async () => {

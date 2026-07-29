@@ -25,7 +25,7 @@ describe('console route registry', () => {
       ])
     ).toEqual([
       ['monitor', ['overview', 'operations', 'usage', 'quota', 'logs']],
-      ['providers', ['ai-providers', 'auth-files', 'oauth', 'diagnostics']],
+      ['providers', ['ai-providers', 'auth-files', 'oauth']],
       ['automate', ['tooling-templates', 'plugins']],
       ['control', ['budgets', 'config', 'changes', 'system']],
     ]);

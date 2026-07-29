@@ -63,8 +63,8 @@
   },
   "splash": {
     "title": "AIPROXY",
-    "title_line_1": "Playful Proxy",
-    "title_line_2": "API Panel",
+    "title_line_1": "AI",
+    "title_line_2": "PROXY",
     "subtitle": "aiproxy"
   },
   "auto_login": {
@@ -140,7 +140,6 @@
       "aiProviders": "AI Providers",
       "authFiles": "Auth Files",
       "oauth": "Auth Login",
-      "diagnostics": "Diagnostics",
       "toolingTemplates": "Tooling Templates",
       "plugins": "Plugins",
       "budgets": "Budgets",
@@ -257,9 +256,24 @@
     "resume": "Resume",
     "pause": "Pause",
     "refresh": "Refresh now",
-    "state": { "live": "Live", "degraded": "Degraded", "paused": "Paused" },
-    "cadence": { "label": "Refresh cadence", "off": "Off", "eight": "8 s", "fifteen": "15 s", "thirty": "30 s" },
-    "signals": { "requests": "Requests", "results": "Success / failures", "latency": "Latency / TTFB", "throughput": "TPS / tokens" },
+    "state": {
+      "live": "Live",
+      "degraded": "Degraded",
+      "paused": "Paused"
+    },
+    "cadence": {
+      "label": "Refresh cadence",
+      "off": "Off",
+      "eight": "8 s",
+      "fifteen": "15 s",
+      "thirty": "30 s"
+    },
+    "signals": {
+      "requests": "Requests",
+      "results": "Success / failures",
+      "latency": "Latency / TTFB",
+      "throughput": "TPS / tokens"
+    },
     "routes": {
       "title": "Provider routes",
       "description": "Actual provider traffic in the last hour.",
@@ -285,7 +299,16 @@
       "success": "Success",
       "failed": "Failed"
     },
-    "columns": { "time": "Time", "result": "Result", "provider": "Provider", "model": "Model", "endpoint": "Endpoint", "source": "Source", "tokens": "Tokens", "latency": "Latency / TTFB" },
+    "columns": {
+      "time": "Time",
+      "result": "Result",
+      "provider": "Provider",
+      "model": "Model",
+      "endpoint": "Endpoint",
+      "source": "Source",
+      "tokens": "Tokens",
+      "latency": "Latency / TTFB"
+    },
     "logs": {
       "title": "Application log",
       "description": "The latest 500 application log lines. Storage controls remain on the Logs page.",
@@ -310,108 +333,145 @@
       "failure": "Failure body"
     }
   },
-  "diagnostics": {
-    "eyebrow": "Providers",
-    "title": "Diagnostics",
-    "description": "Run an exact-credential catalog or connectivity check and inspect bounded history.",
-    "partial": "Partial credentials",
+  "readiness": {
+    "eyebrow": "System gate",
+    "title": "Readiness",
+    "description": "Complete required local checks before routing traffic.",
+    "refresh": "Refresh checks",
+    "loading": "Checking readiness",
+    "error": "Readiness is unavailable.",
     "retry": "Retry",
-    "refresh": "Refresh history",
-    "run": "Run diagnostic",
-    "running": "Running",
-    "runError": "The diagnostic failed. The last successful result remains below.",
-    "kind": {
-      "gemini-api-key": "Gemini API key",
-      "interactions-api-key": "Interactions API key",
-      "claude-api-key": "Claude API key",
-      "xai-api-key": "xAI API key",
-      "codex": "Codex",
-      "vertex-api-key": "Vertex API key",
-      "openai-compatibility": "OpenAI-compatible",
-      "auth-file": "Auth file"
+    "readyTitle": "Ready to route",
+    "readyDescription": "All required checks passed. Continuing to the overview.",
+    "continue": "Continue to overview",
+    "checksTitle": "Operator checks",
+    "open": "Open",
+    "passed": "{{count}} checks passed",
+    "status": {
+      "ready": "Ready",
+      "attention": "Attention",
+      "blocked": "Blocked"
     },
-    "target": {
-      "title": "Target",
-      "description": "Choose one safe credential reference. Secret values are never displayed.",
-      "loading": "Loading credentials",
-      "error": "Credentials are unavailable.",
-      "kind": "Provider kind",
-      "credential": "Credential",
-      "select": "Select a credential",
-      "selected": "Selected target",
-      "emptyTitle": "No credential for this provider",
-      "emptyDescription": "Configure a credential before running diagnostics.",
-      "setup": "Open setup"
-    },
-    "check": {
-      "title": "Check",
-      "description": "Catalog reads provider metadata. Connectivity sends one billable token.",
-      "models": "Model catalog",
-      "modelsDescription": "Fetch the available model catalog without a billable acknowledgement.",
-      "connectivity": "Connectivity",
-      "connectivityDescription": "Send one token to verify the exact credential."
-    },
-    "status": { "pass": "Pass", "warn": "Warning", "fail": "Failed" },
-    "result": {
-      "title": "Current result",
-      "current": "Current result",
-      "previous": "Previous result",
-      "emptyTitle": "No diagnostic result",
-      "emptyDescription": "Select a target and run a diagnostic.",
-      "zeroModels": "No models returned",
-      "target": "Target",
-      "check": "Check",
-      "checked": "Checked",
-      "latency": "Latency",
-      "http": "HTTP status",
-      "modelCount": "Model count",
-      "category": "Category",
-      "testedModel": "Tested model",
-      "searchModels": "Search models"
-    },
-    "history": {
-      "title": "History",
-      "description": "The latest 50 results for the selected target.",
-      "loading": "Loading history",
-      "error": "Diagnostic history is unavailable.",
-      "emptyTitle": "No diagnostic history",
-      "emptyDescription": "Completed checks for this target will appear here.",
-      "time": "Time",
-      "target": "Target",
-      "check": "Check",
-      "status": "Status",
-      "latency": "Latency",
-      "summary": "HTTP / models / category",
-      "runAgain": "Run again"
-    },
-    "confirm": {
-      "title": "Confirm billable connectivity check",
-      "body": "This sends a one-token provider request with {{credential}}. It may consume quota.",
-      "cancel": "Cancel",
-      "submit": "Run connectivity check"
+    "checkStatus": {
+      "pass": "Pass",
+      "warn": "Warning",
+      "fail": "Failed"
     }
   },
-  "readiness": {
-    "eyebrow": "System gate", "title": "Readiness", "description": "Complete required local checks before routing traffic.", "refresh": "Refresh checks", "loading": "Checking readiness", "error": "Readiness is unavailable.", "retry": "Retry", "readyTitle": "Ready to route", "readyDescription": "All required checks passed. Continuing to the overview.", "continue": "Continue to overview", "checksTitle": "Operator checks", "open": "Open", "passed": "{{count}} checks passed",
-    "status": { "ready": "Ready", "attention": "Attention", "blocked": "Blocked" },
-    "checkStatus": { "pass": "Pass", "warn": "Warning", "fail": "Failed" }
-  },
   "changes": {
-    "eyebrow": "Control", "title": "Change History", "description": "Redacted configuration revisions from authenticated management mutations.", "refresh": "Refresh", "retry": "Retry", "loading": "Loading revisions", "restored": "Configuration restored and revision history reloaded.", "emptyTitle": "No recorded changes", "emptyDescription": "A revision appears after the next configuration mutation.", "revisions": "Revisions", "filter": "Filter revisions", "time": "Time", "action": "Action", "path": "Management path", "actor": "Actor", "sha": "Revision hash", "inspector": "Revision inspector", "revision": "Revision", "after": "After hash", "restore": "Restore this revision", "selectTitle": "Select a revision", "selectDescription": "Choose a revision to inspect its redacted before-and-after diff.",
-    "errors": { "load": "Configuration history is unavailable.", "inspect": "This revision could not be loaded.", "notFound": "The selected revision no longer exists.", "conflict": "Restore was not applied because the current configuration changed.", "restore": "Restore was not applied. Refresh and compare again." },
-    "confirm": { "title": "Restore configuration", "body": "This creates a new revision from the selected snapshot. The current configuration must still match the displayed hash.", "cancel": "Cancel", "submit": "Restore" }
+    "eyebrow": "Control",
+    "title": "Change History",
+    "description": "Redacted configuration revisions from authenticated management mutations.",
+    "refresh": "Refresh",
+    "retry": "Retry",
+    "loading": "Loading revisions",
+    "restored": "Configuration restored and revision history reloaded.",
+    "emptyTitle": "No recorded changes",
+    "emptyDescription": "A revision appears after the next configuration mutation.",
+    "revisions": "Revisions",
+    "filter": "Filter revisions",
+    "time": "Time",
+    "action": "Action",
+    "path": "Management path",
+    "actor": "Actor",
+    "sha": "Revision hash",
+    "inspector": "Revision inspector",
+    "revision": "Revision",
+    "after": "After hash",
+    "restore": "Restore this revision",
+    "selectTitle": "Select a revision",
+    "selectDescription": "Choose a revision to inspect its redacted before-and-after diff.",
+    "errors": {
+      "load": "Configuration history is unavailable.",
+      "inspect": "This revision could not be loaded.",
+      "notFound": "The selected revision no longer exists.",
+      "conflict": "Restore was not applied because the current configuration changed.",
+      "restore": "Restore was not applied. Refresh and compare again."
+    },
+    "confirm": {
+      "title": "Restore configuration",
+      "body": "This creates a new revision from the selected snapshot. The current configuration must still match the displayed hash.",
+      "cancel": "Cancel",
+      "submit": "Restore"
+    }
   },
   "budgets": {
-    "eyebrow": "Control", "title": "Budgets", "description": "Advisory USD thresholds from authoritative runtime usage and pricing. Budgets never block requests.", "refresh": "Refresh", "retry": "Retry", "create": "Create budget", "edit": "Edit", "delete": "Delete", "save": "Save budget", "enabled": "Enabled", "global": "All traffic", "list": "Budget controls", "emptyTitle": "No budgets", "emptyDescription": "Create an advisory budget to track current-period spend.", "createTitle": "Create budget", "editTitle": "Edit budget", "unpriced": "{{count}} unpriced events",
-    "summary": { "active": "Active", "warning": "Warning", "exceeded": "Exceeded", "unpriced": "Unpriced events" },
-    "columns": { "name": "Budget", "scope": "Scope", "spend": "Spend / limit", "period": "Period", "status": "Status", "updated": "Period end", "enabled": "Enabled" },
-    "scope": { "global": "Global", "provider": "Provider", "model": "Model", "api_key": "API key hash" },
-    "period": { "day": "Day", "week": "Week", "month": "Month" },
-    "status": { "ok": "Active", "warning": "Warning", "exceeded": "Exceeded", "disabled": "Disabled", "unknown": "Unavailable" },
-    "fields": { "name": "Name", "scope": "Scope", "match": "Exact match", "period": "Period", "limit": "Limit, USD", "warning": "Warning percentage" },
-    "validation": { "name": "Enter a budget name.", "match": "Enter the exact scope match.", "limit": "Limit must be greater than zero.", "warning": "Warning percentage must be between 1 and 100." },
-    "errors": { "load": "Some budget state is unavailable.", "save": "Budget was not saved. Check its scope, limit, and uniqueness.", "toggle": "Budget status was not updated.", "delete": "Budget was not deleted." },
-    "confirm": { "title": "Delete budget", "body": "Delete “{{name}}”? This does not delete usage events.", "cancel": "Cancel", "submit": "Delete" }
+    "eyebrow": "Control",
+    "title": "Budgets",
+    "description": "Advisory USD thresholds from authoritative runtime usage and pricing. Budgets never block requests.",
+    "refresh": "Refresh",
+    "retry": "Retry",
+    "create": "Create budget",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save budget",
+    "enabled": "Enabled",
+    "global": "All traffic",
+    "list": "Budget controls",
+    "emptyTitle": "No budgets",
+    "emptyDescription": "Create an advisory budget to track current-period spend.",
+    "createTitle": "Create budget",
+    "editTitle": "Edit budget",
+    "unpriced": "{{count}} unpriced events",
+    "summary": {
+      "active": "Active",
+      "warning": "Warning",
+      "exceeded": "Exceeded",
+      "unpriced": "Unpriced events"
+    },
+    "columns": {
+      "name": "Budget",
+      "scope": "Scope",
+      "spend": "Spend / limit",
+      "period": "Period",
+      "status": "Status",
+      "updated": "Period end",
+      "enabled": "Enabled"
+    },
+    "scope": {
+      "global": "Global",
+      "provider": "Provider",
+      "model": "Model",
+      "api_key": "API key hash"
+    },
+    "period": {
+      "day": "Day",
+      "week": "Week",
+      "month": "Month"
+    },
+    "status": {
+      "ok": "Active",
+      "warning": "Warning",
+      "exceeded": "Exceeded",
+      "disabled": "Disabled",
+      "unknown": "Unavailable"
+    },
+    "fields": {
+      "name": "Name",
+      "scope": "Scope",
+      "match": "Exact match",
+      "period": "Period",
+      "limit": "Limit, USD",
+      "warning": "Warning percentage"
+    },
+    "validation": {
+      "name": "Enter a budget name.",
+      "match": "Enter the exact scope match.",
+      "limit": "Limit must be greater than zero.",
+      "warning": "Warning percentage must be between 1 and 100."
+    },
+    "errors": {
+      "load": "Some budget state is unavailable.",
+      "save": "Budget was not saved. Check its scope, limit, and uniqueness.",
+      "toggle": "Budget status was not updated.",
+      "delete": "Budget was not deleted."
+    },
+    "confirm": {
+      "title": "Delete budget",
+      "body": "Delete “{{name}}”? This does not delete usage events.",
+      "cancel": "Cancel",
+      "submit": "Delete"
+    }
   },
   "plugins": {
     "title": "Plugins",
@@ -836,11 +896,17 @@
     "checks_heading": "Checks",
     "trace_heading": "Trace",
     "empty": "No checks run yet. Pick the checks you want and run them.",
+    "ready_title": "Ready to diagnose",
     "empty_trace": "Run the checks to see the wire exchange here.",
     "awaiting": "Select a finished check to read its wire exchange.",
     "key_label": "key #{{index}}",
     "key_count_one": "{{count}} key configured",
     "key_count_other": "{{count}} keys configured",
+    "plan_count_one": "{{count}} probe planned",
+    "plan_count_other": "{{count}} probes planned",
+    "plan_billable_one": "{{count}} billable call",
+    "plan_billable_other": "{{count}} billable calls",
+    "plan_free": "No billable calls",
     "copy_trace": "Copy trace",
     "copy_success": "Trace copied",
     "copy_failed": "Could not copy the trace",

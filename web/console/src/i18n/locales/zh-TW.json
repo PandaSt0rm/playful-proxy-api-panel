@@ -63,8 +63,8 @@
   },
   "splash": {
     "title": "AIPROXY",
-    "title_line_1": "Playful Proxy",
-    "title_line_2": "API Panel",
+    "title_line_1": "AI",
+    "title_line_2": "PROXY",
     "subtitle": "aiproxy"
   },
   "auto_login": {
@@ -138,7 +138,6 @@
       "aiProviders": "AI 供應商",
       "authFiles": "驗證檔案",
       "oauth": "驗證登入",
-      "diagnostics": "診斷",
       "toolingTemplates": "工具範本",
       "plugins": "外掛",
       "budgets": "預算",
@@ -255,29 +254,223 @@
     "resume": "繼續",
     "pause": "暫停",
     "refresh": "立即重新整理",
-    "state": { "live": "即時", "degraded": "降級", "paused": "已暫停" },
-    "cadence": { "label": "重新整理頻率", "off": "關閉", "eight": "8 秒", "fifteen": "15 秒", "thirty": "30 秒" },
-    "signals": { "requests": "請求", "results": "成功 / 失敗", "latency": "延遲 / 首位元組", "throughput": "TPS / 權杖" },
-    "routes": { "title": "供應商路由", "description": "最近一小時的實際供應商流量。", "emptyTitle": "沒有供應商路由", "emptyDescription": "記錄流量後會顯示供應商列。", "error": "供應商路由資料無法使用。" },
-    "requests": { "title": "請求活動", "description": "最近一小時內的篩選請求事件。", "emptyTitle": "沒有符合的請求", "emptyDescription": "調整篩選條件或等待新流量。", "error": "請求活動無法使用。" },
-    "filters": { "search": "搜尋請求", "provider": "供應商", "allProviders": "所有供應商", "model": "模型或別名", "endpoint": "端點", "status": "結果", "all": "所有結果", "success": "成功", "failed": "失敗" },
-    "columns": { "time": "時間", "result": "結果", "provider": "供應商", "model": "模型", "endpoint": "端點", "source": "來源", "tokens": "權杖", "latency": "延遲 / 首位元組" },
-    "logs": { "title": "應用程式記錄", "description": "最近 500 行應用程式記錄。儲存控制保留在記錄頁面。", "raw": "顯示原始", "parsed": "顯示解析", "follow": "跟隨最新", "open": "開啟完整記錄", "emptyTitle": "沒有應用程式記錄", "emptyDescription": "伺服器輸出新記錄後會顯示在這裡。", "error": "應用程式記錄無法使用。" },
-    "details": { "title": "請求詳細資料", "requestId": "請求 ID", "eventId": "事件雜湊", "path": "路徑", "auth": "驗證", "source": "來源", "tokens": "輸入 / 輸出 / 總權杖", "timestamps": "時間戳記", "latency": "延遲 / 首位元組", "failure": "失敗內容" }
+    "state": {
+      "live": "即時",
+      "degraded": "降級",
+      "paused": "已暫停"
+    },
+    "cadence": {
+      "label": "重新整理頻率",
+      "off": "關閉",
+      "eight": "8 秒",
+      "fifteen": "15 秒",
+      "thirty": "30 秒"
+    },
+    "signals": {
+      "requests": "請求",
+      "results": "成功 / 失敗",
+      "latency": "延遲 / 首位元組",
+      "throughput": "TPS / 權杖"
+    },
+    "routes": {
+      "title": "供應商路由",
+      "description": "最近一小時的實際供應商流量。",
+      "emptyTitle": "沒有供應商路由",
+      "emptyDescription": "記錄流量後會顯示供應商列。",
+      "error": "供應商路由資料無法使用。"
+    },
+    "requests": {
+      "title": "請求活動",
+      "description": "最近一小時內的篩選請求事件。",
+      "emptyTitle": "沒有符合的請求",
+      "emptyDescription": "調整篩選條件或等待新流量。",
+      "error": "請求活動無法使用。"
+    },
+    "filters": {
+      "search": "搜尋請求",
+      "provider": "供應商",
+      "allProviders": "所有供應商",
+      "model": "模型或別名",
+      "endpoint": "端點",
+      "status": "結果",
+      "all": "所有結果",
+      "success": "成功",
+      "failed": "失敗"
+    },
+    "columns": {
+      "time": "時間",
+      "result": "結果",
+      "provider": "供應商",
+      "model": "模型",
+      "endpoint": "端點",
+      "source": "來源",
+      "tokens": "權杖",
+      "latency": "延遲 / 首位元組"
+    },
+    "logs": {
+      "title": "應用程式記錄",
+      "description": "最近 500 行應用程式記錄。儲存控制保留在記錄頁面。",
+      "raw": "顯示原始",
+      "parsed": "顯示解析",
+      "follow": "跟隨最新",
+      "open": "開啟完整記錄",
+      "emptyTitle": "沒有應用程式記錄",
+      "emptyDescription": "伺服器輸出新記錄後會顯示在這裡。",
+      "error": "應用程式記錄無法使用。"
+    },
+    "details": {
+      "title": "請求詳細資料",
+      "requestId": "請求 ID",
+      "eventId": "事件雜湊",
+      "path": "路徑",
+      "auth": "驗證",
+      "source": "來源",
+      "tokens": "輸入 / 輸出 / 總權杖",
+      "timestamps": "時間戳記",
+      "latency": "延遲 / 首位元組",
+      "failure": "失敗內容"
+    }
   },
-  "diagnostics": {
-    "eyebrow": "供應商", "title": "診斷", "description": "執行精確憑據的模型目錄或連線檢查，並查看有限歷史。", "partial": "部分憑據", "retry": "重試", "refresh": "重新整理歷史", "run": "執行診斷", "running": "執行中", "runError": "診斷失敗。下方保留上次成功結果。",
-    "kind": { "gemini-api-key": "Gemini API 金鑰", "interactions-api-key": "Interactions API 金鑰", "claude-api-key": "Claude API 金鑰", "xai-api-key": "xAI API 金鑰", "codex": "Codex", "vertex-api-key": "Vertex API 金鑰", "openai-compatibility": "OpenAI 相容", "auth-file": "驗證檔案" },
-    "target": { "title": "目標", "description": "選擇安全的憑據參照。絕不顯示金鑰值。", "loading": "正在載入憑據", "error": "憑據無法使用。", "kind": "供應商類型", "credential": "憑據", "select": "選擇憑據", "selected": "已選目標", "emptyTitle": "此供應商沒有憑據", "emptyDescription": "執行診斷前請先設定憑據。", "setup": "開啟設定" },
-    "check": { "title": "檢查", "description": "目錄讀取供應商中繼資料。連線檢查會傳送一個計費權杖。", "models": "模型目錄", "modelsDescription": "取得模型目錄，不傳送計費確認。", "connectivity": "連線", "connectivityDescription": "傳送一個權杖驗證精確憑據。" },
-    "status": { "pass": "通過", "warn": "警告", "fail": "失敗" },
-    "result": { "title": "目前結果", "current": "目前結果", "previous": "先前結果", "emptyTitle": "沒有診斷結果", "emptyDescription": "選擇目標並執行診斷。", "zeroModels": "未傳回模型", "target": "目標", "check": "檢查", "checked": "檢查時間", "latency": "延遲", "http": "HTTP 狀態", "modelCount": "模型數量", "category": "類別", "testedModel": "測試模型", "searchModels": "搜尋模型" },
-    "history": { "title": "歷史", "description": "所選目標最近 50 個結果。", "loading": "正在載入歷史", "error": "診斷歷史無法使用。", "emptyTitle": "沒有診斷歷史", "emptyDescription": "完成的檢查會顯示在這裡。", "time": "時間", "target": "目標", "check": "檢查", "status": "狀態", "latency": "延遲", "summary": "HTTP / 模型 / 類別", "runAgain": "再次執行" },
-    "confirm": { "title": "確認計費連線檢查", "body": "這會使用 {{credential}} 傳送一個權杖的供應商請求，可能消耗配額。", "cancel": "取消", "submit": "執行連線檢查" }
+  "readiness": {
+    "eyebrow": "系統閘門",
+    "title": "就緒狀態",
+    "description": "路由流量前完成必要的本機檢查。",
+    "refresh": "重新整理檢查",
+    "loading": "正在檢查",
+    "error": "就緒狀態無法使用。",
+    "retry": "重試",
+    "readyTitle": "可以路由",
+    "readyDescription": "所有必要檢查均已通過，正在進入概覽。",
+    "continue": "進入概覽",
+    "checksTitle": "操作檢查",
+    "open": "開啟",
+    "passed": "{{count}} 個檢查通過",
+    "status": {
+      "ready": "就緒",
+      "attention": "需注意",
+      "blocked": "已阻擋"
+    },
+    "checkStatus": {
+      "pass": "通過",
+      "warn": "警告",
+      "fail": "失敗"
+    }
   },
-  "readiness": { "eyebrow": "系統閘門", "title": "就緒狀態", "description": "路由流量前完成必要的本機檢查。", "refresh": "重新整理檢查", "loading": "正在檢查", "error": "就緒狀態無法使用。", "retry": "重試", "readyTitle": "可以路由", "readyDescription": "所有必要檢查均已通過，正在進入概覽。", "continue": "進入概覽", "checksTitle": "操作檢查", "open": "開啟", "passed": "{{count}} 個檢查通過", "status": { "ready": "就緒", "attention": "需注意", "blocked": "已阻擋" }, "checkStatus": { "pass": "通過", "warn": "警告", "fail": "失敗" } },
-  "changes": { "eyebrow": "控制", "title": "變更歷史", "description": "驗證管理操作產生的去識別化設定修訂。", "refresh": "重新整理", "retry": "重試", "loading": "正在載入修訂", "restored": "設定已還原，修訂歷史已重新載入。", "emptyTitle": "沒有變更記錄", "emptyDescription": "下次設定變更後會產生修訂。", "revisions": "修訂", "filter": "篩選修訂", "time": "時間", "action": "操作", "path": "管理路徑", "actor": "操作者", "sha": "修訂雜湊", "inspector": "修訂檢查器", "revision": "修訂", "after": "變更後雜湊", "restore": "還原此修訂", "selectTitle": "選擇修訂", "selectDescription": "選擇修訂以查看去識別化差異。", "errors": { "load": "設定歷史無法使用。", "inspect": "無法載入此修訂。", "notFound": "所選修訂已不存在。", "conflict": "目前設定已變更，未執行還原。", "restore": "還原失敗，請重新整理並再次比較。" }, "confirm": { "title": "還原設定", "body": "這會從所選快照建立新修訂，目前設定必須仍符合顯示的雜湊。", "cancel": "取消", "submit": "還原" } },
-  "budgets": { "eyebrow": "控制", "title": "預算", "description": "基於權威執行使用量和定價的建議美元門檻。預算不會阻擋請求。", "refresh": "重新整理", "retry": "重試", "create": "建立預算", "edit": "編輯", "delete": "刪除", "save": "儲存預算", "enabled": "已啟用", "global": "所有流量", "list": "預算控制", "emptyTitle": "沒有預算", "emptyDescription": "建立建議預算以追蹤目前週期支出。", "createTitle": "建立預算", "editTitle": "編輯預算", "unpriced": "{{count}} 個未定價事件", "summary": { "active": "活動", "warning": "警告", "exceeded": "超出", "unpriced": "未定價事件" }, "columns": { "name": "預算", "scope": "範圍", "spend": "支出 / 限額", "period": "週期", "status": "狀態", "updated": "週期結束", "enabled": "啟用" }, "scope": { "global": "全域", "provider": "供應商", "model": "模型", "api_key": "API 金鑰雜湊" }, "period": { "day": "天", "week": "週", "month": "月" }, "status": { "ok": "活動", "warning": "警告", "exceeded": "超出", "disabled": "已停用", "unknown": "無法使用" }, "fields": { "name": "名稱", "scope": "範圍", "match": "精確符合", "period": "週期", "limit": "限額（美元）", "warning": "警告百分比" }, "validation": { "name": "請輸入預算名稱。", "match": "請輸入精確範圍符合。", "limit": "限額必須大於零。", "warning": "警告百分比必須在 1 到 100 之間。" }, "errors": { "load": "部分預算狀態無法使用。", "save": "預算未儲存，請檢查範圍、限額和唯一性。", "toggle": "預算狀態未更新。", "delete": "預算未刪除。" }, "confirm": { "title": "刪除預算", "body": "刪除「{{name}}」？這不會刪除使用事件。", "cancel": "取消", "submit": "刪除" } },
+  "changes": {
+    "eyebrow": "控制",
+    "title": "變更歷史",
+    "description": "驗證管理操作產生的去識別化設定修訂。",
+    "refresh": "重新整理",
+    "retry": "重試",
+    "loading": "正在載入修訂",
+    "restored": "設定已還原，修訂歷史已重新載入。",
+    "emptyTitle": "沒有變更記錄",
+    "emptyDescription": "下次設定變更後會產生修訂。",
+    "revisions": "修訂",
+    "filter": "篩選修訂",
+    "time": "時間",
+    "action": "操作",
+    "path": "管理路徑",
+    "actor": "操作者",
+    "sha": "修訂雜湊",
+    "inspector": "修訂檢查器",
+    "revision": "修訂",
+    "after": "變更後雜湊",
+    "restore": "還原此修訂",
+    "selectTitle": "選擇修訂",
+    "selectDescription": "選擇修訂以查看去識別化差異。",
+    "errors": {
+      "load": "設定歷史無法使用。",
+      "inspect": "無法載入此修訂。",
+      "notFound": "所選修訂已不存在。",
+      "conflict": "目前設定已變更，未執行還原。",
+      "restore": "還原失敗，請重新整理並再次比較。"
+    },
+    "confirm": {
+      "title": "還原設定",
+      "body": "這會從所選快照建立新修訂，目前設定必須仍符合顯示的雜湊。",
+      "cancel": "取消",
+      "submit": "還原"
+    }
+  },
+  "budgets": {
+    "eyebrow": "控制",
+    "title": "預算",
+    "description": "基於權威執行使用量和定價的建議美元門檻。預算不會阻擋請求。",
+    "refresh": "重新整理",
+    "retry": "重試",
+    "create": "建立預算",
+    "edit": "編輯",
+    "delete": "刪除",
+    "save": "儲存預算",
+    "enabled": "已啟用",
+    "global": "所有流量",
+    "list": "預算控制",
+    "emptyTitle": "沒有預算",
+    "emptyDescription": "建立建議預算以追蹤目前週期支出。",
+    "createTitle": "建立預算",
+    "editTitle": "編輯預算",
+    "unpriced": "{{count}} 個未定價事件",
+    "summary": {
+      "active": "活動",
+      "warning": "警告",
+      "exceeded": "超出",
+      "unpriced": "未定價事件"
+    },
+    "columns": {
+      "name": "預算",
+      "scope": "範圍",
+      "spend": "支出 / 限額",
+      "period": "週期",
+      "status": "狀態",
+      "updated": "週期結束",
+      "enabled": "啟用"
+    },
+    "scope": {
+      "global": "全域",
+      "provider": "供應商",
+      "model": "模型",
+      "api_key": "API 金鑰雜湊"
+    },
+    "period": {
+      "day": "天",
+      "week": "週",
+      "month": "月"
+    },
+    "status": {
+      "ok": "活動",
+      "warning": "警告",
+      "exceeded": "超出",
+      "disabled": "已停用",
+      "unknown": "無法使用"
+    },
+    "fields": {
+      "name": "名稱",
+      "scope": "範圍",
+      "match": "精確符合",
+      "period": "週期",
+      "limit": "限額（美元）",
+      "warning": "警告百分比"
+    },
+    "validation": {
+      "name": "請輸入預算名稱。",
+      "match": "請輸入精確範圍符合。",
+      "limit": "限額必須大於零。",
+      "warning": "警告百分比必須在 1 到 100 之間。"
+    },
+    "errors": {
+      "load": "部分預算狀態無法使用。",
+      "save": "預算未儲存，請檢查範圍、限額和唯一性。",
+      "toggle": "預算狀態未更新。",
+      "delete": "預算未刪除。"
+    },
+    "confirm": {
+      "title": "刪除預算",
+      "body": "刪除「{{name}}」？這不會刪除使用事件。",
+      "cancel": "取消",
+      "submit": "刪除"
+    }
+  },
   "plugins": {
     "title": "外掛",
     "description": "管理外掛目錄中發現的動態庫外掛。外掛是受信任的行程內程式碼。",
@@ -677,10 +870,14 @@
     "checks_heading": "檢查項目",
     "trace_heading": "追蹤",
     "empty": "尚未執行檢查。選擇需要的檢查項目並執行。",
+    "ready_title": "可以開始偵錯",
     "empty_trace": "執行檢查後，將在此顯示通訊內容。",
     "awaiting": "選擇一項已完成的檢查以檢視其通訊內容。",
     "key_label": "金鑰 #{{index}}",
     "key_count_other": "已設定 {{count}} 個金鑰",
+    "plan_count_other": "已規劃 {{count}} 項探測",
+    "plan_billable_other": "{{count}} 次計費呼叫",
+    "plan_free": "無計費呼叫",
     "copy_trace": "複製追蹤",
     "copy_success": "追蹤已複製",
     "copy_failed": "無法複製追蹤",

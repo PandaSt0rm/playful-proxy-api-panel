@@ -2,10 +2,10 @@
  * Value-level secret masking for provider debug traces.
  *
  * Why this exists rather than reusing the existing redactors:
- * - `DiagnosticsPage`'s local `redactDetail` and the backend's `control.RedactYAML`
- *   both match on the *key name* and blank the whole value. In a wire trace the
- *   secret sits inside a string (`"> authorization: Bearer sk-proj-..."`), so a
- *   key-name rule never fires and the credential renders verbatim.
+ * - The backend's `control.RedactYAML` matches on the *key name* and blanks the
+ *   whole value. In a wire trace the secret sits inside a string
+ *   (`"> authorization: Bearer sk-proj-..."`), so a key-name rule never fires and
+ *   the credential renders verbatim.
  * - Blanking also destroys the diagnostic itself: an operator debugging "which of my
  *   five keys is dead" needs to tell the keys apart. Masking keeps a short prefix and
  *   suffix so two credentials stay distinguishable while the secret does not survive.

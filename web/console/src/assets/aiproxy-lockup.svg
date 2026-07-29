@@ -1,1 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 216 48" role="img" aria-label="AIPROXY"><path fill="none" stroke="#D3A84C" stroke-width="4" d="M16 16h8v16h8"/><rect x="6" y="6" width="20" height="20" rx="2" fill="#13191D" stroke="#E7ECEA" stroke-width="3"/><rect x="22" y="22" width="20" height="20" rx="2" fill="#1A2227" stroke="#D3A84C" stroke-width="3"/><text x="60" y="33" fill="#E7ECEA" font-family="Bahnschrift,Arial Narrow,sans-serif" font-size="26" font-weight="600" letter-spacing="1">AIPROXY</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 64" role="img" aria-label="AIPROXY" fill="none">
+  <rect x="0" y="0" width="64" height="64" rx="14" fill="#0D1114"/>
+  <rect x="10" y="10" width="28" height="28" rx="6" fill="#1A2227"/>
+  <rect x="26" y="26" width="28" height="28" rx="6" fill="#13191D"/>
+  <path d="M20 18v18h20" stroke="#D3A84C" stroke-width="6" stroke-linecap="square" stroke-linejoin="miter"/>
+  <path d="M40 28l10 8-10 8v-16z" fill="#D3A84C"/>
+  <text x="80" y="42" fill="#E7ECEA" font-family="Bahnschrift, 'Segoe UI', 'Arial Narrow', Arial, sans-serif" font-size="28" font-weight="600" letter-spacing="2.5">AIPROXY</text>
+</svg>

@@ -1,17 +1,18 @@
 # SDK Advanced: Executors & Translators
 
-This guide explains how to extend the embedded proxy with custom providers and schemas using the SDK. You will:
-- Implement a provider executor that talks to your upstream API
-- Register request/response translators for schema conversion
-- Register models so they appear in `/v1/models`
+1. Implement a provider executor.
+2. Register request and response translators.
+3. Register models for `/v1/models`.
+4. Start the service with your core auth manager.
 
-The examples use Go 1.24+ and the v6 module path.
+Extend the embedded proxy with custom providers and schemas. The examples use Go 1.24+ and the v6 module path.
 
 ## Concepts
 
-- Provider executor: a runtime component implementing `auth.ProviderExecutor` that performs outbound calls for a given provider key (e.g., `gemini`, `claude`, `codex`). Executors can also implement `RequestPreparer` to inject credentials on raw HTTP requests.
-- Translator registry: schema conversion functions routed by `sdk/translator`. The built‑in handlers translate between OpenAI/Gemini/Claude/Codex formats; you can register new ones.
-- Model registry: publishes the list of available models per client/provider to power `/v1/models` and routing hints.
+- **Provider executor**: a runtime component that implements `auth.ProviderExecutor`. It performs outbound calls for a provider key (for example `gemini`, `claude`, `codex`).
+- Executors can also implement `RequestPreparer` to inject credentials on raw HTTP requests.
+- **Translator registry**: schema conversion functions routed by `sdk/translator`. The built-in handlers translate between OpenAI/Gemini/Claude/Codex formats. You can register new ones.
+- **Model registry**: publishes the list of available models per client/provider for `/v1/models` and routing hints.
 
 ## 1) Implement a Provider Executor
 
@@ -40,7 +41,7 @@ func (Executor) PrepareRequest(req *http.Request, a *coreauth.Auth) error {
 
 func (Executor) Execute(ctx context.Context, a *coreauth.Auth, req clipexec.Request, opts clipexec.Options) (clipexec.Response, error) {
   // Build HTTP request based on req.Payload (already translated into provider format)
-  // Use per‑auth transport if provided: transport := a.RoundTripper // via RoundTripperProvider
+  // Use per-auth transport if provided: transport := a.RoundTripper // via RoundTripperProvider
   // Perform call and return provider JSON payload
   return clipexec.Response{Payload: []byte(`{"ok":true}`)}, nil
 }
@@ -57,7 +58,7 @@ func (Executor) Refresh(ctx context.Context, a *coreauth.Auth) (*coreauth.Auth, 
 }
 ```
 
-Register the executor with the core manager before starting the service:
+Register the executor with the core manager before you start the service:
 
 ```go
 core := coreauth.NewManager(coreauth.NewFileStore(cfg.AuthDir), nil, nil)
@@ -67,11 +68,14 @@ svc, _ := cliproxy.NewBuilder().WithConfig(cfg).WithConfigPath(cfgPath).WithCore
 
 If your auth entries use provider `"myprov"`, the manager routes requests to your executor.
 
+Check: a request for a `myprov` model returns your executor payload.
+
 ## 2) Register Translators
 
-The handlers accept OpenAI/Gemini/Claude/Codex inputs. To support a new provider format, register translation functions in `sdk/translator`’s default registry.
+The handlers accept OpenAI/Gemini/Claude/Codex inputs. To support a new provider format, register translation functions in the `sdk/translator` default registry.
 
 Direction matters:
+
 - Request: register from inbound schema to provider schema
 - Response: register from provider schema back to inbound schema
 
@@ -94,7 +98,7 @@ func init() {
   sdktr.Register(FOpenAI, FMyProv,
     // Request transform (model, rawJSON, stream)
     func(model string, raw []byte, stream bool) []byte { return convertOpenAIToMyProv(model, raw, stream) },
-    // Response transform (stream & non‑stream)
+    // Response transform (stream & non-stream)
     sdktr.ResponseTransform{
       Stream: func(ctx context.Context, model string, originalReq, translatedReq, raw []byte, param *any) []string {
         return convertStreamMyProvToOpenAI(model, originalReq, translatedReq, raw)
@@ -107,11 +111,11 @@ func init() {
 }
 ```
 
-When the OpenAI handler receives a request that should route to `myprov`, the pipeline uses the registered transforms automatically.
+When the OpenAI handler receives a request that must route to `myprov`, the pipeline uses the registered transforms automatically.
 
 ## 3) Register Models
 
-Expose models under `/v1/models` by registering them in the global model registry using the auth ID (client ID) and provider name.
+Expose models under `/v1/models`. Register them in the global model registry. Use the auth ID (client ID) and provider name.
 
 ```go
 models := []*cliproxy.ModelInfo{
@@ -120,19 +124,18 @@ models := []*cliproxy.ModelInfo{
 cliproxy.GlobalModelRegistry().RegisterClient(authID, "myprov", models)
 ```
 
-The embedded server calls this automatically for built‑in providers; for custom providers, register during startup (e.g., after loading auths) or upon auth registration hooks.
+The embedded server calls this automatically for built-in providers. For custom providers, register at startup (for example after auth load) or on auth registration hooks.
 
 ## Credentials & Transports
 
-- Use `Manager.SetRoundTripperProvider` to inject per‑auth `*http.Transport` (e.g., proxy):
+- Use `Manager.SetRoundTripperProvider` to inject per-auth `*http.Transport` (for example a proxy):
   ```go
   core.SetRoundTripperProvider(myProvider) // returns transport per auth
   ```
 - For raw HTTP flows, implement `PrepareRequest` and/or call `Manager.InjectCredentials(req, authID)` to set headers.
 
-## Testing Tips
+## Test tips
 
-- Enable request logging: Management API GET/PUT `/v0/management/request-log`
+- Enable the request log: Management API GET/PUT `/v0/management/request-log`
 - Toggle debug logs: Management API GET/PUT `/v0/management/debug`
-- Hot reload changes in `config.yaml` and `auths/` are picked up automatically by the watcher
-
+- The watcher picks up changes in `config.yaml` and `auths/` automatically

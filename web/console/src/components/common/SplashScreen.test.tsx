@@ -18,13 +18,13 @@ describe('SplashScreen', () => {
   it('renders the first title line', () => {
     render(<SplashScreen onFinish={vi.fn()} />);
 
-    expect(screen.getByText('Playful Proxy')).toBeInTheDocument();
+    expect(screen.getByText('AI')).toBeInTheDocument();
   });
 
   it('renders the second title line', () => {
     render(<SplashScreen onFinish={vi.fn()} />);
 
-    expect(screen.getByText('API Panel')).toBeInTheDocument();
+    expect(screen.getByText('PROXY')).toBeInTheDocument();
   });
 
   it('renders the subtitle', () => {

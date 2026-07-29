@@ -24,7 +24,6 @@ import { ToolingTemplatesPage } from '@/pages/ToolingTemplatesPage';
 import { PluginsPage } from '@/pages/PluginsPage';
 import { OnboardingPage } from '@/pages/OnboardingPage';
 import { OperationsPage } from '@/pages/OperationsPage';
-import { DiagnosticsPage } from '@/pages/DiagnosticsPage';
 import { ChangesPage } from '@/pages/ChangesPage';
 import { BudgetsPage } from '@/pages/BudgetsPage';
 
@@ -32,7 +31,6 @@ export const mainRoutes = [
   { path: '/', element: <DashboardPage /> },
   { path: '/onboarding', element: <OnboardingPage /> },
   { path: '/operations', element: <OperationsPage /> },
-  { path: '/diagnostics', element: <DiagnosticsPage /> },
   { path: '/changes', element: <ChangesPage /> },
   { path: '/budgets', element: <BudgetsPage /> },
   { path: '/dashboard', element: <DashboardPage /> },

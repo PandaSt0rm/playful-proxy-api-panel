@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
-import { Checkbox, ConfirmationDialog, Drawer, SegmentedControl } from '@/shared/ui';
+import { Badge, Checkbox, ConfirmationDialog, Drawer, SegmentedControl } from '@/shared/ui';
 import {
   DEBUG_CHECKS,
   countBillableCalls,
@@ -47,8 +47,7 @@ type BenchTab = 'checks' | 'matrix' | 'lab';
  * The provider debug bench.
  *
  * Lives in a drawer rather than a route so it keeps working against the edit page's
- * unsaved draft state — the single most useful property of the connection test it replaces,
- * and something the saved-credential diagnostics path cannot offer.
+ * unsaved draft state — the single most useful property of the connection test it replaces.
  */
 export function ProviderDebugDrawer({ open, onClose, target }: ProviderDebugDrawerProps) {
   const { t } = useTranslation();
@@ -71,8 +70,11 @@ export function ProviderDebugDrawer({ open, onClose, target }: ProviderDebugDraw
   // Reopening the bench should reflect whatever the form says now, not what it said the
   // first time the drawer mounted.
   useEffect(() => {
-    if (open) setChosenModel('');
-  }, [open]);
+    if (!open) return;
+    setChosenModel('');
+    setPinnedId(null);
+    reset();
+  }, [open, reset]);
 
   const model = chosenModel || target.model || target.models[0] || '';
   const effectiveTarget = useMemo<DebugTarget>(() => ({ ...target, model }), [target, model]);
@@ -90,22 +92,24 @@ export function ProviderDebugDrawer({ open, onClose, target }: ProviderDebugDraw
     routedAvailable && (lane === 'routed' || !directAvailable) ? 'routed' : 'direct';
 
   const testableKeys = countTestableKeys(target.keys);
-  const units = useMemo(
-    () => planDebugRun(selected, target.keys),
-    [selected, target.keys]
-  );
+  const units = useMemo(() => planDebugRun(selected, target.keys), [selected, target.keys]);
   const matrixPlan = useMemo(
     () => planMatrix(target.models, target.keys),
     [target.models, target.keys]
   );
+  const plannedBillableCalls =
+    activeLane === 'routed'
+      ? units.filter((unit) => unit.check.billable && supportsRoutedLane(unit.check.id)).length
+      : countBillableCalls(units);
+  const hasRunState = Object.keys(states).length > 0;
 
   const activeUnits = useMemo<{ id: string; unit?: DebugRunUnit }[]>(
     () =>
       tab === 'checks'
         ? units.map((unit) => ({ id: unit.id, unit }))
         : tab === 'matrix'
-        ? matrixPlan.cells.map((cell) => ({ id: cell.id }))
-        : [{ id: 'payload' }],
+          ? matrixPlan.cells.map((cell) => ({ id: cell.id }))
+          : [{ id: 'payload' }],
     [tab, units, matrixPlan.cells]
   );
 
@@ -128,10 +132,19 @@ export function ProviderDebugDrawer({ open, onClose, target }: ProviderDebugDraw
     ? unitLabel(t, activeUnit)
     : (activeTrace?.meta?.model ?? t('provider_debug.tab_matrix'));
 
-  const toggleCheck = (id: RegistryCheckId) =>
+  const toggleCheck = (id: RegistryCheckId) => {
+    setPinnedId(null);
+    reset();
     setSelected((previous) =>
       previous.includes(id) ? previous.filter((item) => item !== id) : [...previous, id]
     );
+  };
+
+  const chooseModel = (nextModel: string) => {
+    setChosenModel(nextModel);
+    setPinnedId(null);
+    reset();
+  };
 
   /** Billable work never starts without an explicit, counted confirmation. */
   const requestRun = (jobs: DebugJob[], calls: number) => {
@@ -162,9 +175,7 @@ export function ProviderDebugDrawer({ open, onClose, target }: ProviderDebugDraw
               )
             : runDirectCheck(unit, effectiveTarget, deps),
       })),
-      activeLane === 'routed'
-        ? units.filter((unit) => unit.check.billable && supportsRoutedLane(unit.check.id)).length
-        : countBillableCalls(units)
+      plannedBillableCalls
     );
   };
 
@@ -201,6 +212,12 @@ export function ProviderDebugDrawer({ open, onClose, target }: ProviderDebugDraw
     if (!pendingRun) return;
     run(pendingRun.jobs);
     setPendingRun(null);
+  };
+
+  const closeBench = () => {
+    reset();
+    setPendingRun(null);
+    onClose();
   };
 
   const runAction = running ? (
@@ -243,7 +260,7 @@ export function ProviderDebugDrawer({ open, onClose, target }: ProviderDebugDraw
         model={model}
       />
     ) : tab === 'checks' ? (
-      Object.keys(states).length ? (
+      hasRunState ? (
         <DebugCheckRail units={units} states={states} activeId={activeId} onSelect={setPinnedId} />
       ) : (
         <p className={styles.empty}>{t('provider_debug.empty')}</p>
@@ -272,7 +289,7 @@ export function ProviderDebugDrawer({ open, onClose, target }: ProviderDebugDraw
       open={open}
       size="wide"
       title={t('provider_debug.title', { provider: target.providerLabel })}
-      onClose={onClose}
+      onClose={closeBench}
     >
       <div className={styles.bench}>
         <div className={styles.controls}>
@@ -304,11 +321,21 @@ export function ProviderDebugDrawer({ open, onClose, target }: ProviderDebugDraw
           </div>
 
           <div className={styles.actions}>
-            {target.models.length > 0 && (
+            <span className={styles.laneSummary}>
+              <span>{t('provider_debug.lane_label')}</span>
+              <Badge tone="neutral">
+                {t(
+                  activeLane === 'direct'
+                    ? 'provider_debug.lane_direct'
+                    : 'provider_debug.lane_routed'
+                )}
+              </Badge>
+            </span>
+            {tab !== 'matrix' && target.models.length > 0 && (
               <Select
                 value={model}
                 options={target.models.map((entry) => ({ value: entry, label: entry }))}
-                onChange={setChosenModel}
+                onChange={chooseModel}
                 disabled={running}
                 ariaLabel={t('provider_debug.model_label')}
                 className={styles.modelSelect}
@@ -317,11 +344,21 @@ export function ProviderDebugDrawer({ open, onClose, target }: ProviderDebugDraw
             <span className={styles.keyCount}>
               {t('provider_debug.key_count', { count: testableKeys })}
             </span>
+            {tab === 'checks' && (
+              <div className={styles.planSummary} aria-live="polite">
+                <span>{t('provider_debug.plan_count', { count: units.length })}</span>
+                <Badge tone={plannedBillableCalls > 0 ? 'caution' : 'neutral'}>
+                  {plannedBillableCalls > 0
+                    ? t('provider_debug.plan_billable', { count: plannedBillableCalls })
+                    : t('provider_debug.plan_free')}
+                </Badge>
+              </div>
+            )}
             {runAction}
           </div>
         </div>
 
-        {routedAvailable && (
+        {directAvailable && routedAvailable && (
           <SegmentedControl
             label={t('provider_debug.lane_label')}
             value={activeLane}
@@ -352,21 +389,28 @@ export function ProviderDebugDrawer({ open, onClose, target }: ProviderDebugDraw
           ]}
         />
 
-        <div className={tab === 'lab' ? `${styles.panes} ${styles.panesStacked}` : styles.panes}>
-          <section
-            className={styles.railPane}
-            aria-label={
-              tab === 'checks'
-                ? t('provider_debug.checks_heading')
-                : tab === 'matrix'
-                  ? t('provider_debug.tab_matrix')
-                  : t('provider_debug.tab_lab')
-            }
-          >
-            {leftPane}
+        {tab === 'checks' && !hasRunState ? (
+          <section className={styles.idlePrompt} aria-label={t('provider_debug.checks_heading')}>
+            <strong>{t('provider_debug.ready_title')}</strong>
+            <span>{t('provider_debug.empty')}</span>
           </section>
-          {tracePane}
-        </div>
+        ) : (
+          <div className={tab === 'lab' ? `${styles.panes} ${styles.panesStacked}` : styles.panes}>
+            <section
+              className={styles.railPane}
+              aria-label={
+                tab === 'checks'
+                  ? t('provider_debug.checks_heading')
+                  : tab === 'matrix'
+                    ? t('provider_debug.tab_matrix')
+                    : t('provider_debug.tab_lab')
+              }
+            >
+              {leftPane}
+            </section>
+            {tracePane}
+          </div>
+        )}
       </div>
 
       <ConfirmationDialog
