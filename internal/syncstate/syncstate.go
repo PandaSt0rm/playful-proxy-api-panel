@@ -1,5 +1,5 @@
 // Package syncstate persists per-host sync status reports submitted by the
-// ppap-sync CLI through the management API. The management panel reads the
+// aiproxy-sync CLI through the management API. The management panel reads the
 // stored state to display real per-tool sync status next to sync profiles.
 //
 // State is stored as a single JSON file written atomically (temp file →

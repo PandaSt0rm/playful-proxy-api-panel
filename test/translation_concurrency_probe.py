@@ -56,7 +56,7 @@ def post_chat_completion(endpoint: str, api_key: str, model: str, timeout: float
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
-        "User-Agent": "ppap-translation-concurrency-probe/1",
+        "User-Agent": "aiproxy-translation-concurrency-probe/1",
         "Origin": "chrome-extension://amkbmndfnliijdhojkpoglbnaaahippg",
     }
     request = urllib.request.Request(endpoint, data=body, headers=headers, method="POST")

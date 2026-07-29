@@ -379,6 +379,7 @@ func (h *Handler) DeletePlugin(c *gin.Context) {
 	}
 
 	h.mu.Lock()
+	before, _ := os.ReadFile(h.configFilePath)
 	delete(h.cfg.Plugins.Configs, id)
 	if configured {
 		if errSave := config.SaveConfigPreserveComments(h.configFilePath, h.cfg); errSave != nil {
@@ -392,6 +393,8 @@ func (h *Handler) DeletePlugin(c *gin.Context) {
 			return
 		}
 	}
+	after, _ := os.ReadFile(h.configFilePath)
+	h.queueConfigMutationLocked(c, before, after)
 	cfgSnapshot := h.reloadSnapshotConfigLocked()
 	h.mu.Unlock()
 

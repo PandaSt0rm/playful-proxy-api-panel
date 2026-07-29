@@ -21,7 +21,7 @@ const syncStateMaxHostnameLen = 253
 const syncStateMaxErrorLen = 2000
 
 // syncStateReportRequest is the body of POST /v0/management/sync/state,
-// submitted by the ppap-sync CLI after a sync or rollback.
+// submitted by the aiproxy-sync CLI after a sync or rollback.
 type syncStateReportRequest struct {
 	Hostname string                 `json:"hostname"`
 	Profile  string                 `json:"profile,omitempty"`
@@ -56,14 +56,14 @@ func (h *Handler) getSyncStateStore() *syncstate.Store {
 	return h.syncStateStore
 }
 
-// GetSyncState returns the per-host sync status reported by ppap-sync CLIs.
+// GetSyncState returns the per-host sync status reported by aiproxy-sync CLIs.
 // GET /v0/management/sync/state
 func (h *Handler) GetSyncState(c *gin.Context) {
 	store := h.getSyncStateStore()
 	c.JSON(http.StatusOK, gin.H{"hosts": store.Snapshot()})
 }
 
-// PostSyncState records a sync status report from a ppap-sync CLI.
+// PostSyncState records a sync status report from a aiproxy-sync CLI.
 // POST /v0/management/sync/state
 func (h *Handler) PostSyncState(c *gin.Context) {
 	var req syncStateReportRequest

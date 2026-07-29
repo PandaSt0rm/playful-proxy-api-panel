@@ -7,7 +7,7 @@ import (
 )
 
 // ValidSyncToolIDs lists all recognized CLI tool IDs for sync profile targets.
-// These correspond to CLI tools that ppap-sync can write configuration to.
+// These correspond to CLI tools that aiproxy-sync can write configuration to.
 var ValidSyncToolIDs = map[string]bool{
 	"factory-droid": true,
 	"forgecode":     true,

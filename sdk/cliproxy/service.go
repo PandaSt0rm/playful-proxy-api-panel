@@ -156,6 +156,14 @@ func (s *Service) RegisterUsagePlugin(plugin usage.Plugin) {
 	usage.RegisterPlugin(plugin)
 }
 
+// AuthManager returns the runtime authentication manager used for exact-credential operator diagnostics.
+func (s *Service) AuthManager() *coreauth.Manager {
+	if s == nil {
+		return nil
+	}
+	return s.coreManager
+}
+
 func (s *Service) registerPluginAuthParser() {
 	var parser PluginAuthParser
 	if s != nil && s.pluginHost != nil {
@@ -1243,6 +1251,29 @@ func (s *Service) tryRegisterPluginModelsForAuth(ctx context.Context, a *coreaut
 	}
 	GlobalModelRegistry().UnregisterClient(activeAuth.ID)
 	return true
+}
+
+// ValidateConfig validates a complete runtime configuration before persistence.
+func (s *Service) ValidateConfig(_ context.Context, cfg *config.Config) error {
+	if s == nil {
+		return errors.New("proxy service is nil")
+	}
+	if cfg == nil {
+		return errors.New("configuration is nil")
+	}
+	if cfg.Port < 0 || cfg.Port > 65535 {
+		return fmt.Errorf("invalid port %d", cfg.Port)
+	}
+	return nil
+}
+
+// ApplyConfig synchronously applies a complete runtime configuration.
+func (s *Service) ApplyConfig(ctx context.Context, cfg *config.Config) error {
+	if err := s.ValidateConfig(ctx, cfg); err != nil {
+		return err
+	}
+	s.applyConfigUpdateWithAuthSynthesis(cfg, true)
+	return nil
 }
 
 func (s *Service) applyConfigUpdate(newCfg *config.Config) {

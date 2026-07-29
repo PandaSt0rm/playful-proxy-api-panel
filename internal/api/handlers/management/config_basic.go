@@ -92,20 +92,7 @@ func (h *Handler) GetLatestVersion(c *gin.Context) {
 }
 
 func WriteConfig(path string, data []byte) error {
-	data = config.NormalizeCommentIndentation(data)
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
-	if err != nil {
-		return err
-	}
-	if _, errWrite := f.Write(data); errWrite != nil {
-		_ = f.Close()
-		return errWrite
-	}
-	if errSync := f.Sync(); errSync != nil {
-		_ = f.Close()
-		return errSync
-	}
-	return f.Close()
+	return writeConfigAtomic(path, data)
 }
 
 func (h *Handler) PutConfigYAML(c *gin.Context) {
@@ -148,6 +135,7 @@ func (h *Handler) PutConfigYAML(c *gin.Context) {
 	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	before, _ := os.ReadFile(h.configFilePath)
 	if WriteConfig(h.configFilePath, body) != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "write_failed", "message": "failed to write config"})
 		return
@@ -159,6 +147,8 @@ func (h *Handler) PutConfigYAML(c *gin.Context) {
 		return
 	}
 	h.cfg = newCfg
+	after, _ := os.ReadFile(h.configFilePath)
+	h.queueConfigMutationLocked(c, before, after)
 	c.JSON(http.StatusOK, gin.H{"ok": true, "changed": []string{"config"}})
 }
 

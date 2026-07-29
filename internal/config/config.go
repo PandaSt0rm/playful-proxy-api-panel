@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	DefaultPanelGitHubRepository = "https://github.com/daishuge/playful-proxy-api-panel"
+	DefaultPanelGitHubRepository = "https://github.com/PandaSt0rm/aiproxy"
 	DefaultPprofAddr             = "127.0.0.1:8316"
 	DefaultAuthDir               = "~/.cli-proxy-api"
 )
@@ -193,11 +193,11 @@ type Config struct {
 	Payload PayloadConfig `yaml:"payload" json:"payload"`
 
 	// SyncProfiles defines named sync profiles for propagating provider/model
-	// configuration to local CLI tool config files via ppap-sync.
+	// configuration to local CLI tool config files via aiproxy-sync.
 	SyncProfiles []SyncProfile `yaml:"sync-profiles,omitempty" json:"sync-profiles,omitempty"`
 
 	// SyncStatePath stores per-host sync status reports submitted by the
-	// ppap-sync CLI. When empty, it defaults to sync-state.json next to config.yaml.
+	// aiproxy-sync CLI. When empty, it defaults to sync-state.json next to config.yaml.
 	SyncStatePath string `yaml:"sync-state-path,omitempty" json:"sync-state-path,omitempty"`
 
 	legacyMigrationPending bool `yaml:"-" json:"-"`

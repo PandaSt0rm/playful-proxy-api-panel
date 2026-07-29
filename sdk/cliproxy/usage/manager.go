@@ -45,7 +45,7 @@ type Record struct {
 	Generate    *bool
 	RequestedAt time.Time
 	Latency     time.Duration
-	// FirstByteLatency is the PPAP gin-context-derived time to first response byte.
+	// FirstByteLatency is the AIPROXY gin-context-derived time to first response byte.
 	FirstByteLatency time.Duration
 	// TTFT is the transport-instrumented time to first response byte.
 	TTFT   time.Duration

@@ -1,21 +1,21 @@
-# Playful Proxy API Panel (PPAP)
+# AIPROXY (AIPROXY)
 
 [English](README.md) | [中文](README_CN.md) | 日本語
 
-**PPAP は、自ホスト向けの CLIProxyAPI 互換 fork です。管理パネル、永続化される使用量分析、コスト推定、Codex 向け model alias をまとめて提供します。**
+**AIPROXY は、自ホスト向けの CLIProxyAPI 互換 fork です。管理パネル、永続化される使用量分析、コスト推定、Codex 向け model alias をまとめて提供します。**
 
 [`router-for-me/CLIProxyAPI`](https://github.com/router-for-me/CLIProxyAPI) の OpenAI/Gemini/Claude/Codex/Grok 互換 proxy surface を保ちながら、日常運用で必要になる usage snapshot、request/cost metrics、backend と同じ tag で配布される管理パネル、より安全な thinking strength alias を追加しています。
 
 素の CLIProxyAPI が必要なら上流を使ってください。  
-使用量、latency、cache hit、Codex strength routing をローカルで見たいなら PPAP を使ってください。
+使用量、latency、cache hit、Codex strength routing をローカルで見たいなら AIPROXY を使ってください。
 
-## PPAP の違い
+## AIPROXY の違い
 
 - **使用量分析を内蔵**: `/v0/management/usage`、import/export、local snapshot persistence、cache hit rate、first-byte latency、average latency、TPS、token breakdown、model/API rollup。
-- **パネルと backend を同時 release**: frontend source は [`web/management-panel`](web/management-panel) にあり、各 release に同じ tag で build された `management.html` が含まれます。
+- **パネルと backend を同時 release**: frontend source は [`web/console`](web/console) にあり、各 release に同じ tag で build された `management.html` が含まれます。
 - **Codex を主要 workflow として扱う**: OpenAI Codex OAuth、GPT model routing、Spark pricing estimate、thinking strength alias をこの fork で保守します。
 - **thinking strength の書き方を統一**: `model(high)` と `model-high` の両方に対応し、`low`、`medium`、`high`、`xhigh` を扱います。explicit alias と exact model name が優先されます。
-- **上流互換を維持**: 競合しない上流更新は取り込みます。Redis usage queue retention も含まれ、PPAP の usage persistence は維持されます。
+- **上流互換を維持**: 競合しない上流更新は取り込みます。Redis usage queue retention も含まれ、AIPROXY の usage persistence は維持されます。
 
 ## Core Features
 
@@ -30,7 +30,7 @@
 
 ## Quick Start
 
-この repository の [latest Release](https://github.com/daishuge/playful-proxy-api-panel/releases/latest) から platform に合う archive をダウンロードし、展開して local config で起動します。
+この repository の [latest Release](https://github.com/PandaSt0rm/aiproxy/releases/latest) から platform に合う archive をダウンロードし、展開して local config で起動します。
 
 ```bash
 cp config.example.yaml config.yaml
@@ -43,7 +43,7 @@ Release archives は upstream CPA と同じ platform family を対象にしま�
 
 ## Docker
 
-Docker image は `ghcr.io/daishuge/playful-proxy-api-panel` に公開され、`linux/amd64` と `linux/arm64` をサポートします。Image には同じ tag から build された PPAP management panel が含まれるため、`/management.html` は初回 download なしで使えます。
+Docker image は `ghcr.io/PandaSt0rm/aiproxy` に公開され、`linux/amd64` と `linux/arm64` をサポートします。Image には同じ tag から build された AIPROXY management panel が含まれるため、`/management.html` は初回 download なしで使えます。
 
 Release archive または cloned checkout の中で:
 
@@ -74,16 +74,16 @@ Docker bridge traffic は container 内では non-localhost として見える�
 
 ## Configuration Notes
 
-[`config.example.yaml`](config.example.yaml) から始めてください。PPAP でよく使う設定:
+[`config.example.yaml`](config.example.yaml) から始めてください。AIPROXY でよく使う設定:
 
 - `usage-statistics-enabled`: built-in usage snapshot を有効化。
 - `usage-statistics-path`: snapshot file の保存先を指定。
 - `redis-usage-queue-retention-seconds`: Redis usage queue retention を調整。
-- `home`: v7 Redis-compatible Home control plane 設定。Home mode では PPAP の in-process management endpoints を無効化し、usage を Home に転送します。
+- `home`: v7 Redis-compatible Home control plane 設定。Home mode では AIPROXY の in-process management endpoints を無効化し、usage を Home に転送します。
 - `/v0/management/usage-queue`: Redis-compatible usage stream の queued records を external integrations 向けに pop。
 - `oauth-model-alias`: friendly model alias を定義し、legacy config style も維持。
 
-thinking levels を宣言している model では、PPAP は次のような aliases を自動で公開できます。
+thinking levels を宣言している model では、AIPROXY は次のような aliases を自動で公開できます。
 
 ```text
 gpt-5.3-codex-spark-low
@@ -100,7 +100,7 @@ gpt-5.3-codex-spark(high)
 
 ## Codex Spark Pricing
 
-PPAP pricing data には `gpt-5.3-codex-spark` が含まれています。公式 preview pricing が安定するまでは、`gpt-5.3-codex` の推定 rate を使います。
+AIPROXY pricing data には `gpt-5.3-codex-spark` が含まれています。公式 preview pricing が安定するまでは、`gpt-5.3-codex` の推定 rate を使います。
 
 References:
 
@@ -110,7 +110,7 @@ References:
 
 ## Management
 
-- Management panel source: [`web/management-panel`](web/management-panel)
+- Management panel source: [`web/console`](web/console)
 - Management API docs: [help.router-for.me/management/api](https://help.router-for.me/management/api)
 - Usage endpoints: `/v0/management/usage`, `/v0/management/usage/export`, `/v0/management/usage/import`
 - Usage queue endpoint: `/v0/management/usage-queue?count=100`

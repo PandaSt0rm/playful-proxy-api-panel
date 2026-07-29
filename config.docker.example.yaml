@@ -1,4 +1,4 @@
-# Docker-oriented PPAP configuration.
+# Docker-oriented AIPROXY configuration.
 # Copy this file to config.yaml before running docker compose.
 
 host: ""
@@ -20,7 +20,7 @@ remote-management:
 
   disable-control-panel: false
   disable-auto-update-panel: true
-  panel-github-repository: "https://github.com/daishuge/playful-proxy-api-panel"
+  panel-github-repository: "https://github.com/PandaSt0rm/aiproxy"
 
 auth-dir: "/root/.cli-proxy-api"
 

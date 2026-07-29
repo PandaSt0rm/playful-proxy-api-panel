@@ -262,9 +262,9 @@ func renderOpenCode(req RenderRequest) (string, []AuxiliaryFile, error) {
 	config := map[string]interface{}{
 		"$schema": "https://opencode.ai/config.json",
 		"provider": map[string]interface{}{
-			"ppap": map[string]interface{}{
+			"aiproxy": map[string]interface{}{
 				"npm":  "@ai-sdk/openai-compatible",
-				"name": "PPAP",
+				"name": "AIPROXY",
 				"options": map[string]string{
 					"baseURL": resolveBase(req) + "/v1",
 					"apiKey":  resolveKey(req),
@@ -305,10 +305,10 @@ func renderCodex(req RenderRequest) string {
 	}
 	return strings.Join([]string{
 		fmt.Sprintf("model = %q", resolveActiveModel("codex", "codex", req)),
-		`model_provider = "ppap"`,
+		`model_provider = "aiproxy"`,
 		``,
-		`[model_providers.ppap]`,
-		`name = "PPAP"`,
+		`[model_providers.aiproxy]`,
+		`name = "AIPROXY"`,
 		fmt.Sprintf("base_url = %q", resolveBase(req)+"/v1"),
 		fmt.Sprintf("wire_api = %q", wireAPI),
 		`env_key = "PROXY_API_KEY"`,
@@ -336,7 +336,7 @@ func renderContinue(req RenderRequest) string {
 	lines = append(lines, "models:")
 	for _, model := range resolveModelList(req) {
 		lines = append(lines,
-			fmt.Sprintf("  - name: PPAP %s", model),
+			fmt.Sprintf("  - name: AIPROXY %s", model),
 			"    provider: openai",
 			fmt.Sprintf("    model: %s", model),
 			fmt.Sprintf("    apiBase: %s/v1", resolveBase(req)),
@@ -360,14 +360,14 @@ func renderForgeCode(req RenderRequest) string {
 		wireAPI = "responses"
 	}
 	return strings.Join([]string{
-		"# ppap-sync: managed",
+		"# aiproxy-sync: managed",
 		"[session]",
-		`provider_id = "ppap"`,
+		`provider_id = "aiproxy"`,
 		fmt.Sprintf("model_id = %q", resolveActiveModel("forgecode", "forgecode", req)),
 		``,
-		"# ppap-sync: managed",
-		"[model_providers.ppap]",
-		`name = "PPAP"`,
+		"# aiproxy-sync: managed",
+		"[model_providers.aiproxy]",
+		`name = "AIPROXY"`,
 		fmt.Sprintf("base_url = %q", resolveBase(req)+"/v1"),
 		fmt.Sprintf("wire_api = %q", wireAPI),
 		fmt.Sprintf("api_key = %q", resolveKey(req)),
@@ -376,16 +376,16 @@ func renderForgeCode(req RenderRequest) string {
 
 func renderHermes(req RenderRequest) (string, []AuxiliaryFile, error) {
 	content := strings.Join([]string{
-		"# ppap-sync: managed",
+		"# aiproxy-sync: managed",
 		"model:",
 		fmt.Sprintf("  default: %s", resolveActiveModel("hermes", "hermes", req)),
-		"  provider: ppap",
+		"  provider: aiproxy",
 		fmt.Sprintf("  base_url: %s/v1", resolveBase(req)),
-		"  api_key: ${PPAP_API_KEY}",
+		"  api_key: ${AIPROXY_API_KEY}",
 	}, "\n") + "\n"
 	aux := []AuxiliaryFile{{
 		Filename: ".env",
-		Content:  fmt.Sprintf("PPAP_API_KEY=%s\n", resolveKey(req)),
+		Content:  fmt.Sprintf("AIPROXY_API_KEY=%s\n", resolveKey(req)),
 	}}
 	return content, aux, nil
 }

@@ -40,31 +40,34 @@ const attemptMaxIdleTime = 2 * time.Hour
 
 // Handler aggregates config reference, persistence path and helpers.
 type Handler struct {
-	cfg                     *config.Config
-	configFilePath          string
-	mu                      sync.Mutex
-	reloadMu                sync.Mutex
-	reloadGeneration        uint64
-	appliedReloadGeneration uint64
-	attemptsMu              sync.Mutex
-	failedAttempts          map[string]*attemptInfo // keyed by client IP
-	authManager             *coreauth.Manager
-	usageStats              *usage.RequestStatistics
-	tokenStore              coreauth.Store
-	localPassword           string
-	allowRemoteOverride     bool
-	envSecret               string
-	logDir                  string
-	postAuthHook            coreauth.PostAuthHook
-	postAuthPersistHook     coreauth.PostAuthHook
-	pluginHost              *pluginhost.Host
-	configReloadHook        func(context.Context, *config.Config)
-	pluginStoreRegistryURL  string
-	pluginStoreHTTPClient   pluginstore.HTTPDoer
-	pluginReleaseCacheMu    sync.Mutex
-	pluginReleaseCache      map[string]pluginReleaseCacheEntry
-	syncStateMu             sync.Mutex
-	syncStateStore          *syncstate.Store
+	cfg                       *config.Config
+	configFilePath            string
+	mu                        sync.Mutex
+	reloadMu                  sync.Mutex
+	reloadGeneration          uint64
+	appliedReloadGeneration   uint64
+	attemptsMu                sync.Mutex
+	failedAttempts            map[string]*attemptInfo // keyed by client IP
+	authManager               *coreauth.Manager
+	usageStats                *usage.RequestStatistics
+	tokenStore                coreauth.Store
+	localPassword             string
+	allowRemoteOverride       bool
+	envSecret                 string
+	logDir                    string
+	postAuthHook              coreauth.PostAuthHook
+	postAuthPersistHook       coreauth.PostAuthHook
+	pluginHost                *pluginhost.Host
+	configReloadHook          func(context.Context, *config.Config)
+	configMutationObserver    ConfigMutationObserver
+	pluginStoreRegistryURL    string
+	pluginStoreHTTPClient     pluginstore.HTTPDoer
+	pluginReleaseCacheMu      sync.Mutex
+	pluginReleaseCache        map[string]pluginReleaseCacheEntry
+	syncStateMu               sync.Mutex
+	syncStateStore            *syncstate.Store
+	oauthCallbackWaitTimeout  time.Duration
+	oauthCallbackPollInterval time.Duration
 }
 
 type configReloadSnapshot struct {
@@ -78,14 +81,16 @@ func NewHandler(cfg *config.Config, configFilePath string, manager *coreauth.Man
 	envSecret = strings.TrimSpace(envSecret)
 
 	h := &Handler{
-		cfg:                 cfg,
-		configFilePath:      configFilePath,
-		failedAttempts:      make(map[string]*attemptInfo),
-		authManager:         manager,
-		usageStats:          usage.GetRequestStatistics(),
-		tokenStore:          sdkAuth.GetTokenStore(),
-		allowRemoteOverride: envSecret != "",
-		envSecret:           envSecret,
+		cfg:                       cfg,
+		configFilePath:            configFilePath,
+		failedAttempts:            make(map[string]*attemptInfo),
+		authManager:               manager,
+		usageStats:                usage.GetRequestStatistics(),
+		tokenStore:                sdkAuth.GetTokenStore(),
+		allowRemoteOverride:       envSecret != "",
+		envSecret:                 envSecret,
+		oauthCallbackWaitTimeout:  5 * time.Minute,
+		oauthCallbackPollInterval: 500 * time.Millisecond,
 	}
 	h.startAttemptCleanup()
 	return h
@@ -185,10 +190,13 @@ func (h *Handler) reloadSnapshotConfigLocked() configReloadSnapshot {
 // saveConfigAndSnapshotLocked saves h.cfg and returns a full runtime config snapshot.
 // Callers must hold h.mu.
 func (h *Handler) saveConfigAndSnapshotLocked(c *gin.Context) (configReloadSnapshot, bool) {
+	before, _ := os.ReadFile(h.configFilePath)
 	if errSave := config.SaveConfigPreserveComments(h.configFilePath, h.cfg); errSave != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to save config: %v", errSave)})
 		return configReloadSnapshot{}, false
 	}
+	after, _ := os.ReadFile(h.configFilePath)
+	h.queueConfigMutationLocked(c, before, after)
 	return h.reloadSnapshotConfigLocked(), true
 }
 
@@ -415,11 +423,13 @@ func (h *Handler) persist(c *gin.Context) bool {
 // persistLocked saves the current in-memory config to disk.
 // It expects the caller to hold h.mu.
 func (h *Handler) persistLocked(c *gin.Context) bool {
-	// Preserve comments when writing
+	before, _ := os.ReadFile(h.configFilePath)
 	if err := config.SaveConfigPreserveComments(h.configFilePath, h.cfg); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to save config: %v", err)})
 		return false
 	}
+	after, _ := os.ReadFile(h.configFilePath)
+	h.queueConfigMutationLocked(c, before, after)
 	snapshot := h.reloadSnapshotConfigLocked()
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	var reqCtx context.Context

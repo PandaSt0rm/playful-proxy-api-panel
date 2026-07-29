@@ -1,20 +1,20 @@
-# Playful Proxy API Panel (PPAP)
+# AIPROXY (AIPROXY)
 
 English | [中文](README_CN.md) | [日本語](README_JA.md)
 
-**PPAP is a self-hosted, upstream-compatible CLIProxyAPI fork with a built-in management panel, persistent usage analytics, and Codex-focused model ergonomics.**
+**AIPROXY is a self-hosted, upstream-compatible CLIProxyAPI fork with a built-in management panel, persistent usage analytics, and Codex-focused model ergonomics.**
 
 It keeps the familiar OpenAI/Gemini/Claude/Codex/Grok-compatible proxy surface from [`router-for-me/CLIProxyAPI`](https://github.com/router-for-me/CLIProxyAPI), then adds the pieces that matter when you run it every day: usage snapshots, cost estimates, panel assets released with the backend, and safer thinking-strength aliases.
 
-Use upstream CLIProxyAPI when you want the vanilla project. Use PPAP when you want the same proxy style with more local visibility and a tighter operations loop.
+Use upstream CLIProxyAPI when you want the vanilla project. Use AIPROXY when you want the same proxy style with more local visibility and a tighter operations loop.
 
-## What Makes PPAP Different
+## What Makes AIPROXY Different
 
 - **Usage analytics built in**: restored `/v0/management/usage`, import/export endpoints, persistent local snapshots, cache hit rate, first-byte latency, average latency, TPS, token breakdowns, and per-model/per-API rollups.
-- **Panel and backend released together**: the management panel source lives in [`web/management-panel`](web/management-panel), and each release ships the matching `management.html`.
+- **Panel and backend released together**: the management panel source lives in [`web/console`](web/console), and each release ships the matching `management.html`.
 - **Codex is treated as a primary workflow**: OpenAI Codex OAuth, GPT model routing, Spark pricing estimation, and thinking-strength aliases are maintained in this fork.
 - **Thinking aliases are predictable**: both `model(high)` and `model-high` work for `low`, `medium`, `high`, and `xhigh`; explicit aliases and exact model names stay higher priority.
-- **Upstream compatibility is still the baseline**: upstream fixes are merged where they do not conflict with PPAP behavior. Recent Redis usage queue retention support is included.
+- **Upstream compatibility is still the baseline**: upstream fixes are merged where they do not conflict with AIPROXY behavior. Recent Redis usage queue retention support is included.
 
 ## Core Features
 
@@ -29,7 +29,7 @@ Use upstream CLIProxyAPI when you want the vanilla project. Use PPAP when you wa
 
 ## Quick Start
 
-Download the [latest PPAP release](https://github.com/daishuge/playful-proxy-api-panel/releases/latest), extract the archive for your platform, then start with a local config file:
+Download the [latest AIPROXY release](https://github.com/PandaSt0rm/aiproxy/releases/latest), extract the archive for your platform, then start with a local config file:
 
 ```bash
 cp config.example.yaml config.yaml
@@ -42,7 +42,7 @@ Release archives cover the same platform families as upstream CPA: Linux, Window
 
 ## Docker
 
-The Docker image is published as `ghcr.io/daishuge/playful-proxy-api-panel` for `linux/amd64` and `linux/arm64`. The image bundles the PPAP management panel built from the same tag, so `/management.html` works without downloading a panel asset first.
+The Docker image is published as `ghcr.io/PandaSt0rm/aiproxy` for `linux/amd64` and `linux/arm64`. The image bundles the AIPROXY management panel built from the same tag, so `/management.html` works without downloading a panel asset first.
 
 From a release archive or cloned checkout:
 
@@ -73,16 +73,16 @@ Keep `config.yaml`, `.env`, OAuth files, API keys, auth directories, logs, data 
 
 ## Configuration Notes
 
-Start from [`config.example.yaml`](config.example.yaml). The most useful PPAP-specific settings are:
+Start from [`config.example.yaml`](config.example.yaml). The most useful AIPROXY-specific settings are:
 
 - `usage-statistics-enabled`: enable built-in usage snapshots.
 - `usage-statistics-path`: optionally move the usage snapshot away from the config directory.
 - `redis-usage-queue-retention-seconds`: tune Redis usage queue retention when Redis usage queueing is enabled.
-- `home`: v7 Redis-compatible Home control-plane settings; PPAP disables in-process management endpoints in Home mode and forwards usage to Home.
+- `home`: v7 Redis-compatible Home control-plane settings; AIPROXY disables in-process management endpoints in Home mode and forwards usage to Home.
 - `/v0/management/usage-queue`: pop queued usage records for integrations that consume the Redis-compatible usage stream.
 - `oauth-model-alias`: define friendly model aliases while preserving old config compatibility.
 
-For models that declare thinking levels, PPAP can expose automatic aliases such as:
+For models that declare thinking levels, AIPROXY can expose automatic aliases such as:
 
 ```text
 gpt-5.3-codex-spark-low
@@ -99,7 +99,7 @@ gpt-5.3-codex-spark(high)
 
 ## Codex Spark Pricing
 
-`gpt-5.3-codex-spark` is included in PPAP pricing data for local usage-cost estimation. Until official preview pricing settles, PPAP temporarily estimates it with the `gpt-5.3-codex` rate.
+`gpt-5.3-codex-spark` is included in AIPROXY pricing data for local usage-cost estimation. Until official preview pricing settles, AIPROXY temporarily estimates it with the `gpt-5.3-codex` rate.
 
 References:
 
@@ -109,13 +109,13 @@ References:
 
 ## Management
 
-- Management panel source: [`web/management-panel`](web/management-panel)
+- Management panel source: [`web/console`](web/console)
 - Management API docs: [help.router-for.me/management/api](https://help.router-for.me/management/api)
 - Usage endpoints: `/v0/management/usage`, `/v0/management/usage/export`, `/v0/management/usage/import`
 - Usage queue endpoint: `/v0/management/usage-queue?count=100`
 - Amp CLI guide: [help.router-for.me/agent-client/amp-cli.html](https://help.router-for.me/agent-client/amp-cli.html)
 
-The release asset `management.html` is built from the same tag as the backend binaries, so a running PPAP instance can point its panel updater at this repository.
+The release asset `management.html` is built from the same tag as the backend binaries, so a running AIPROXY instance can point its panel updater at this repository.
 
 ## SDK And Docs
 

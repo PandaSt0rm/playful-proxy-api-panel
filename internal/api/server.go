@@ -73,20 +73,39 @@ const (
 	exampleAPIKeyManagementURL  = "/management.html?safe-mode=configure"
 )
 
+// ManagementExtensionRegistrar mounts product-owned routes below the authenticated
+// management group and releases any resources it owns during server shutdown.
+type ManagementExtensionRegistrar interface {
+	Register(*gin.RouterGroup)
+	Close() error
+}
+
+// ManagementExtensionFactory constructs one extension from the router-owned
+// management handler. A nil factory preserves the router's default behavior.
+type ManagementExtensionFactory func(*managementHandlers.Handler) ManagementExtensionRegistrar
+
+// WithManagementExtensionFactory attaches one product-owned management extension.
+func WithManagementExtensionFactory(factory ManagementExtensionFactory) ServerOption {
+	return func(cfg *serverOptionConfig) {
+		cfg.managementExtensionFactory = factory
+	}
+}
+
 type serverOptionConfig struct {
-	extraMiddleware       []gin.HandlerFunc
-	engineConfigurator    func(*gin.Engine)
-	routerConfigurator    func(*gin.Engine, *handlers.BaseAPIHandler, *config.Config)
-	requestLoggerFactory  func(*config.Config, string) logging.RequestLogger
-	localPassword         string
-	keepAliveEnabled      bool
-	keepAliveTimeout      time.Duration
-	keepAliveOnTimeout    func()
-	postAuthHook          auth.PostAuthHook
-	postAuthPersistHook   auth.PostAuthHook
-	pluginHost            *pluginhost.Host
-	configReloadHook      func(context.Context, *config.Config)
-	exampleAPIKeySafeMode bool
+	extraMiddleware            []gin.HandlerFunc
+	engineConfigurator         func(*gin.Engine)
+	routerConfigurator         func(*gin.Engine, *handlers.BaseAPIHandler, *config.Config)
+	requestLoggerFactory       func(*config.Config, string) logging.RequestLogger
+	localPassword              string
+	keepAliveEnabled           bool
+	keepAliveTimeout           time.Duration
+	keepAliveOnTimeout         func()
+	postAuthHook               auth.PostAuthHook
+	postAuthPersistHook        auth.PostAuthHook
+	pluginHost                 *pluginhost.Host
+	configReloadHook           func(context.Context, *config.Config)
+	exampleAPIKeySafeMode      bool
+	managementExtensionFactory ManagementExtensionFactory
 }
 
 // ServerOption customises HTTP server construction.
@@ -226,6 +245,10 @@ type Server struct {
 	loggerToggle  func(bool)
 
 	// configFilePath is the absolute path to the YAML config file for persistence.
+	managementExtension          ManagementExtensionRegistrar
+	managementExtensionCloseOnce sync.Once
+	managementExtensionCloseErr  error
+
 	configFilePath string
 
 	// currentPath is the absolute path to the current working directory.
@@ -377,6 +400,9 @@ func NewServer(cfg *config.Config, authManager *auth.Manager, accessManager *sdk
 		s.mgmt.SetPostAuthPersistHook(optionState.postAuthPersistHook)
 	}
 	s.localPassword = optionState.localPassword
+	if optionState.managementExtensionFactory != nil {
+		s.managementExtension = optionState.managementExtensionFactory(s.mgmt)
+	}
 
 	// Home heartbeat gate: when home is enabled, block all endpoints with 503 until the
 	// subscribe-config heartbeat connection is healthy.
@@ -816,6 +842,9 @@ func (s *Server) registerManagementRoutes() {
 
 	mgmt := s.engine.Group("/v0/management")
 	mgmt.Use(s.managementAvailabilityMiddleware(), s.mgmt.Middleware())
+	if s.managementExtension != nil {
+		s.managementExtension.Register(mgmt.Group("/aiproxy"))
+	}
 	{
 		mgmt.GET("/usage", s.mgmt.GetUsageStatistics)
 		mgmt.GET("/usage/events", s.mgmt.GetUsageEvents)
@@ -1803,13 +1832,23 @@ func (s *Server) Stop(ctx context.Context) error {
 		}
 	}
 
-	// Shutdown the HTTP server.
-	if err := s.server.Shutdown(ctx); err != nil {
-		return fmt.Errorf("failed to shutdown HTTP server: %v", err)
+	var shutdownErr error
+	if s.server != nil {
+		if err := s.server.Shutdown(ctx); err != nil {
+			shutdownErr = fmt.Errorf("failed to shutdown HTTP server: %w", err)
+		}
+	}
+	s.managementExtensionCloseOnce.Do(func() {
+		if s.managementExtension != nil {
+			s.managementExtensionCloseErr = s.managementExtension.Close()
+		}
+	})
+	if s.managementExtensionCloseErr != nil {
+		shutdownErr = errors.Join(shutdownErr, fmt.Errorf("close management extension: %w", s.managementExtensionCloseErr))
 	}
 
 	log.Debug("API server stopped")
-	return nil
+	return shutdownErr
 }
 
 // corsMiddleware returns a Gin middleware handler that adds CORS headers

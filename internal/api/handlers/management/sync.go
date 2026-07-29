@@ -14,7 +14,7 @@ import (
 // Response types for the sync available-configs aggregation endpoint.
 
 // SyncAvailableConfigsResponse aggregates all provider, model, and key
-// information needed by the ppap-sync CLI tool to configure target tools.
+// information needed by the aiproxy-sync CLI tool to configure target tools.
 type SyncAvailableConfigsResponse struct {
 	// BaseURL is the server's external URL derived from host, port, and TLS config.
 	BaseURL string `json:"base_url"`

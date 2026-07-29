@@ -162,6 +162,12 @@ func (h *Host) callHostHTTPDoStream(ctx context.Context, request []byte) ([]byte
 		ctx = context.Background()
 	}
 	streamCtx, cancel := context.WithCancel(ctx)
+	streamOwned := false
+	defer func() {
+		if !streamOwned {
+			cancel()
+		}
+	}()
 	resp, errDo := h.newHTTPClient(nil).DoStream(streamCtx, httpReq)
 	if errDo != nil {
 		cancel()
@@ -171,6 +177,7 @@ func (h *Host) callHostHTTPDoStream(ctx context.Context, request []byte) ([]byte
 	if h != nil && h.httpStreams != nil {
 		streamID = h.httpStreams.open(resp.Chunks, cancel)
 	}
+	streamOwned = streamID != ""
 	if streamID == "" {
 		cancel()
 		return nil, fmt.Errorf("host http stream bridge is unavailable")

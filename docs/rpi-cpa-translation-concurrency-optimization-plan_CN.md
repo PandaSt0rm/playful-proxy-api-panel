@@ -9,7 +9,7 @@ Immersive Translate 通过 OpenAI-compatible 配置连接 RPi 上的 CPA：
 - 插件：Edge 扩展 `amkbmndfnliijdhojkpoglbnaaahippg`，Immersive Translate `1.28.5`。
 - 入口：`http://m.daishuge.win:8317/v1/chat/completions`。
 - 模型：`gpt-5.3-codex-spark`。
-- RPi 服务：`cliproxyapi.service`，实际运行 `CLIProxyAPI 6.10.0-ppap.8`。
+- RPi 服务：`cliproxyapi.service`，实际运行 `CLIProxyAPI 6.10.0-aiproxy.8`。
 - 上游：CPA 的 `codex` executor 通过 `socks5://127.0.0.1:7890` 访问 `https://chatgpt.com/backend-api/codex/responses`。
 
 现象是翻译插件高并发时经常返回 `500`，错误为：
@@ -268,7 +268,7 @@ upstream-concurrency:
 当前问题：
 
 - `error-logs-max-files` 太小，只保留最近少量错误，旧错误文件被清理后主日志会出现 `failed to read error log info ... no such file`。
-- `version.txt` 显示 `6.10.0-ppap.6`，实际运行二进制是 `6.10.0-ppap.8`，状态工具会被误导。
+- `version.txt` 显示 `6.10.0-aiproxy.6`，实际运行二进制是 `6.10.0-aiproxy.8`，状态工具会被误导。
 
 建议：
 

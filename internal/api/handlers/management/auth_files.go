@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -30,6 +31,7 @@ import (
 	xaiauth "github.com/router-for-me/CLIProxyAPI/v7/internal/auth/xai"
 	"github.com/router-for-me/CLIProxyAPI/v7/internal/config"
 	"github.com/router-for-me/CLIProxyAPI/v7/internal/misc"
+	"github.com/router-for-me/CLIProxyAPI/v7/internal/oauthbridge"
 	"github.com/router-for-me/CLIProxyAPI/v7/internal/pluginhost"
 	"github.com/router-for-me/CLIProxyAPI/v7/internal/registry"
 	"github.com/router-for-me/CLIProxyAPI/v7/internal/util"
@@ -49,9 +51,10 @@ const (
 )
 
 type callbackForwarder struct {
-	provider string
-	server   *http.Server
-	done     chan struct{}
+	provider    string
+	server      *http.Server
+	done        chan struct{}
+	bridgeLease *oauthbridge.Lease
 }
 
 type codexOAuthService interface {
@@ -135,9 +138,32 @@ func isWebUIRequest(c *gin.Context) bool {
 	}
 }
 
-const callbackForwarderSuccessHTML = `<html><head><meta charset="utf-8"><title>Authentication successful</title><script>setTimeout(function(){window.close();},5000);</script></head><body><h1>Authentication successful!</h1><p>You can close this window.</p><p>This window will close automatically in 5 seconds.</p></body></html>`
+func startCallbackForwarder(port int, provider, state, authDir string) (*callbackForwarder, error) {
+	handler := func(_ context.Context, callback oauthbridge.Callback) oauthbridge.CallbackResult {
+		return persistForwardedOAuthCallback(provider, authDir, callback)
+	}
+	if socketPath := os.Getenv("AIPROXY_OAUTH_BRIDGE_SOCKET"); socketPath != "" {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		lease, err := oauthbridge.Acquire(ctx, socketPath, oauthbridge.AcquireRequest{
+			Provider: provider,
+			State:    state,
+			Port:     port,
+		}, handler)
+		if err != nil {
+			return nil, err
+		}
+		forwarder := &callbackForwarder{provider: provider, bridgeLease: lease, done: make(chan struct{})}
+		go func() {
+			<-lease.Done()
+			close(forwarder.done)
+			if lease.Err() != nil && !lease.CallbackDelivered() && IsOAuthSessionPending(state, provider) {
+				SetOAuthSessionError(state, "OAuth callback bridge stopped")
+			}
+		}()
+		return forwarder, nil
+	}
 
-func startCallbackForwarder(port int, provider, authDir string) (*callbackForwarder, error) {
 	callbackForwardersMu.Lock()
 	prev := callbackForwarders[port]
 	if prev != nil {
@@ -152,11 +178,14 @@ func startCallbackForwarder(port int, provider, authDir string) (*callbackForwar
 	addr := fmt.Sprintf("0.0.0.0:%d", port)
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
+		if errors.Is(err, syscall.EADDRINUSE) {
+			return nil, fmt.Errorf("%w: %v", oauthbridge.ErrPortInUse, err)
+		}
 		return nil, fmt.Errorf("failed to listen on %s: %w", addr, err)
 	}
 
 	srv := &http.Server{
-		Handler:           newCallbackForwarderHandler(provider, authDir),
+		Handler:           oauthbridge.NewCallbackHTTPHandler(handler),
 		ReadHeaderTimeout: 5 * time.Second,
 		WriteTimeout:      5 * time.Second,
 	}
@@ -180,73 +209,28 @@ func startCallbackForwarder(port int, provider, authDir string) (*callbackForwar
 	callbackForwardersMu.Unlock()
 
 	log.Infof("callback forwarder for %s listening on %s", provider, addr)
-
 	return forwarder, nil
 }
 
 func newCallbackForwarderHandler(provider, authDir string) http.Handler {
+	return oauthbridge.NewCallbackHTTPHandler(func(_ context.Context, callback oauthbridge.Callback) oauthbridge.CallbackResult {
+		return persistForwardedOAuthCallback(provider, authDir, callback)
+	})
+}
+
+func persistForwardedOAuthCallback(provider, authDir string, callback oauthbridge.Callback) oauthbridge.CallbackResult {
 	canonicalProvider, err := NormalizeOAuthProvider(provider)
 	if err != nil {
 		canonicalProvider = strings.ToLower(strings.TrimSpace(provider))
 	}
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		setCallbackForwarderHeaders(w, r)
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
+	if _, err = WriteOAuthCallbackFileForPendingSession(authDir, canonicalProvider, callback.State, callback.Code, callback.Error); err != nil {
+		log.WithError(err).Warnf("failed to persist %s oauth callback", canonicalProvider)
+		if errors.Is(err, errOAuthSessionNotPending) {
+			return oauthbridge.CallbackResult{Status: http.StatusConflict, Error: "oauth flow is not pending"}
 		}
-		if r.Method != http.MethodGet && r.Method != http.MethodPost {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		if errParse := r.ParseForm(); errParse != nil {
-			http.Error(w, "invalid callback request", http.StatusBadRequest)
-			return
-		}
-
-		state := strings.TrimSpace(r.Form.Get("state"))
-		code := strings.TrimSpace(r.Form.Get("code"))
-		errStr := strings.TrimSpace(r.Form.Get("error"))
-		if errStr == "" {
-			errStr = strings.TrimSpace(r.Form.Get("error_description"))
-		}
-		if state == "" {
-			http.Error(w, "state is required", http.StatusBadRequest)
-			return
-		}
-		if code == "" && errStr == "" {
-			http.Error(w, "code or error is required", http.StatusBadRequest)
-			return
-		}
-		if _, errWrite := WriteOAuthCallbackFileForPendingSession(authDir, canonicalProvider, state, code, errStr); errWrite != nil {
-			log.WithError(errWrite).Warnf("failed to persist %s oauth callback", canonicalProvider)
-			if errors.Is(errWrite, errOAuthSessionNotPending) {
-				http.Error(w, "oauth flow is not pending", http.StatusConflict)
-				return
-			}
-			http.Error(w, "failed to persist oauth callback", http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-		_, _ = io.WriteString(w, callbackForwarderSuccessHTML)
-	})
-}
-
-func setCallbackForwarderHeaders(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Cache-Control", "no-store")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Access-Control-Allow-Private-Network", "true")
-	origin := strings.TrimSpace(r.Header.Get("Origin"))
-	if origin == "" {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		return
+		return oauthbridge.CallbackResult{Status: http.StatusInternalServerError, Error: "failed to persist oauth callback"}
 	}
-	w.Header().Set("Access-Control-Allow-Origin", origin)
-	w.Header().Add("Vary", "Origin")
+	return oauthbridge.CallbackResult{Status: http.StatusOK}
 }
 
 func stopCallbackForwarderInstance(port int, forwarder *callbackForwarder) {
@@ -263,7 +247,17 @@ func stopCallbackForwarderInstance(port int, forwarder *callbackForwarder) {
 }
 
 func stopForwarderInstance(port int, forwarder *callbackForwarder) {
-	if forwarder == nil || forwarder.server == nil {
+	if forwarder == nil {
+		return
+	}
+	if forwarder.bridgeLease != nil {
+		if err := forwarder.bridgeLease.Close(); err != nil {
+			log.WithError(err).Warnf("failed to close callback bridge lease on port %d", port)
+		}
+		log.Infof("callback forwarder on port %d stopped", port)
+		return
+	}
+	if forwarder.server == nil {
 		return
 	}
 
@@ -280,6 +274,25 @@ func stopForwarderInstance(port int, forwarder *callbackForwarder) {
 	}
 
 	log.Infof("callback forwarder on port %d stopped", port)
+}
+
+func (h *Handler) startWebUICallbackForwarder(c *gin.Context, port int, provider, state string) (*callbackForwarder, bool) {
+	if !isWebUIRequest(c) {
+		return nil, true
+	}
+	forwarder, err := startCallbackForwarder(port, provider, state, h.cfg.AuthDir)
+	if err == nil {
+		return forwarder, true
+	}
+
+	CancelOAuthSession(state)
+	log.WithError(err).Errorf("failed to start %s callback forwarder", provider)
+	if errors.Is(err, oauthbridge.ErrPortInUse) {
+		c.JSON(http.StatusConflict, gin.H{"error": fmt.Sprintf("OAuth callback port %d is already in use on the host", port)})
+		return nil, false
+	}
+	c.JSON(http.StatusServiceUnavailable, gin.H{"error": "OAuth callback bridge is unavailable"})
+	return nil, false
 }
 
 func (h *Handler) managementCallbackURL(path string) (string, error) {
@@ -799,7 +812,7 @@ func (h *Handler) DownloadAuthFilesArchive(c *gin.Context) {
 		return
 	}
 
-	fileName := fmt.Sprintf("ppap-auth-files-%s.zip", time.Now().UTC().Format("20060102T150405Z"))
+	fileName := fmt.Sprintf("aiproxy-auth-files-%s.zip", time.Now().UTC().Format("20060102T150405Z"))
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", fileName))
 	c.Header("Content-Type", "application/zip")
 
@@ -2153,19 +2166,13 @@ func (h *Handler) RequestAnthropicToken(c *gin.Context) {
 
 	RegisterOAuthSession(state, "anthropic")
 
-	isWebUI := isWebUIRequest(c)
-	var forwarder *callbackForwarder
-	if isWebUI {
-		var errStart error
-		if forwarder, errStart = startCallbackForwarder(anthropicCallbackPort, "anthropic", h.cfg.AuthDir); errStart != nil {
-			log.WithError(errStart).Error("failed to start anthropic callback forwarder")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start callback server"})
-			return
-		}
+	forwarder, ok := h.startWebUICallbackForwarder(c, anthropicCallbackPort, "anthropic", state)
+	if !ok {
+		return
 	}
 
 	go func() {
-		if isWebUI {
+		if forwarder != nil {
 			defer stopCallbackForwarderInstance(anthropicCallbackPort, forwarder)
 		}
 
@@ -2188,13 +2195,13 @@ func (h *Handler) RequestAnthropicToken(c *gin.Context) {
 					_ = os.Remove(path)
 					return m, nil
 				}
-				time.Sleep(500 * time.Millisecond)
+				time.Sleep(h.oauthCallbackPollInterval)
 			}
 		}
 
 		fmt.Println("Waiting for authentication callback...")
 		// Wait up to 5 minutes
-		resultMap, errWait := waitForFile(waitFile, 5*time.Minute)
+		resultMap, errWait := waitForFile(waitFile, h.oauthCallbackWaitTimeout)
 		if errWait != nil {
 			if errors.Is(errWait, errOAuthSessionNotPending) {
 				return
@@ -2295,25 +2302,19 @@ func (h *Handler) RequestCodexToken(c *gin.Context) {
 
 	RegisterOAuthSession(state, "codex")
 
-	isWebUI := isWebUIRequest(c)
-	var forwarder *callbackForwarder
-	if isWebUI {
-		var errStart error
-		if forwarder, errStart = startCallbackForwarder(codexCallbackPort, "codex", h.cfg.AuthDir); errStart != nil {
-			log.WithError(errStart).Error("failed to start codex callback forwarder")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start callback server"})
-			return
-		}
+	forwarder, ok := h.startWebUICallbackForwarder(c, codexCallbackPort, "codex", state)
+	if !ok {
+		return
 	}
 
 	go func() {
-		if isWebUI {
+		if forwarder != nil {
 			defer stopCallbackForwarderInstance(codexCallbackPort, forwarder)
 		}
 
 		// Wait for callback file
 		waitFile := filepath.Join(h.cfg.AuthDir, fmt.Sprintf(".oauth-codex-%s.oauth", state))
-		deadline := time.Now().Add(5 * time.Minute)
+		deadline := time.Now().Add(h.oauthCallbackWaitTimeout)
 		var code string
 		for {
 			if !IsOAuthSessionPending(state, "codex") {
@@ -2344,7 +2345,7 @@ func (h *Handler) RequestCodexToken(c *gin.Context) {
 				code = m["code"]
 				break
 			}
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(h.oauthCallbackPollInterval)
 		}
 
 		log.Debug("Authorization code received, exchanging for tokens...")
@@ -2422,24 +2423,18 @@ func (h *Handler) RequestAntigravityToken(c *gin.Context) {
 
 	RegisterOAuthSession(state, "antigravity")
 
-	isWebUI := isWebUIRequest(c)
-	var forwarder *callbackForwarder
-	if isWebUI {
-		var errStart error
-		if forwarder, errStart = startCallbackForwarder(antigravity.CallbackPort, "antigravity", h.cfg.AuthDir); errStart != nil {
-			log.WithError(errStart).Error("failed to start antigravity callback forwarder")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start callback server"})
-			return
-		}
+	forwarder, ok := h.startWebUICallbackForwarder(c, antigravity.CallbackPort, "antigravity", state)
+	if !ok {
+		return
 	}
 
 	go func() {
-		if isWebUI {
+		if forwarder != nil {
 			defer stopCallbackForwarderInstance(antigravity.CallbackPort, forwarder)
 		}
 
 		waitFile := filepath.Join(h.cfg.AuthDir, fmt.Sprintf(".oauth-antigravity-%s.oauth", state))
-		deadline := time.Now().Add(5 * time.Minute)
+		deadline := time.Now().Add(h.oauthCallbackWaitTimeout)
 		var authCode string
 		for {
 			if !IsOAuthSessionPending(state, "antigravity") {
@@ -2472,7 +2467,7 @@ func (h *Handler) RequestAntigravityToken(c *gin.Context) {
 				}
 				break
 			}
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(h.oauthCallbackPollInterval)
 		}
 
 		tokenResp, errToken := authSvc.ExchangeCodeForTokens(ctx, authCode, redirectURI)

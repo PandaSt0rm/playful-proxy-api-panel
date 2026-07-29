@@ -26,11 +26,11 @@ import (
 //   - configPath: The path to the configuration file
 //   - localPassword: Optional password accepted for local management requests
 func StartService(cfg *config.Config, configPath string, localPassword string) {
-	StartServiceWithPluginHost(cfg, configPath, localPassword, nil)
+	StartServiceWithPluginHost(cfg, configPath, localPassword, nil, nil)
 }
 
 // StartServiceWithPluginHost builds and runs the proxy service with a shared plugin host.
-func StartServiceWithPluginHost(cfg *config.Config, configPath string, localPassword string, host *pluginhost.Host, serverOptions ...api.ServerOption) {
+func StartServiceWithPluginHost(cfg *config.Config, configPath string, localPassword string, host *pluginhost.Host, onBuilt func(*cliproxy.Service), serverOptions ...api.ServerOption) {
 	builder := cliproxy.NewBuilder().
 		WithConfig(cfg).
 		WithConfigPath(configPath).
@@ -60,6 +60,9 @@ func StartServiceWithPluginHost(cfg *config.Config, configPath string, localPass
 		log.Errorf("failed to build proxy service: %v", err)
 		return
 	}
+	if onBuilt != nil {
+		onBuilt(service)
+	}
 
 	err = service.Run(runCtx)
 	if err != nil && !errors.Is(err, context.Canceled) {
@@ -70,11 +73,11 @@ func StartServiceWithPluginHost(cfg *config.Config, configPath string, localPass
 // StartServiceBackground starts the proxy service in a background goroutine
 // and returns a cancel function for shutdown and a done channel.
 func StartServiceBackground(cfg *config.Config, configPath string, localPassword string) (cancel func(), done <-chan struct{}) {
-	return StartServiceBackgroundWithPluginHost(cfg, configPath, localPassword, nil)
+	return StartServiceBackgroundWithPluginHost(cfg, configPath, localPassword, nil, nil)
 }
 
 // StartServiceBackgroundWithPluginHost starts the proxy service with a shared plugin host.
-func StartServiceBackgroundWithPluginHost(cfg *config.Config, configPath string, localPassword string, host *pluginhost.Host, serverOptions ...api.ServerOption) (cancel func(), done <-chan struct{}) {
+func StartServiceBackgroundWithPluginHost(cfg *config.Config, configPath string, localPassword string, host *pluginhost.Host, onBuilt func(*cliproxy.Service), serverOptions ...api.ServerOption) (cancel func(), done <-chan struct{}) {
 	builder := cliproxy.NewBuilder().
 		WithConfig(cfg).
 		WithConfigPath(configPath).
@@ -94,6 +97,9 @@ func StartServiceBackgroundWithPluginHost(cfg *config.Config, configPath string,
 		log.Errorf("failed to build proxy service: %v", err)
 		close(doneCh)
 		return cancelFn, doneCh
+	}
+	if onBuilt != nil {
+		onBuilt(service)
 	}
 
 	go func() {

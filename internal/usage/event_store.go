@@ -498,6 +498,11 @@ func (s *EventStore) InsertEvents(ctx context.Context, events []UsageEvent) (Imp
 	return result, nil
 }
 
+type CostAggregate struct {
+	Provider, Model, APIKeyHash                                        string
+	InputTokens, CachedTokens, OutputTokens, TotalTokens, RequestCount int64
+}
+
 func (s *EventStore) Events(ctx context.Context, query EventQuery) ([]UsageEvent, error) {
 	if s == nil || s.db == nil {
 		return nil, nil
@@ -523,6 +528,30 @@ func (s *EventStore) Events(ctx context.Context, query EventQuery) ([]UsageEvent
 		}
 	}()
 	return scanEvents(rows)
+}
+
+func (s *EventStore) CostAggregates(ctx context.Context, from, to time.Time) ([]CostAggregate, error) {
+	if s == nil || s.db == nil {
+		return nil, nil
+	}
+	rows, err := s.db.QueryContext(ctx, `SELECT provider,model,api_key_hash,
+		COALESCE(SUM(input_tokens),0),COALESCE(SUM(cached_tokens),0),COALESCE(SUM(output_tokens),0),
+		COALESCE(SUM(total_tokens),0),COUNT(*)
+		FROM usage_events WHERE timestamp_ms>=? AND timestamp_ms<? GROUP BY provider,model,api_key_hash`,
+		from.UnixMilli(), to.UnixMilli())
+	if err != nil {
+		return nil, fmt.Errorf("query cost aggregates: %w", err)
+	}
+	defer rows.Close()
+	aggregates := make([]CostAggregate, 0)
+	for rows.Next() {
+		var item CostAggregate
+		if err = rows.Scan(&item.Provider, &item.Model, &item.APIKeyHash, &item.InputTokens, &item.CachedTokens, &item.OutputTokens, &item.TotalTokens, &item.RequestCount); err != nil {
+			return nil, err
+		}
+		aggregates = append(aggregates, item)
+	}
+	return aggregates, rows.Err()
 }
 
 func (s *EventStore) Snapshot(ctx context.Context, query EventQuery) (StatisticsSnapshot, error) {

@@ -97,7 +97,7 @@ func (h *Handler) ExportUsageStatistics(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		filename := fmt.Sprintf("ppap-usage-events-%s.jsonl", time.Now().UTC().Format("20060102T150405Z"))
+		filename := fmt.Sprintf("aiproxy-usage-events-%s.jsonl", time.Now().UTC().Format("20060102T150405Z"))
 		c.Header("Content-Type", "application/x-ndjson; charset=utf-8")
 		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
 		if errExport := store.ExportJSONL(c.Request.Context(), c.Writer, query); errExport != nil {

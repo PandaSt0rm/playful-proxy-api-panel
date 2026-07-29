@@ -1,6 +1,6 @@
 services:
   cli-proxy-api:
-    image: ${CLI_PROXY_IMAGE:-ghcr.io/daishuge/playful-proxy-api-panel:latest}
+    image: ${CLI_PROXY_IMAGE:-ghcr.io/PandaSt0rm/aiproxy:latest}
     pull_policy: missing
     build:
       context: .

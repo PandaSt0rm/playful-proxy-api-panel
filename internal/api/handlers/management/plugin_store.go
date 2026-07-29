@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"runtime"
 	"strings"
 	"sync"
@@ -307,6 +308,7 @@ func (h *Handler) installPluginFromStore(c *gin.Context, goos, goarch string) {
 	restartRequired := false
 
 	h.mu.Lock()
+	before, _ := os.ReadFile(h.configFilePath)
 	if h.cfg == nil {
 		h.mu.Unlock()
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -334,6 +336,8 @@ func (h *Handler) installPluginFromStore(c *gin.Context, goos, goarch string) {
 		})
 		return
 	}
+	after, _ := os.ReadFile(h.configFilePath)
+	h.queueConfigMutationLocked(c, before, after)
 	cfgSnapshot := h.reloadSnapshotConfigLocked()
 	h.mu.Unlock()
 

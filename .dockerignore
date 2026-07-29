@@ -21,8 +21,8 @@ logs/*
 data/*
 conv/*
 config.yaml
-web/management-panel/node_modules/*
-web/management-panel/dist/*
+web/console/node_modules/*
+web/console/dist/*
 
 # Development/editor
 bin
