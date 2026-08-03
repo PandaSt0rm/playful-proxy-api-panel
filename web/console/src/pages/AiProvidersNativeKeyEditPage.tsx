@@ -351,7 +351,7 @@ export function AiProvidersNativeKeyEditPage({ kind }: Props) {
                 removeButtonClassName={styles.modelRowRemoveButton}
                 removeButtonTitle={t('common.delete')}
                 removeButtonAriaLabel={t('common.delete')}
-                renderRowExtras={(args) => <ModelEffortPayloadsEditor {...args} />}
+                renderRowExtras={(args) => <ModelEffortPayloadsEditor {...args} mode={kind} />}
               />
             </div>
             <div className="form-group">

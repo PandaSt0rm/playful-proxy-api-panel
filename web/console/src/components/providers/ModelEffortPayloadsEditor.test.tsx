@@ -3,11 +3,25 @@ import { useState } from 'react';
 import { render, screen, userEvent } from '@/test/utils';
 import type { ModelEntry } from '@/components/ui/modelInputListUtils';
 import { ModelEffortPayloadsEditor } from './ModelEffortPayloadsEditor';
+import en from '@/i18n/locales/en.json';
+import {
+  EFFORT_PRESETS,
+  type EffortPresetId,
+  type ModelEntryEditorMode,
+} from './modelEffortPresets';
 
 // Stateful harness so commits round-trip into the entry like ModelInputList
 // does, exercising the editor's draft-resync logic. The probe exposes the
 // persisted entry shape (JSON.stringify drops undefined fields).
-function Harness({ initial }: { initial?: Partial<ModelEntry> }) {
+function Harness({
+  initial,
+  mode = 'openai',
+  baseUrl,
+}: {
+  initial?: Partial<ModelEntry>;
+  mode?: ModelEntryEditorMode;
+  baseUrl?: string;
+}) {
   const [entry, setEntry] = useState<ModelEntry>({ name: 'm1', alias: '', ...initial });
   return (
     <>
@@ -16,6 +30,8 @@ function Harness({ initial }: { initial?: Partial<ModelEntry> }) {
         index={0}
         disabled={false}
         updateEntry={(patch) => setEntry((prev) => ({ ...prev, ...patch }))}
+        mode={mode}
+        baseUrl={baseUrl}
       />
       <pre data-testid="entry-probe">{JSON.stringify(entry)}</pre>
     </>
@@ -28,6 +44,11 @@ const probedEntry = (): ModelEntry =>
 const openEditor = async (user: ReturnType<typeof userEvent.setup>, name = 'effort payloads') => {
   await user.click(screen.getByRole('button', { name }));
 };
+
+// Template chips are labelled from the locale, so the roster assertions stay
+// tied to the preset list rather than to a duplicated list of strings.
+const presetLabel = (id: EffortPresetId): string =>
+  en.ai_providers[`thinking_payloads_preset_${id}`];
 
 describe('ModelEffortPayloadsEditor', () => {
   it('renders a bare toggle when no effort config exists and opens the panel', async () => {
@@ -43,7 +64,7 @@ describe('ModelEffortPayloadsEditor', () => {
     for (const label of ['minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'none', 'auto']) {
       expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-pressed', 'false');
     }
-    expect(screen.getByRole('button', { name: 'GLM thinking.type' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'GLM 4.5+ thinking.type' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Qwen enable_thinking' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'OpenRouter reasoning' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'clear' })).toBeDisabled();
@@ -312,7 +333,10 @@ describe('ModelEffortPayloadsEditor', () => {
 
     expect(probedEntry().thinkingPayloads).toEqual({
       none: { thinking: { type: 'disabled' } },
+      low: { thinking: { type: 'enabled' }, reasoning_effort: 'low' },
+      medium: { thinking: { type: 'enabled' }, reasoning_effort: 'high' },
       high: { thinking: { type: 'enabled' }, reasoning_effort: 'high' },
+      xhigh: { thinking: { type: 'enabled' }, reasoning_effort: 'max' },
       max: { thinking: { type: 'enabled' }, reasoning_effort: 'max' },
     });
   });
@@ -330,24 +354,181 @@ describe('ModelEffortPayloadsEditor', () => {
     });
   });
 
-  it('renders the full template roster', async () => {
+  it('disables reasoning through the documented OpenRouter effort value', async () => {
     const user = userEvent.setup();
     render(<Harness />);
     await openEditor(user);
 
-    for (const label of [
-      'GLM thinking.type',
-      'Qwen enable_thinking',
-      'OpenRouter reasoning',
-      'DeepSeek thinking',
-      'Doubao thinking',
-      'Kimi thinking',
-      'vLLM enable_thinking',
-      'Gemini thinking_config',
-    ]) {
-      expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'OpenRouter reasoning' }));
+
+    expect(probedEntry().thinkingPayloads?.none).toEqual({ reasoning: { effort: 'none' } });
+  });
+
+  it('applies the standard template as declared levels with no payload', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await openEditor(user);
+
+    await user.click(screen.getByRole('button', { name: 'Standard reasoning_effort' }));
+
+    const entry = probedEntry();
+    expect(entry.thinkingPayloads).toBeUndefined();
+    expect(entry.thinkingLevels).toEqual(['low', 'medium', 'high', 'max']);
+    expect(entry.thinking).toEqual({ levels: ['low', 'medium', 'high', 'max'], zeroAllowed: true });
+  });
+
+  // Spelled out rather than derived from EFFORT_PRESETS: a template whose
+  // declared levels are narrower than the labels it maps makes the proxy
+  // reject efforts the upstream would have accepted.
+  it.each([
+    ['standard', ['low', 'medium', 'high', 'max']],
+    ['glm', ['high']],
+    ['glm52', ['minimal', 'low', 'medium', 'high', 'xhigh', 'max']],
+    ['qwen', ['low', 'medium', 'high']],
+    ['openrouter', ['minimal', 'low', 'medium', 'high', 'xhigh', 'max']],
+    ['deepseek', ['low', 'medium', 'high', 'xhigh', 'max']],
+    ['doubao', ['high']],
+    ['kimi', ['high']],
+    ['vllm', ['high']],
+    ['gemini', ['low', 'high']],
+  ] as const)('declares the levels the %s template maps', async (id, levels) => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await openEditor(user);
+
+    await user.click(screen.getByRole('button', { name: presetLabel(id) }));
+
+    expect(probedEntry().thinkingLevels).toEqual([...levels]);
+    expect(probedEntry().thinking?.levels).toEqual([...levels]);
+  });
+
+  it('covers every shipped template in the level expectations above', () => {
+    expect(EFFORT_PRESETS.map((preset) => preset.id)).toEqual([
+      'standard',
+      'glm',
+      'glm52',
+      'qwen',
+      'openrouter',
+      'deepseek',
+      'doubao',
+      'kimi',
+      'vllm',
+      'gemini',
+    ]);
+  });
+
+  it('maps every level it declares to a payload, except payload-free templates', async () => {
+    for (const preset of EFFORT_PRESETS) {
+      if (!Object.keys(preset.payloads).length) continue;
+      for (const level of preset.levels) {
+        expect(preset.payloads[level], `${preset.id}.${level}`).toBeDefined();
+      }
     }
   });
+
+  it('keeps auto selectable by allowing dynamic thinking, and drops it on the next template', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await openEditor(user);
+
+    await user.click(screen.getByRole('button', { name: 'Doubao thinking' }));
+
+    expect(probedEntry().thinkingPayloads?.auto).toEqual({ thinking: { type: 'auto' } });
+    expect(probedEntry().thinking?.dynamicAllowed).toBe(true);
+
+    await user.click(screen.getByRole('button', { name: 'GLM 4.5+ thinking.type' }));
+
+    expect(probedEntry().thinking?.dynamicAllowed).toBeUndefined();
+
+    await user.click(screen.getByRole('button', { name: 'clear' }));
+
+    expect(probedEntry().thinking).toEqual({});
+    expect(probedEntry().thinkingLevels).toBeUndefined();
+  });
+
+  it('renders the full template roster with no recommendation for a generic provider', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await openEditor(user);
+
+    for (const preset of EFFORT_PRESETS) {
+      expect(screen.getByRole('button', { name: presetLabel(preset.id) })).toBeInTheDocument();
+    }
+    expect(screen.queryByText('recommended templates')).not.toBeInTheDocument();
+    expect(screen.getByText('templates')).toBeInTheDocument();
+  });
+
+  it('leads with the templates of the provider being set up without hiding the rest', async () => {
+    const user = userEvent.setup();
+    render(<Harness mode="zai" />);
+    await openEditor(user);
+
+    const recommended = screen.getByText('recommended templates').nextElementSibling;
+    expect(recommended).toHaveTextContent('GLM 4.5+ thinking.type');
+    expect(recommended).toHaveTextContent('GLM-5.2 reasoning_effort');
+    expect(recommended).not.toHaveTextContent('Qwen');
+    expect(screen.getByRole('button', { name: 'Qwen enable_thinking' })).toBeInTheDocument();
+  });
+
+  it('recommends by base URL when the endpoint no longer matches the editor', async () => {
+    const user = userEvent.setup();
+    render(<Harness mode="zai" baseUrl="https://openrouter.ai/api/v1" />);
+    await openEditor(user);
+
+    const recommended = screen.getByText('recommended templates').nextElementSibling;
+    expect(recommended).toHaveTextContent('OpenRouter reasoning');
+    expect(recommended).not.toHaveTextContent('GLM');
+  });
+
+  it('keeps a saved payload from another upstream editable under a scoped provider', async () => {
+    const user = userEvent.setup();
+    render(
+      <Harness
+        mode="zai"
+        initial={{
+          thinkingLevels: ['low'],
+          thinking: { levels: ['low'] },
+          thinkingPayloads: { low: { enable_thinking: true, thinking_budget: 1024 } },
+        }}
+      />
+    );
+    await openEditor(user, 'effort payloads (1)');
+
+    const row = screen.getByRole('textbox', { name: 'low payload' });
+    expect(row).toHaveValue(JSON.stringify({ enable_thinking: true, thinking_budget: 1024 }));
+
+    await user.clear(row);
+    await user.click(row);
+    await user.paste('{"enable_thinking": true, "thinking_budget": 4096}');
+
+    expect(probedEntry().thinkingPayloads).toEqual({
+      low: { enable_thinking: true, thinking_budget: 4096 },
+    });
+  });
+
+  it.each(['interactions', 'xai'] as const)(
+    'offers only the fields a %s key can persist',
+    async (mode) => {
+      const user = userEvent.setup();
+      render(<Harness mode={mode} />);
+      await openEditor(user, 'model options');
+
+      expect(screen.getByPlaceholderText('Display name (optional)')).toBeInTheDocument();
+      expect(
+        screen.queryByRole('checkbox', { name: 'Image generation model' })
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByPlaceholderText('Input modalities: text, image')
+      ).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'high' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'JSON' })).not.toBeInTheDocument();
+      for (const preset of EFFORT_PRESETS) {
+        expect(
+          screen.queryByRole('button', { name: presetLabel(preset.id) })
+        ).not.toBeInTheDocument();
+      }
+    }
+  );
 
   it('JSON mode rejects maps with unknown labels without committing', async () => {
     const user = userEvent.setup();

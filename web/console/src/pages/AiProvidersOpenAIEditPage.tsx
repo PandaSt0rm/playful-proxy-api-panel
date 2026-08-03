@@ -116,10 +116,11 @@ export function AiProvidersOpenAIEditPage() {
     }, []);
   }, [form.modelEntries]);
 
-
   const renderModelEffortPayloads = useCallback(
-    (args: ModelInputListRowExtrasArgs) => <ModelEffortPayloadsEditor {...args} />,
-    []
+    (args: ModelInputListRowExtrasArgs) => (
+      <ModelEffortPayloadsEditor {...args} mode={providerMode} baseUrl={form.baseUrl} />
+    ),
+    [providerMode, form.baseUrl]
   );
 
   const openOpenaiModelDiscovery = () => {

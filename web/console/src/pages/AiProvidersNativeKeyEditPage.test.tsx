@@ -275,4 +275,24 @@ describe('AiProvidersNativeKeyEditPage', () => {
     await user.click(screen.getByRole('button', { name: 'Back' }));
     await waitFor(() => expect(screen.queryByLabelText('Key')).not.toBeInTheDocument());
   });
+
+  it.each(['interactions', 'xai'] as const)(
+    'offers %s model rows only the options a native key persists',
+    async (kind) => {
+      const user = userEvent.setup();
+      renderWithRouter(<AiProvidersNativeKeyEditPage kind={kind} />, {
+        route: `/ai-providers/${kind}/new`,
+      });
+      await screen.findByLabelText('Key');
+
+      await user.click(screen.getByRole('button', { name: 'model options' }));
+
+      expect(screen.getByPlaceholderText('Display name (optional)')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'effort payloads' })).not.toBeInTheDocument();
+      expect(screen.queryByText('templates')).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('checkbox', { name: 'Image generation model' })
+      ).not.toBeInTheDocument();
+    }
+  );
 });

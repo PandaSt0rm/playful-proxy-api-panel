@@ -61,6 +61,11 @@
   right: 0;
   z-index: $z-dropdown;
   width: min(520px, calc(100vw - 32px));
+  // The panel stacks catalog fields, level chips, payload rows, and two
+  // template groups; cap it so the lower groups stay reachable instead of
+  // running off the viewport.
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: $spacing-xs;

@@ -263,7 +263,7 @@ describe('AiProvidersOpenAIEditPage', () => {
     renderPage(context);
 
     await user.click(screen.getByRole('button', { name: 'effort payloads' }));
-    await user.click(screen.getByRole('button', { name: 'GLM thinking.type' }));
+    await user.click(screen.getByRole('button', { name: 'GLM 4.5+ thinking.type' }));
 
     const updater = setForm.mock.calls.at(-1)?.[0] as (prev: OpenAIFormState) => OpenAIFormState;
     expect(typeof updater).toBe('function');
@@ -272,6 +272,41 @@ describe('AiProvidersOpenAIEditPage', () => {
       none: { thinking: { type: 'disabled' } },
       high: { thinking: { type: 'enabled' } },
     });
+  });
+
+  it('leads with the provider mode templates in the model row editor', async () => {
+    const user = userEvent.setup();
+    renderPage(
+      buildContext({
+        providerMode: 'zai',
+        form: buildForm({ modelEntries: [{ name: 'glm-4.6', alias: '' }] }),
+      }),
+      '/ai-providers/zai/new'
+    );
+
+    await user.click(screen.getByRole('button', { name: 'effort payloads' }));
+
+    const recommended = screen.getByText('recommended templates').nextElementSibling;
+    expect(recommended).toHaveTextContent('GLM 4.5+ thinking.type');
+    expect(recommended).not.toHaveTextContent('Qwen');
+  });
+
+  it('recommends templates for the base URL the row is actually pointed at', async () => {
+    const user = userEvent.setup();
+    renderPage(
+      buildContext({
+        providerMode: 'openai',
+        form: buildForm({
+          baseUrl: 'https://ollama.com/v1',
+          modelEntries: [{ name: 'gpt-oss:120b', alias: '' }],
+        }),
+      })
+    );
+
+    await user.click(screen.getByRole('button', { name: 'effort payloads' }));
+
+    const recommended = screen.getByText('recommended templates').nextElementSibling;
+    expect(recommended).toHaveTextContent('Standard reasoning_effort');
   });
 
   it('shows the active label count on the toggle and seeds the JSON view from the entry', async () => {

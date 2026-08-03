@@ -2,94 +2,19 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ModelInputListRowExtrasArgs } from '@/components/ui/ModelInputList';
 import type { ThinkingPayloadMap } from '@/types';
+import {
+  EFFORT_LABELS,
+  EFFORT_PRESETS,
+  MODEL_ENTRY_CAPABILITIES,
+  REASONING_LEVELS,
+  isEffortLabel,
+  isReasoningLevel,
+  recommendedPresetIds,
+  type EffortLabel,
+  type EffortPreset,
+  type ModelEntryEditorMode,
+} from './modelEffortPresets';
 import styles from './ModelEffortPayloadsEditor.module.scss';
-
-const REASONING_LEVELS = ['minimal', 'low', 'medium', 'high', 'xhigh', 'max'] as const;
-// Labels that only make sense as payload keys; they never become alias levels.
-const PAYLOAD_ONLY_LABELS = ['none', 'auto'] as const;
-const EFFORT_LABELS = [...REASONING_LEVELS, ...PAYLOAD_ONLY_LABELS] as const;
-type EffortLabel = (typeof EFFORT_LABELS)[number];
-
-const THINKING_PAYLOAD_LABELS = new Set<string>(EFFORT_LABELS);
-
-// Editable starting points for upstreams that do not accept reasoning_effort.
-type PresetId = 'glm' | 'qwen' | 'openrouter' | 'deepseek' | 'doubao' | 'kimi' | 'vllm' | 'gemini';
-const THINKING_PAYLOAD_PRESETS: Array<{ id: PresetId; payloads: ThinkingPayloadMap }> = [
-  {
-    id: 'glm',
-    payloads: {
-      none: { thinking: { type: 'disabled' } },
-      high: { thinking: { type: 'enabled' } },
-    },
-  },
-  {
-    id: 'qwen',
-    payloads: {
-      none: { enable_thinking: false },
-      low: { enable_thinking: true, thinking_budget: 1024 },
-      medium: { enable_thinking: true, thinking_budget: 8192 },
-      high: { enable_thinking: true, thinking_budget: 24576 },
-    },
-  },
-  {
-    id: 'openrouter',
-    payloads: {
-      none: { reasoning: { enabled: false } },
-      low: { reasoning: { effort: 'low' } },
-      medium: { reasoning: { effort: 'medium' } },
-      high: { reasoning: { effort: 'high' } },
-    },
-  },
-  {
-    // DeepSeek V3.2+ chat completions: thinking.type toggles CoT, and the
-    // native reasoning_effort only accepts high/max while thinking is on.
-    id: 'deepseek',
-    payloads: {
-      none: { thinking: { type: 'disabled' } },
-      high: { thinking: { type: 'enabled' }, reasoning_effort: 'high' },
-      max: { thinking: { type: 'enabled' }, reasoning_effort: 'max' },
-    },
-  },
-  {
-    // Volcengine Ark (Doubao seed models): thinking.type enabled/disabled/auto.
-    id: 'doubao',
-    payloads: {
-      none: { thinking: { type: 'disabled' } },
-      auto: { thinking: { type: 'auto' } },
-      high: { thinking: { type: 'enabled' } },
-    },
-  },
-  {
-    // Moonshot Kimi K2 thinking models: thinking.type enabled/disabled.
-    id: 'kimi',
-    payloads: {
-      none: { thinking: { type: 'disabled' } },
-      high: { thinking: { type: 'enabled' } },
-    },
-  },
-  {
-    // vLLM/SGLang self-hosted hybrid-reasoning models (Qwen3 etc.):
-    // enable_thinking flows to the chat template.
-    id: 'vllm',
-    payloads: {
-      none: { chat_template_kwargs: { enable_thinking: false } },
-      high: { chat_template_kwargs: { enable_thinking: true } },
-    },
-  },
-  {
-    // Gemini OpenAI-compat endpoint: a literal extra_body.google.thinking_config
-    // key; thinking_budget: 0 disables on 2.5, thinking_level on newer models.
-    id: 'gemini',
-    payloads: {
-      none: { extra_body: { google: { thinking_config: { thinking_budget: 0 } } } },
-      low: { extra_body: { google: { thinking_config: { thinking_level: 'low' } } } },
-      high: { extra_body: { google: { thinking_config: { thinking_level: 'high' } } } },
-    },
-  },
-];
-
-const isReasoningLevel = (label: string): boolean =>
-  (REASONING_LEVELS as readonly string[]).includes(label);
 
 const orderLevels = (levels: Set<string>): string[] => [
   ...REASONING_LEVELS.filter((known) => levels.has(known)),
@@ -122,7 +47,7 @@ const parseEffortMap = (
     const out: ThinkingPayloadMap = {};
     for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
       const label = key.trim().toLowerCase();
-      if (!THINKING_PAYLOAD_LABELS.has(label)) return { ok: false };
+      if (!isEffortLabel(label)) return { ok: false };
       if (!value || typeof value !== 'object' || Array.isArray(value)) return { ok: false };
       if (!labels.includes(label)) labels.push(label);
       const patch = value as Record<string, unknown>;
@@ -255,18 +180,28 @@ function PayloadMapEditor({ serialized, disabled, onCommit }: PayloadMapEditorPr
   );
 }
 
+interface ModelEffortPayloadsEditorProps extends ModelInputListRowExtrasArgs {
+  /** Provider editor the row belongs to; decides which fields persist and which templates lead. */
+  mode: ModelEntryEditorMode;
+  /** Draft base URL of the provider being edited, used to recommend templates. */
+  baseUrl?: string;
+}
+
 /**
- * Unified per-model reasoning effort editor. One "effort payloads" chip per
- * model row opens a panel that owns the whole effort config: which levels the
- * model accepts (chips), an optional JSON payload per label (rows or raw JSON
- * mode), and provider templates.
+ * Per-model options editor. One chip per model row opens a panel with the
+ * catalog metadata the provider can store and, where the provider supports it,
+ * the whole effort config: which levels the model accepts (chips), an optional
+ * JSON payload per label (rows or raw JSON mode), and upstream templates.
  */
 export function ModelEffortPayloadsEditor({
   entry,
   disabled,
   updateEntry,
-}: ModelInputListRowExtrasArgs) {
+  mode,
+  baseUrl,
+}: ModelEffortPayloadsEditorProps) {
   const { t } = useTranslation();
+  const capabilities = MODEL_ENTRY_CAPABILITIES[mode];
   const [open, setOpen] = useState(false);
   const [jsonMode, setJsonMode] = useState(false);
   // Labels switched on in this session that have neither a level entry nor a
@@ -334,29 +269,69 @@ export function ModelEffortPayloadsEditor({
   const commitEffortMap = (labels: string[], nextPayloads: ThinkingPayloadMap | undefined) => {
     const nextLevels = new Set([
       ...labels.filter(isReasoningLevel),
-      ...levels.filter((level) => !THINKING_PAYLOAD_LABELS.has(level)),
+      ...levels.filter((level) => !isEffortLabel(level)),
     ]);
     setStubLabels(labels.filter((label) => !isReasoningLevel(label) && !nextPayloads?.[label]));
     commit(nextLevels, nextPayloads ?? {});
   };
 
-  const applyPreset = (preset: ThinkingPayloadMap) => {
+  // A template is a complete replacement value: it describes the whole
+  // thinking capability, so a stale budget range from the previous template
+  // cannot survive and turn a levels-only model back into a hybrid one.
+  const applyPreset = (preset: EffortPreset) => {
     setStubLabels([]);
-    updateEntry({ thinkingPayloads: clonePayloadMap(preset) });
+    const payloadMap = clonePayloadMap(preset.payloads);
+    updateEntry({
+      thinking: {
+        levels: preset.levels.length ? [...preset.levels] : undefined,
+        dynamicAllowed: preset.dynamicAllowed || undefined,
+        zeroAllowed: preset.zeroAllowed || undefined,
+      },
+      thinkingLevels: preset.levels.length ? [...preset.levels] : undefined,
+      thinkingPayloads: Object.keys(payloadMap).length ? payloadMap : undefined,
+    });
   };
 
   const clearAll = () => {
     setStubLabels([]);
     updateEntry({
-      thinking: entry.thinking ? { ...entry.thinking, levels: undefined } : undefined,
+      thinking: entry.thinking
+        ? {
+            ...entry.thinking,
+            levels: undefined,
+            dynamicAllowed: undefined,
+            zeroAllowed: undefined,
+          }
+        : undefined,
       thinkingLevels: undefined,
       thinkingPayloads: undefined,
     });
   };
 
+  // Templates for the endpoint being edited come first; the rest stay
+  // reachable because a provider entry can point anywhere.
+  const recommendedIds = recommendedPresetIds(mode, baseUrl);
+  const recommendedPresets = EFFORT_PRESETS.filter((preset) =>
+    recommendedIds.includes(preset.id)
+  );
+  const otherPresets = EFFORT_PRESETS.filter((preset) => !recommendedIds.includes(preset.id));
+
   const toggleClassName = [styles.chip, persistedCount || open ? styles.chipActive : '']
     .filter(Boolean)
     .join(' ');
+
+  const renderPresetChips = (presets: readonly EffortPreset[]) =>
+    presets.map((preset) => (
+      <button
+        type="button"
+        key={preset.id}
+        className={styles.chip}
+        onClick={() => applyPreset(preset)}
+        disabled={disabled}
+      >
+        {t(`ai_providers.thinking_payloads_preset_${preset.id}`)}
+      </button>
+    ));
 
   return (
     <div className={styles.editor}>
@@ -368,7 +343,11 @@ export function ModelEffortPayloadsEditor({
         aria-expanded={open}
         title={persistedCount ? activeLabels.join(', ') : undefined}
       >
-        {t('ai_providers.thinking_payloads_toggle')}
+        {t(
+          capabilities.effort
+            ? 'ai_providers.thinking_payloads_toggle'
+            : 'ai_providers.model_options_toggle'
+        )}
         {persistedCount ? ` (${persistedCount})` : ''}
       </button>
       {open && (
@@ -381,123 +360,135 @@ export function ModelEffortPayloadsEditor({
             placeholder="Display name (optional)"
             disabled={disabled}
           />
-          <label>
-            <input
-              type="checkbox"
-              checked={Boolean(entry.image)}
-              onChange={(event) => updateEntry({ image: event.target.checked || undefined })}
-              disabled={disabled}
-            />{' '}
-            Image generation model
-          </label>
-          <input
-            className="input"
-            defaultValue={(entry.inputModalities ?? []).join(', ')}
-            onBlur={(event) => {
-              const values = event.target.value
-                .split(',')
-                .map((value) => value.trim())
-                .filter(Boolean);
-              updateEntry({ inputModalities: values.length ? values : undefined });
-            }}
-            placeholder="Input modalities: text, image"
-            disabled={disabled}
-          />
-          <input
-            className="input"
-            defaultValue={(entry.outputModalities ?? []).join(', ')}
-            onBlur={(event) => {
-              const values = event.target.value
-                .split(',')
-                .map((value) => value.trim())
-                .filter(Boolean);
-              updateEntry({ outputModalities: values.length ? values : undefined });
-            }}
-            placeholder="Output modalities: text, image"
-            disabled={disabled}
-          />
-          <div className={styles.panelHeader}>
-            <span className={styles.sectionLabel}>
-              {t('ai_providers.thinking_payloads_levels_label')}
-            </span>
-            <button
-              type="button"
-              className={[styles.chip, jsonMode ? styles.chipActive : ''].filter(Boolean).join(' ')}
-              onClick={() => setJsonMode((value) => !value)}
-              disabled={disabled}
-              aria-pressed={jsonMode}
-            >
-              {t('ai_providers.thinking_payloads_json_toggle')}
-            </button>
-          </div>
-          <div className={styles.chips}>
-            {EFFORT_LABELS.map((label) => {
-              const on = isActive(label);
-              const hasPayload = payloads[label] !== undefined;
-              const className = [styles.chip, on ? styles.chipActive : '']
-                .filter(Boolean)
-                .join(' ');
-              return (
+          {capabilities.modalities && (
+            <>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={Boolean(entry.image)}
+                  onChange={(event) => updateEntry({ image: event.target.checked || undefined })}
+                  disabled={disabled}
+                />{' '}
+                Image generation model
+              </label>
+              <input
+                className="input"
+                defaultValue={(entry.inputModalities ?? []).join(', ')}
+                onBlur={(event) => {
+                  const values = event.target.value
+                    .split(',')
+                    .map((value) => value.trim())
+                    .filter(Boolean);
+                  updateEntry({ inputModalities: values.length ? values : undefined });
+                }}
+                placeholder="Input modalities: text, image"
+                disabled={disabled}
+              />
+              <input
+                className="input"
+                defaultValue={(entry.outputModalities ?? []).join(', ')}
+                onBlur={(event) => {
+                  const values = event.target.value
+                    .split(',')
+                    .map((value) => value.trim())
+                    .filter(Boolean);
+                  updateEntry({ outputModalities: values.length ? values : undefined });
+                }}
+                placeholder="Output modalities: text, image"
+                disabled={disabled}
+              />
+            </>
+          )}
+          {capabilities.effort && (
+            <>
+              <div className={styles.panelHeader}>
+                <span className={styles.sectionLabel}>
+                  {t('ai_providers.thinking_payloads_levels_label')}
+                </span>
                 <button
                   type="button"
-                  key={label}
-                  className={className}
-                  onClick={() => toggleLabel(label)}
+                  className={[styles.chip, jsonMode ? styles.chipActive : '']
+                    .filter(Boolean)
+                    .join(' ')}
+                  onClick={() => setJsonMode((value) => !value)}
                   disabled={disabled}
-                  aria-pressed={on}
+                  aria-pressed={jsonMode}
                 >
-                  {t(`ai_providers.reasoning_level_${label}`)}
-                  {hasPayload && <span className={styles.payloadDot} aria-hidden="true" />}
+                  {t('ai_providers.thinking_payloads_json_toggle')}
                 </button>
-              );
-            })}
-          </div>
-          {jsonMode ? (
-            <PayloadMapEditor
-              serialized={formatEffortMap(activeLabels, payloads)}
-              disabled={disabled}
-              onCommit={commitEffortMap}
-            />
-          ) : (
-            activeLabels.length > 0 && (
-              <div className={styles.payloadRows}>
-                {activeLabels.map((label) => (
-                  <PayloadRow
-                    key={label}
-                    label={label}
-                    value={payloads[label]}
-                    disabled={disabled}
-                    onCommit={commitPayload}
-                  />
-                ))}
               </div>
-            )
+              <div className={styles.chips}>
+                {EFFORT_LABELS.map((label) => {
+                  const on = isActive(label);
+                  const hasPayload = payloads[label] !== undefined;
+                  const className = [styles.chip, on ? styles.chipActive : '']
+                    .filter(Boolean)
+                    .join(' ');
+                  return (
+                    <button
+                      type="button"
+                      key={label}
+                      className={className}
+                      onClick={() => toggleLabel(label)}
+                      disabled={disabled}
+                      aria-pressed={on}
+                    >
+                      {t(`ai_providers.reasoning_level_${label}`)}
+                      {hasPayload && <span className={styles.payloadDot} aria-hidden="true" />}
+                    </button>
+                  );
+                })}
+              </div>
+              {jsonMode ? (
+                <PayloadMapEditor
+                  serialized={formatEffortMap(activeLabels, payloads)}
+                  disabled={disabled}
+                  onCommit={commitEffortMap}
+                />
+              ) : (
+                activeLabels.length > 0 && (
+                  <div className={styles.payloadRows}>
+                    {activeLabels.map((label) => (
+                      <PayloadRow
+                        key={label}
+                        label={label}
+                        value={payloads[label]}
+                        disabled={disabled}
+                        onCommit={commitPayload}
+                      />
+                    ))}
+                  </div>
+                )
+              )}
+              {recommendedPresets.length > 0 && (
+                <>
+                  <div className={styles.sectionLabel}>
+                    {t('ai_providers.thinking_payloads_templates_recommended_label')}
+                  </div>
+                  <div className={styles.chips}>{renderPresetChips(recommendedPresets)}</div>
+                </>
+              )}
+              <div className={styles.sectionLabel}>
+                {t(
+                  recommendedPresets.length
+                    ? 'ai_providers.thinking_payloads_templates_other_label'
+                    : 'ai_providers.thinking_payloads_templates_label'
+                )}
+              </div>
+              <div className={styles.chips}>
+                {renderPresetChips(otherPresets)}
+                <button
+                  type="button"
+                  className={styles.chip}
+                  onClick={clearAll}
+                  disabled={disabled || !hasAnyConfig}
+                >
+                  {t('ai_providers.thinking_payloads_preset_clear')}
+                </button>
+              </div>
+              <div className={styles.hint}>{t('ai_providers.thinking_payloads_hint')}</div>
+            </>
           )}
-          <div className={styles.sectionLabel}>
-            {t('ai_providers.thinking_payloads_templates_label')}
-          </div>
-          <div className={styles.chips}>
-            {THINKING_PAYLOAD_PRESETS.map((preset) => (
-              <button
-                type="button"
-                key={preset.id}
-                className={styles.chip}
-                onClick={() => applyPreset(preset.payloads)}
-                disabled={disabled}
-              >
-                {t(`ai_providers.thinking_payloads_preset_${preset.id}`)}
-              </button>
-            ))}
-            <button
-              type="button"
-              className={styles.chip}
-              onClick={clearAll}
-              disabled={disabled || !hasAnyConfig}
-            >
-              {t('ai_providers.thinking_payloads_preset_clear')}
-            </button>
-          </div>
-          <div className={styles.hint}>{t('ai_providers.thinking_payloads_hint')}</div>
         </div>
       )}
     </div>
