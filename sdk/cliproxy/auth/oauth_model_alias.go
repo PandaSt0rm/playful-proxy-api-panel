@@ -123,6 +123,15 @@ func modelAliasLookupCandidates(requestedModel string) (thinking.SuffixResult, [
 	}
 	return requestResult, candidates
 }
+func modelAliasCandidatePreservesSuffix(candidate modelAliasLookupCandidate, requestResult thinking.SuffixResult) bool {
+	if candidate.preserveSuffix {
+		return true
+	}
+	exactParenthesizedSuffix := "(" + requestResult.RawSuffix + ")"
+	return requestResult.HasSuffix &&
+		requestResult.RawSuffix != "" &&
+		strings.HasSuffix(strings.TrimSpace(candidate.value), exactParenthesizedSuffix)
+}
 
 func preserveResolvedModelSuffix(resolved string, requestResult thinking.SuffixResult) string {
 	resolved = strings.TrimSpace(resolved)
@@ -139,15 +148,16 @@ func preserveResolvedModelSuffix(resolved string, requestResult thinking.SuffixR
 }
 
 func oauthModelAliasForceMappingResponseModel(configAlias string) string {
+	aliasResult := thinking.ParseSuffixAllowHyphen(strings.TrimSpace(configAlias))
+	if aliasResult.HasSuffix && aliasResult.ModelName != "" {
+		return aliasResult.ModelName
+	}
 	return strings.TrimSpace(configAlias)
 }
 
 func resolveModelAliasPoolFromConfigModels(requestedModel string, models []modelAliasEntry) []string {
 	requestedModel = strings.TrimSpace(requestedModel)
-	if requestedModel == "" {
-		return nil
-	}
-	if len(models) == 0 {
+	if requestedModel == "" || len(models) == 0 {
 		return nil
 	}
 
@@ -156,12 +166,12 @@ func resolveModelAliasPoolFromConfigModels(requestedModel string, models []model
 		return nil
 	}
 
-	out := make([]string, 0)
-	seen := make(map[string]struct{})
-	for i := range models {
-		name := strings.TrimSpace(models[i].GetName())
-		alias := strings.TrimSpace(models[i].GetAlias())
-		for _, candidate := range candidates {
+	for _, candidate := range candidates {
+		out := make([]string, 0)
+		seen := make(map[string]struct{})
+		for i := range models {
+			name := strings.TrimSpace(models[i].GetName())
+			alias := strings.TrimSpace(models[i].GetAlias())
 			if candidate.value == "" || alias == "" || !strings.EqualFold(alias, candidate.value) {
 				continue
 			}
@@ -169,33 +179,32 @@ func resolveModelAliasPoolFromConfigModels(requestedModel string, models []model
 			if name != "" {
 				resolved = name
 			}
-			if candidate.preserveSuffix {
+			if modelAliasCandidatePreservesSuffix(candidate, requestResult) {
 				resolved = preserveResolvedModelSuffix(resolved, requestResult)
 			}
 			key := strings.ToLower(strings.TrimSpace(resolved))
 			if key == "" {
-				break
+				continue
 			}
 			if _, exists := seen[key]; exists {
-				break
+				continue
 			}
 			seen[key] = struct{}{}
 			out = append(out, resolved)
-			break
+		}
+		if len(out) > 0 {
+			return out
 		}
 	}
-	if len(out) > 0 {
-		return out
-	}
 
-	for i := range models {
-		name := strings.TrimSpace(models[i].GetName())
-		for _, candidate := range candidates {
+	for _, candidate := range candidates {
+		for i := range models {
+			name := strings.TrimSpace(models[i].GetName())
 			if candidate.value == "" || name == "" || !strings.EqualFold(name, candidate.value) {
 				continue
 			}
-			if candidate.preserveSuffix {
-				return []string{preserveResolvedModelSuffix(name, requestResult)}
+			if modelAliasCandidatePreservesSuffix(candidate, requestResult) {
+				name = preserveResolvedModelSuffix(name, requestResult)
 			}
 			return []string{name}
 		}
@@ -224,15 +233,15 @@ func resolveModelAliasResultFromConfigModels(requestedModel string, models []mod
 	if baseModel == "" {
 		baseModel = requestedModel
 	}
-	for i := range models {
-		original := strings.TrimSpace(models[i].GetName())
-		alias := strings.TrimSpace(models[i].GetAlias())
-		if original == "" || alias == "" {
+	for _, candidate := range candidates {
+		key := strings.TrimSpace(candidate.value)
+		if key == "" {
 			continue
 		}
-		for _, candidate := range candidates {
-			key := strings.TrimSpace(candidate.value)
-			if key == "" || !strings.EqualFold(alias, key) {
+		for i := range models {
+			original := strings.TrimSpace(models[i].GetName())
+			alias := strings.TrimSpace(models[i].GetAlias())
+			if original == "" || alias == "" || !strings.EqualFold(alias, key) {
 				continue
 			}
 			if strings.EqualFold(original, baseModel) {
@@ -242,7 +251,7 @@ func resolveModelAliasResultFromConfigModels(requestedModel string, models []mod
 				return OAuthModelAliasResult{
 					UpstreamModel: preserveResolvedModelSuffix(original, requestResult),
 					ForceMapping:  models[i].GetForceMapping(),
-					OriginalAlias: oauthModelAliasForceMappingResponseModel(alias),
+					OriginalAlias: strings.TrimSpace(alias),
 				}
 			}
 			originalAlias := requestedModel
@@ -250,7 +259,7 @@ func resolveModelAliasResultFromConfigModels(requestedModel string, models []mod
 				originalAlias = oauthModelAliasForceMappingResponseModel(alias)
 			}
 			upstreamModel := original
-			if candidate.preserveSuffix {
+			if modelAliasCandidatePreservesSuffix(candidate, requestResult) {
 				upstreamModel = preserveResolvedModelSuffix(original, requestResult)
 			}
 			return OAuthModelAliasResult{
@@ -357,15 +366,15 @@ func resolveUpstreamModelFromAliases(aliases []internalconfig.OAuthModelAlias, r
 	if baseModel == "" {
 		baseModel = strings.TrimSpace(requestedModel)
 	}
-	for _, entry := range aliases {
-		original := strings.TrimSpace(entry.Name)
-		alias := strings.TrimSpace(entry.Alias)
-		if original == "" || alias == "" {
+	for _, candidate := range candidates {
+		key := strings.TrimSpace(candidate.value)
+		if key == "" {
 			continue
 		}
-		for _, candidate := range candidates {
-			key := strings.TrimSpace(candidate.value)
-			if key == "" || !strings.EqualFold(alias, key) {
+		for _, entry := range aliases {
+			original := strings.TrimSpace(entry.Name)
+			alias := strings.TrimSpace(entry.Alias)
+			if original == "" || alias == "" || !strings.EqualFold(alias, key) {
 				continue
 			}
 			if strings.EqualFold(original, baseModel) {
@@ -375,7 +384,7 @@ func resolveUpstreamModelFromAliases(aliases []internalconfig.OAuthModelAlias, r
 				return OAuthModelAliasResult{
 					UpstreamModel: preserveResolvedModelSuffix(original, requestResult),
 					ForceMapping:  entry.ForceMapping,
-					OriginalAlias: oauthModelAliasForceMappingResponseModel(alias),
+					OriginalAlias: strings.TrimSpace(alias),
 				}
 			}
 			originalAlias := requestedModel
@@ -383,7 +392,7 @@ func resolveUpstreamModelFromAliases(aliases []internalconfig.OAuthModelAlias, r
 				originalAlias = oauthModelAliasForceMappingResponseModel(alias)
 			}
 			upstreamModel := original
-			if candidate.preserveSuffix {
+			if modelAliasCandidatePreservesSuffix(candidate, requestResult) {
 				upstreamModel = preserveResolvedModelSuffix(original, requestResult)
 			}
 			return OAuthModelAliasResult{
@@ -452,12 +461,12 @@ func resolveUpstreamModelFromAliasTable(m *Manager, auth *Auth, requestedModel, 
 			return OAuthModelAliasResult{
 				UpstreamModel: preserveResolvedModelSuffix(targetModel, requestResult),
 				ForceMapping:  entry.forceMapping,
-				OriginalAlias: oauthModelAliasForceMappingResponseModel(entry.configAlias),
+				OriginalAlias: strings.TrimSpace(entry.configAlias),
 			}
 		}
 
 		upstreamModel := targetModel
-		if candidate.preserveSuffix {
+		if modelAliasCandidatePreservesSuffix(candidate, requestResult) {
 			upstreamModel = preserveResolvedModelSuffix(targetModel, requestResult)
 		}
 

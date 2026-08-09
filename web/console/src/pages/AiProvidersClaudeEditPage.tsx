@@ -14,14 +14,9 @@ import { useConfigStore } from '@/stores';
 import { parseTextList } from '@/components/providers/utils';
 import { ProviderConcurrencyInput } from '@/components/providers';
 import type { ClaudeEditOutletContext } from './AiProvidersClaudeEditLayout';
-import {
-  ProviderDebugAction,
-  buildSingleKeyTarget,
-} from '@/components/providerDebug';
+import { ProviderDebugAction, buildSingleKeyTarget } from '@/components/providerDebug';
 import styles from './AiProvidersPage.module.scss';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
-
-
 
 export function AiProvidersClaudeEditPage() {
   const { t } = useTranslation();
@@ -112,8 +107,6 @@ export function AiProvidersClaudeEditPage() {
     navigate('models');
   };
 
-
-
   // Built from the draft form so the bench debugs what is on screen, saved or not.
   const debugTarget = useMemo(
     () =>
@@ -183,6 +176,23 @@ export function AiProvidersClaudeEditPage() {
                 setForm((prev) => ({
                   ...prev,
                   priority: parsed !== undefined && Number.isFinite(parsed) ? parsed : undefined,
+                }));
+              }}
+              disabled={saving || disableControls}
+            />
+            <Input
+              label={t('ai_providers.weight_label')}
+              hint={t('ai_providers.weight_hint')}
+              type="number"
+              step={1}
+              max={1000000}
+              value={form.weight ?? ''}
+              onChange={(e) => {
+                const raw = e.target.value;
+                const parsed = raw.trim() === '' ? undefined : Number(raw);
+                setForm((prev) => ({
+                  ...prev,
+                  weight: parsed !== undefined && Number.isFinite(parsed) ? parsed : undefined,
                 }));
               }}
               disabled={saving || disableControls}
@@ -307,9 +317,7 @@ export function AiProvidersClaudeEditPage() {
               {/* Provider debug bench: replaces the single-prompt connection test. */}
               <div className={styles.modelTestPanel}>
                 <div className={styles.modelTestMeta}>
-                  <label className={styles.modelTestLabel}>
-                    {t('provider_debug.panel_title')}
-                  </label>
+                  <label className={styles.modelTestLabel}>{t('provider_debug.panel_title')}</label>
                   <span className={styles.modelTestHint}>{t('provider_debug.panel_hint')}</span>
                 </div>
                 <div className={styles.modelTestControls}>

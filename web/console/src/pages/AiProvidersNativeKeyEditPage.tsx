@@ -21,10 +21,7 @@ import { providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { GeminiKeyConfig, ProviderKeyConfig } from '@/types';
 import { buildHeaderObject, headersToEntries, type HeaderEntry } from '@/utils/headers';
-import {
-  ProviderDebugAction,
-  buildSingleKeyTarget,
-} from '@/components/providerDebug';
+import { ProviderDebugAction, buildSingleKeyTarget } from '@/components/providerDebug';
 import styles from './AiProvidersPage.module.scss';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
 
@@ -33,6 +30,7 @@ export type NativeProviderKind = 'interactions' | 'xai';
 type NativeProviderForm = {
   apiKey: string;
   priority?: number;
+  weight?: number;
   prefix: string;
   baseUrl: string;
   proxyUrl: string;
@@ -49,6 +47,7 @@ type LocationState = { fromAiProviders?: boolean } | null;
 
 const EMPTY_FORM: NativeProviderForm = {
   apiKey: '',
+  weight: undefined,
   prefix: '',
   baseUrl: '',
   proxyUrl: '',
@@ -72,6 +71,7 @@ const getErrorMessage = (error: unknown) => {
 const toForm = (config: ProviderKeyConfig): NativeProviderForm => ({
   apiKey: config.apiKey,
   priority: config.priority,
+  weight: config.weight,
   prefix: config.prefix ?? '',
   baseUrl: config.baseUrl ?? '',
   proxyUrl: config.proxyUrl ?? '',
@@ -87,6 +87,7 @@ const toConfig = (form: NativeProviderForm, includeWebsockets: boolean): Provide
   const config: ProviderKeyConfig = {
     apiKey: form.apiKey.trim(),
     priority: form.priority,
+    weight: form.weight !== undefined ? Math.trunc(form.weight) : undefined,
     prefix: form.prefix.trim() || undefined,
     baseUrl: form.baseUrl.trim() || undefined,
     proxyUrl: form.proxyUrl.trim() || undefined,
@@ -276,6 +277,23 @@ export function AiProvidersNativeKeyEditPage({ kind }: Props) {
               onChange={(event) => {
                 const value = event.target.value.trim();
                 setForm((prev) => ({ ...prev, priority: value ? Number(value) : undefined }));
+              }}
+              disabled={disableControls || saving}
+            />
+            <Input
+              label={t('ai_providers.weight_label')}
+              hint={t('ai_providers.weight_hint')}
+              type="number"
+              step={1}
+              max={1000000}
+              value={form.weight ?? ''}
+              onChange={(event) => {
+                const raw = event.target.value;
+                const parsed = raw.trim() === '' ? undefined : Number(raw);
+                setForm((prev) => ({
+                  ...prev,
+                  weight: parsed !== undefined && Number.isFinite(parsed) ? parsed : undefined,
+                }));
               }}
               disabled={disableControls || saving}
             />

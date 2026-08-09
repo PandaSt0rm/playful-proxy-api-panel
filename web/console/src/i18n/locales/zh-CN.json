@@ -625,6 +625,8 @@
     "prefix_hint": "设置后可用 prefix/<model> 选择该条目。",
     "priority_label": "优先级 (可选):",
     "priority_hint": "数值越大优先级越高；留空表示默认（0）。",
+    "weight_label": "路由权重",
+    "weight_hint": "加权轮询中的流量比例。留空默认为 1；零或负数会排除此凭据；最大值为 1,000,000。",
     "concurrency_label": "并发",
     "concurrency_limit_label": "上游并发限制",
     "concurrency_inherited_default": "留空继承默认限制 {{limit}}。",

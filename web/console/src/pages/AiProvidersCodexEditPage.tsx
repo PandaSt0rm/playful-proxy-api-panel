@@ -32,10 +32,7 @@ import {
 } from '@/utils/upstreamConcurrency';
 import type { ModelInfo } from '@/utils/models';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
-import {
-  ProviderDebugAction,
-  buildSingleKeyTarget,
-} from '@/components/providerDebug';
+import { ProviderDebugAction, buildSingleKeyTarget } from '@/components/providerDebug';
 import styles from './AiProvidersPage.module.scss';
 
 type LocationState = { fromAiProviders?: boolean } | null;
@@ -43,6 +40,7 @@ type LocationState = { fromAiProviders?: boolean } | null;
 const buildEmptyForm = (): ProviderFormState => ({
   apiKey: '',
   priority: undefined,
+  weight: undefined,
   prefix: '',
   baseUrl: '',
   websockets: false,
@@ -82,6 +80,7 @@ const normalizeModelEntries = (entries: Array<{ name: string; alias: string }>) 
 type CodexFormBaseline = {
   apiKey: string;
   priority: number | null;
+  weight: number | null;
   prefix: string;
   baseUrl: string;
   websockets: boolean;
@@ -98,6 +97,8 @@ const buildCodexBaseline = (form: ProviderFormState): CodexFormBaseline => ({
     form.priority !== undefined && Number.isFinite(form.priority)
       ? Math.trunc(form.priority)
       : null,
+  weight:
+    form.weight !== undefined && Number.isFinite(form.weight) ? Math.trunc(form.weight) : null,
   prefix: String(form.prefix ?? '').trim(),
   baseUrl: String(form.baseUrl ?? '').trim(),
   websockets: Boolean(form.websockets),
@@ -265,6 +266,11 @@ export function AiProvidersCodexEditPage() {
       ? Math.trunc(form.priority)
       : null;
   }, [form.priority]);
+  const normalizedWeight = useMemo(() => {
+    return form.weight !== undefined && Number.isFinite(form.weight)
+      ? Math.trunc(form.weight)
+      : null;
+  }, [form.weight]);
   const isHeadersDirty = useMemo(
     () => !areKeyValueEntriesEqual(baseline.headers, normalizedHeaders),
     [baseline.headers, normalizedHeaders]
@@ -280,6 +286,7 @@ export function AiProvidersCodexEditPage() {
   const isDirty =
     baseline.apiKey !== form.apiKey.trim() ||
     baseline.priority !== normalizedPriority ||
+    baseline.weight !== normalizedWeight ||
     baseline.prefix !== String(form.prefix ?? '').trim() ||
     baseline.baseUrl !== String(form.baseUrl ?? '').trim() ||
     baseline.websockets !== Boolean(form.websockets) ||
@@ -518,6 +525,7 @@ export function AiProvidersCodexEditPage() {
         apiKey: form.apiKey.trim(),
         raw: initialData?.raw,
         priority: form.priority !== undefined ? Math.trunc(form.priority) : undefined,
+        weight: form.weight !== undefined ? Math.trunc(form.weight) : undefined,
         prefix: form.prefix?.trim() || undefined,
         baseUrl,
         websockets: Boolean(form.websockets),
@@ -656,6 +664,23 @@ export function AiProvidersCodexEditPage() {
                 setForm((prev) => ({
                   ...prev,
                   priority: parsed !== undefined && Number.isFinite(parsed) ? parsed : undefined,
+                }));
+              }}
+              disabled={disableControls || saving}
+            />
+            <Input
+              label={t('ai_providers.weight_label')}
+              hint={t('ai_providers.weight_hint')}
+              type="number"
+              step={1}
+              max={1000000}
+              value={form.weight ?? ''}
+              onChange={(e) => {
+                const raw = e.target.value;
+                const parsed = raw.trim() === '' ? undefined : Number(raw);
+                setForm((prev) => ({
+                  ...prev,
+                  weight: parsed !== undefined && Number.isFinite(parsed) ? parsed : undefined,
                 }));
               }}
               disabled={disableControls || saving}

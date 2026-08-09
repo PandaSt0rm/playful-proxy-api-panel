@@ -26,16 +26,14 @@ import {
   getProviderConcurrencyOverride,
   parseConcurrencyLimitDraft,
 } from '@/utils/upstreamConcurrency';
-import {
-  ProviderDebugAction,
-  buildSingleKeyTarget,
-} from '@/components/providerDebug';
+import { ProviderDebugAction, buildSingleKeyTarget } from '@/components/providerDebug';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
 
 type LocationState = { fromAiProviders?: boolean } | null;
 
 const buildEmptyForm = (): VertexFormState => ({
   apiKey: '',
+  weight: undefined,
   prefix: '',
   baseUrl: '',
   proxyUrl: '',
@@ -64,6 +62,7 @@ const normalizeModelEntries = (entries: Array<{ name: string; alias: string }>) 
 type VertexFormBaseline = {
   apiKey: string;
   priority: number | null;
+  weight: number | null;
   prefix: string;
   baseUrl: string;
   proxyUrl: string;
@@ -78,6 +77,8 @@ const buildVertexBaseline = (form: VertexFormState): VertexFormBaseline => ({
     form.priority !== undefined && Number.isFinite(form.priority)
       ? Math.trunc(form.priority)
       : null,
+  weight:
+    form.weight !== undefined && Number.isFinite(form.weight) ? Math.trunc(form.weight) : null,
   prefix: String(form.prefix ?? '').trim(),
   baseUrl: String(form.baseUrl ?? '').trim(),
   proxyUrl: String(form.proxyUrl ?? '').trim(),
@@ -238,6 +239,11 @@ export function AiProvidersVertexEditPage() {
       ? Math.trunc(form.priority)
       : null;
   }, [form.priority]);
+  const normalizedWeight = useMemo(() => {
+    return form.weight !== undefined && Number.isFinite(form.weight)
+      ? Math.trunc(form.weight)
+      : null;
+  }, [form.weight]);
   const isHeadersDirty = useMemo(
     () => !areKeyValueEntriesEqual(baseline.headers, normalizedHeaders),
     [baseline.headers, normalizedHeaders]
@@ -253,6 +259,7 @@ export function AiProvidersVertexEditPage() {
   const isDirty =
     baseline.apiKey !== form.apiKey.trim() ||
     baseline.priority !== normalizedPriority ||
+    baseline.weight !== normalizedWeight ||
     baseline.prefix !== String(form.prefix ?? '').trim() ||
     baseline.baseUrl !== String(form.baseUrl ?? '').trim() ||
     baseline.proxyUrl !== String(form.proxyUrl ?? '').trim() ||
@@ -289,6 +296,10 @@ export function AiProvidersVertexEditPage() {
         priority:
           form.priority !== undefined && Number.isFinite(form.priority)
             ? Math.trunc(form.priority)
+            : undefined,
+        weight:
+          form.weight !== undefined && Number.isFinite(form.weight)
+            ? Math.trunc(form.weight)
             : undefined,
         prefix: form.prefix?.trim() || undefined,
         baseUrl,
@@ -409,6 +420,23 @@ export function AiProvidersVertexEditPage() {
               placeholder={t('ai_providers.vertex_add_modal_key_placeholder')}
               value={form.apiKey}
               onChange={(e) => setForm((prev) => ({ ...prev, apiKey: e.target.value }))}
+              disabled={disableControls || saving}
+            />
+            <Input
+              label={t('ai_providers.weight_label')}
+              hint={t('ai_providers.weight_hint')}
+              type="number"
+              step={1}
+              max={1000000}
+              value={form.weight ?? ''}
+              onChange={(e) => {
+                const raw = e.target.value;
+                const parsed = raw.trim() === '' ? undefined : Number(raw);
+                setForm((prev) => ({
+                  ...prev,
+                  weight: parsed !== undefined && Number.isFinite(parsed) ? parsed : undefined,
+                }));
+              }}
               disabled={disableControls || saving}
             />
             <Input

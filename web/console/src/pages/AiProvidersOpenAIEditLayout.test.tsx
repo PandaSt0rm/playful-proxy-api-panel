@@ -239,7 +239,7 @@ describe('AiProvidersOpenAIEditLayout', () => {
       ...prev,
       name: 'Acme',
       baseUrl: 'https://api.example.com/v1',
-      apiKeyEntries: [{ apiKey: '  sk-trim  ', proxyUrl: '', headers: {} }],
+      apiKeyEntries: [{ apiKey: '  sk-trim  ', weight: 0, proxyUrl: '', headers: {} }],
     }));
     await waitFor(() => expect(captured?.form.name).toBe('Acme'));
     await captured?.handleSave();
@@ -247,6 +247,7 @@ describe('AiProvidersOpenAIEditLayout', () => {
     await waitFor(() => expect(saveOpenAIProviders).toHaveBeenCalledTimes(1));
     const [savedList] = saveOpenAIProviders.mock.calls[0];
     expect(savedList[0].apiKeyEntries[0].apiKey).toBe('sk-trim');
+    expect(savedList[0].apiKeyEntries[0].weight).toBe(0);
   });
 
   it('normalizes the saved models from the model entries (alias dropped when equal to name)', async () => {

@@ -275,6 +275,7 @@ export const getOpenAIEntryKey = (entry: ApiKeyEntry, index: number): string => 
 
 export const buildApiKeyEntry = (input?: Partial<ApiKeyEntry>): ApiKeyEntry => ({
   apiKey: input?.apiKey ?? '',
+  ...(input?.weight !== undefined ? { weight: input.weight } : {}),
   proxyUrl: input?.proxyUrl ?? '',
   headers: input?.headers ?? {},
 });

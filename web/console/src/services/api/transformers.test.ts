@@ -365,6 +365,12 @@ describe('normalizeApiKeyEntry', () => {
     expect(result?.headers).toEqual({ 'X-A': 'b' });
   });
 
+  it('parses an explicit zero weight', () => {
+    const result = normalizeApiKeyEntry({ 'api-key': 'sk', weight: '0' });
+
+    expect(result?.weight).toBe(0);
+  });
+
   it('reads the auth index from the hyphenated auth-index field', () => {
     const result = normalizeApiKeyEntry({ 'api-key': 'sk', 'auth-index': 'idx-1' });
 
@@ -432,6 +438,12 @@ describe('normalizeProviderKeyConfig', () => {
     const result = normalizeProviderKeyConfig({ 'api-key': 'sk', priority: 'abc' });
 
     expect(result?.priority).toBeUndefined();
+  });
+
+  it('parses a numeric-string weight into a number', () => {
+    const result = normalizeProviderKeyConfig({ 'api-key': 'sk', weight: '7' });
+
+    expect(result?.weight).toBe(7);
   });
 
   it('reads the base url from the hyphenated base-url field', () => {
@@ -583,6 +595,12 @@ describe('normalizeGeminiKeyConfig', () => {
     const result = normalizeGeminiKeyConfig({ 'api-key': 'gm', priority: 'xyz' });
 
     expect(result?.priority).toBeUndefined();
+  });
+
+  it('preserves an explicit zero weight', () => {
+    const result = normalizeGeminiKeyConfig({ 'api-key': 'gm', weight: 0 });
+
+    expect(result?.weight).toBe(0);
   });
 
   it('normalizes model aliases', () => {

@@ -140,6 +140,7 @@ export const serializeModelAliases = (models?: ModelAlias[]) =>
 export const serializeApiKeyEntry = (entry: ApiKeyEntry) => {
   const payload: Record<string, unknown> = cloneRaw(entry.raw);
   payload['api-key'] = entry.apiKey;
+  setOptionalNumber(payload, 'weight', entry.weight);
   setOptionalString(payload, 'proxy-url', entry.proxyUrl);
   setOptionalHeaders(payload, 'headers', entry.headers);
   delete payload['auth-index'];
@@ -151,6 +152,7 @@ export const serializeApiKeyEntry = (entry: ApiKeyEntry) => {
 export const serializeProviderKey = (config: ProviderKeyConfig) => {
   const payload: Record<string, unknown> = cloneRaw(config.raw);
   payload['api-key'] = config.apiKey;
+  setOptionalNumber(payload, 'weight', config.weight);
   setOptionalNumber(payload, 'priority', config.priority);
   setOptionalString(payload, 'prefix', config.prefix);
   setOptionalString(payload, 'base-url', config.baseUrl);
@@ -213,6 +215,7 @@ const serializeVertexModelAliases = (models?: ModelAlias[]) =>
 const serializeVertexKey = (config: ProviderKeyConfig) => {
   const payload: Record<string, unknown> = cloneRaw(config.raw);
   payload['api-key'] = config.apiKey;
+  setOptionalNumber(payload, 'weight', config.weight);
   setOptionalNumber(payload, 'priority', config.priority);
   setOptionalString(payload, 'prefix', config.prefix);
   setOptionalString(payload, 'base-url', config.baseUrl);
@@ -235,6 +238,7 @@ const serializeVertexKey = (config: ProviderKeyConfig) => {
 export const serializeGeminiKey = (config: GeminiKeyConfig) => {
   const payload: Record<string, unknown> = cloneRaw(config.raw);
   payload['api-key'] = config.apiKey;
+  setOptionalNumber(payload, 'weight', config.weight);
   setOptionalNumber(payload, 'priority', config.priority);
   setOptionalString(payload, 'prefix', config.prefix);
   setOptionalString(payload, 'base-url', config.baseUrl);

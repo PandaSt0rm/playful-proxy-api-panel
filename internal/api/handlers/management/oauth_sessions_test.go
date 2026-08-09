@@ -27,6 +27,21 @@ func TestOAuthSessionStoreCompleteKeepsShortLivedSession(t *testing.T) {
 	}
 }
 
+func TestOAuthSessionStoreCompleteKeepsConcurrentProviderSessionPending(t *testing.T) {
+	store := newOAuthSessionStore(time.Minute)
+	store.Register("completed-state", "anthropic")
+	store.Register("concurrent-state", "anthropic")
+
+	store.Complete("completed-state")
+
+	if store.IsPending("completed-state", "anthropic") {
+		t.Fatal("completed OAuth session remained pending")
+	}
+	if !store.IsPending("concurrent-state", "anthropic") {
+		t.Fatal("completing one OAuth session also completed a concurrent provider session")
+	}
+}
+
 func TestOAuthSessionStoreCompleteDoesNotExtendCompletedSession(t *testing.T) {
 	store := newOAuthSessionStore(time.Minute)
 	store.Register("completed-state", "codex")

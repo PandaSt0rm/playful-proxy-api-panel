@@ -135,7 +135,6 @@ export function AiProvidersOpenAIEditPage() {
   const renderKeyEntries = (entries: ApiKeyEntry[]) => {
     const list = entries.length ? entries : [buildApiKeyEntry()];
 
-
     const updateEntry = (idx: number, field: keyof ApiKeyEntry, value: string) => {
       const next = list.map((entry, i) => (i === idx ? { ...entry, [field]: value } : entry));
       setForm((prev) => ({ ...prev, apiKeyEntries: next }));
@@ -174,18 +173,17 @@ export function AiProvidersOpenAIEditPage() {
           <div className={styles.keyTableHeader}>
             <div className={styles.keyTableColIndex}>#</div>
             <div className={styles.keyTableColKey}>{t('common.api_key')}</div>
+            <div className={styles.keyTableColWeight}>{t('ai_providers.weight_label')}</div>
             <div className={styles.keyTableColProxy}>{t('common.proxy_url')}</div>
             <div className={styles.keyTableColAction}>{t('common.action')}</div>
           </div>
 
           {/* 数据行 */}
           {list.map((entry, index) => {
-
             return (
               <div key={index} className={styles.keyTableRow}>
                 {/* 序号 */}
                 <div className={styles.keyTableColIndex}>{index + 1}</div>
-
 
                 {/* Key 输入框 */}
                 <div className={styles.keyTableColKey}>
@@ -196,6 +194,28 @@ export function AiProvidersOpenAIEditPage() {
                     disabled={saving || disableControls}
                     className={`input ${styles.keyTableInput}`}
                     placeholder={t('ai_providers.openai_key_placeholder')}
+                  />
+                </div>
+                <div className={styles.keyTableColWeight}>
+                  <input
+                    type="number"
+                    step={1}
+                    max={1000000}
+                    value={entry.weight ?? ''}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const parsed = raw.trim() === '' ? undefined : Number(raw);
+                      const weight =
+                        parsed !== undefined && Number.isFinite(parsed) ? parsed : undefined;
+                      const next = list.map((item, itemIndex) =>
+                        itemIndex === index ? { ...item, weight } : item
+                      );
+                      setForm((prev) => ({ ...prev, apiKeyEntries: next }));
+                    }}
+                    disabled={saving || disableControls}
+                    className={`input ${styles.keyTableInput}`}
+                    aria-label={`${t('ai_providers.weight_label')} ${index + 1}`}
+                    title={t('ai_providers.weight_hint')}
                   />
                 </div>
 
@@ -396,9 +416,7 @@ export function AiProvidersOpenAIEditPage() {
               {/* Provider debug bench: replaces the single-prompt connection test. */}
               <div className={styles.modelTestPanel}>
                 <div className={styles.modelTestMeta}>
-                  <label className={styles.modelTestLabel}>
-                    {t('provider_debug.panel_title')}
-                  </label>
+                  <label className={styles.modelTestLabel}>{t('provider_debug.panel_title')}</label>
                   <span className={styles.modelTestHint}>{t('provider_debug.panel_hint')}</span>
                 </div>
                 <div className={styles.modelTestControls}>

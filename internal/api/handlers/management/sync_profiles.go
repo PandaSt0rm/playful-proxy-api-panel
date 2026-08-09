@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -229,13 +230,9 @@ func copySyncProfiles(profiles []config.SyncProfile) []config.SyncProfile {
 	if profiles == nil {
 		return nil
 	}
-	out := make([]config.SyncProfile, len(profiles))
-	copy(out, profiles)
+	out := slices.Clone(profiles)
 	for i := range out {
-		if out[i].Targets != nil {
-			out[i].Targets = make([]config.SyncProfileTarget, len(profiles[i].Targets))
-			copy(out[i].Targets, profiles[i].Targets)
-		}
+		out[i].Targets = slices.Clone(profiles[i].Targets)
 	}
 	return out
 }

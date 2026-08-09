@@ -250,6 +250,7 @@ const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
 
   const proxyUrl = record ? (record['proxy-url'] ?? record.proxyUrl) : undefined;
   const headers = record ? normalizeHeaders(record.headers) : undefined;
+  const weight = record?.weight;
   const authIndex = normalizeAuthIndex(
     record?.['auth-index'] ?? record?.authIndex ?? record?.['auth_index']
   );
@@ -261,6 +262,10 @@ const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
     raw: record ? cloneRecord(record) : undefined,
   };
   if (authIndex) result.authIndex = authIndex;
+  if (weight !== undefined && weight !== null && String(weight).trim() !== '') {
+    const parsed = Number(weight);
+    if (Number.isFinite(parsed)) result.weight = parsed;
+  }
   return result;
 };
 
@@ -281,6 +286,11 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
     if (Number.isFinite(parsed)) {
       config.priority = parsed;
     }
+  }
+  const weight = record?.weight;
+  if (weight !== undefined && weight !== null && String(weight).trim() !== '') {
+    const parsed = Number(weight);
+    if (Number.isFinite(parsed)) config.weight = parsed;
   }
   const prefix = normalizePrefix(record?.prefix ?? record?.['prefix']);
   if (prefix) config.prefix = prefix;
@@ -374,6 +384,11 @@ const normalizeGeminiKeyConfig = (item: unknown): GeminiKeyConfig | null => {
     if (Number.isFinite(parsed)) {
       config.priority = parsed;
     }
+  }
+  const weight = record?.weight;
+  if (weight !== undefined && weight !== null && String(weight).trim() !== '') {
+    const parsed = Number(weight);
+    if (Number.isFinite(parsed)) config.weight = parsed;
   }
   const prefix = normalizePrefix(record?.prefix ?? record?.['prefix']);
   if (prefix) config.prefix = prefix;

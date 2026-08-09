@@ -66,6 +66,7 @@ describe('AiProvidersNativeKeyEditPage', () => {
       {
         apiKey: 'old-key',
         priority: 2,
+        weight: 2,
         prefix: 'old',
         baseUrl: 'https://old.example',
         proxyUrl: 'socks5://old',
@@ -89,6 +90,8 @@ describe('AiProvidersNativeKeyEditPage', () => {
     await user.type(screen.getByLabelText('Key'), '  new-key  ');
     await user.clear(screen.getByLabelText('Priority'));
     await user.type(screen.getByLabelText('Priority'), '7');
+    await user.clear(screen.getByLabelText('Routing Weight'));
+    await user.type(screen.getByLabelText('Routing Weight'), '0');
     await user.clear(screen.getByLabelText('Prefix'));
     await user.type(screen.getByLabelText('Prefix'), 'next');
     await user.clear(screen.getByLabelText('Address'));
@@ -116,6 +119,7 @@ describe('AiProvidersNativeKeyEditPage', () => {
     expect(saveXAIConfigs.mock.calls[0][0][0]).toEqual({
       apiKey: 'new-key',
       priority: 7,
+      weight: 0,
       prefix: 'next',
       baseUrl: 'https://new.example',
       proxyUrl: 'http://proxy.example',
@@ -170,6 +174,7 @@ describe('AiProvidersNativeKeyEditPage', () => {
     expect(saveInteractionsConfigs.mock.calls[0][0][1]).toEqual({
       apiKey: 'second',
       priority: undefined,
+      weight: undefined,
       prefix: undefined,
       baseUrl: undefined,
       proxyUrl: undefined,

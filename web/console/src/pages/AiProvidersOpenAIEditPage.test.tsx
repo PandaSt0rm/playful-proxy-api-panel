@@ -173,6 +173,18 @@ describe('AiProvidersOpenAIEditPage', () => {
     expect(screen.getByText('Keys Count: 2')).toBeInTheDocument();
   });
 
+  it('edits an API key routing weight', async () => {
+    const user = userEvent.setup();
+    const setForm = vi.fn();
+    const form = buildForm({ apiKeyEntries: [buildKeyEntry({ apiKey: 'a' })] });
+    renderPage(buildContext({ form, setForm }));
+
+    await user.type(screen.getByLabelText('Routing Weight 1'), '5');
+
+    const update = setForm.mock.calls.at(-1)?.[0] as (previous: typeof form) => typeof form;
+    expect(update(form).apiKeyEntries[0].weight).toBe(5);
+  });
+
   it('invokes handleSave when the Save button is clicked', async () => {
     const user = userEvent.setup();
     const handleSave = vi.fn(async () => {});

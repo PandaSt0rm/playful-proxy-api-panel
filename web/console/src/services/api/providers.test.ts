@@ -181,6 +181,12 @@ describe('serializeApiKeyEntry', () => {
 
     expect(result).toEqual({ 'api-key': 'k' });
   });
+
+  it('preserves an explicit zero weight', () => {
+    const result = serializeApiKeyEntry({ apiKey: 'k', weight: 0 });
+
+    expect(result).toEqual({ 'api-key': 'k', weight: 0 });
+  });
 });
 
 describe('serializeProviderKey', () => {
@@ -188,6 +194,7 @@ describe('serializeProviderKey', () => {
     const config: ProviderKeyConfig = {
       apiKey: 'k',
       priority: 2,
+      weight: 3,
       prefix: 'p',
       baseUrl: 'https://b',
       websockets: true,
@@ -199,6 +206,7 @@ describe('serializeProviderKey', () => {
 
     expect(result).toEqual({
       'api-key': 'k',
+      weight: 3,
       priority: 2,
       prefix: 'p',
       'base-url': 'https://b',
@@ -284,6 +292,7 @@ describe('serializeGeminiKey', () => {
     const config: GeminiKeyConfig = {
       apiKey: 'g',
       priority: 1,
+      weight: 0,
       prefix: 'pre',
       baseUrl: 'https://gem',
       proxyUrl: 'http://p',
@@ -297,6 +306,7 @@ describe('serializeGeminiKey', () => {
     expect(result).toEqual({
       'api-key': 'g',
       priority: 1,
+      weight: 0,
       prefix: 'pre',
       'base-url': 'https://gem',
       'proxy-url': 'http://p',

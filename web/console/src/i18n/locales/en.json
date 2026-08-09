@@ -651,6 +651,8 @@
     "prefix_hint": "When set, call models as prefix/<model> to target this entry.",
     "priority_label": "Priority (Optional):",
     "priority_hint": "Higher values are preferred. Leave empty for default (0).",
+    "weight_label": "Routing Weight",
+    "weight_hint": "Proportional share under weighted round-robin. Blank defaults to 1; zero or less excludes this credential; maximum 1,000,000.",
     "concurrency_label": "Concurrency",
     "concurrency_limit_label": "Upstream Concurrency Limit",
     "concurrency_inherited_default": "Blank inherits default limit {{limit}}.",
