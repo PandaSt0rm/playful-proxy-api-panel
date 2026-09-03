@@ -5,7 +5,9 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { IconCheck, IconX } from '@/components/ui/icons';
-import iconOpenRouter from '@/assets/icons/openrouter.svg';
+import iconOpenRouterLight from '@/assets/icons/openrouter-light.svg';
+import iconOpenRouterDark from '@/assets/icons/openrouter-dark.svg';
+import { useThemeStore } from '@/stores';
 import type { OpenAIProviderConfig, UpstreamConcurrencyConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
 import { statusBarDataFromRecentRequests } from '@/utils/recentRequests';
@@ -52,6 +54,8 @@ export function OpenRouterSection({
   onToggle,
 }: OpenRouterSectionProps) {
   const { t } = useTranslation();
+  const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
+  const iconOpenRouter = resolvedTheme === 'dark' ? iconOpenRouterDark : iconOpenRouterLight;
   const actionsDisabled = disableControls || loading || isSwitching;
   const toggleDisabled = disableControls || loading || isSwitching;
 

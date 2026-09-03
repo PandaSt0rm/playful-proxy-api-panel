@@ -1,9 +1,11 @@
 /**
- * AIPROXY brand identity — Imagine-generated raster mark is the source of truth.
- * Vectors were retired for product mark quality; keep wordmark text out of the mark asset.
+ * AIPROXY brand identity — deterministic vectors are the source of truth.
+ * Keep wordmark text out of the standalone product mark.
  */
-import mark from './brand/aiproxy-mark.png';
-import markPremium from './brand/aiproxy-mark-premium.png';
+import mark from './aiproxy-mark.svg';
+import lockup from './aiproxy-lockup.svg';
+import monochromeMark from './aiproxy-mark-mono.svg';
+import markPremium from './brand/aiproxy-mark-premium.svg';
 import icon32 from './brand/favicon-32.png';
 import icon16 from './brand/favicon-16.png';
 import icon192 from './brand/aiproxy-icon-192.png';
@@ -13,11 +15,11 @@ import og from './brand/aiproxy-og.png';
 export const AIPROXY_MARK = mark;
 /** Premium glass marketing mark. */
 export const AIPROXY_MARK_PREMIUM = markPremium;
-/** Alias used by older call sites expecting a lockup — same primary mark (wordmark is text in UI). */
-export const AIPROXY_LOCKUP = mark;
-/** Mono alias — primary dark mark (light UI should invert via CSS if needed). */
-export const AIPROXY_MARK_MONO = mark;
-/** Tab favicon (32px Imagine downsample). */
+/** Horizontal mark and wordmark for wide brand placements. */
+export const AIPROXY_LOCKUP = lockup;
+/** Single-color mark for constrained print and system contexts. */
+export const AIPROXY_MARK_MONO = monochromeMark;
+/** Tab favicon rendered from the vector master at its target size. */
 export const AIPROXY_FAVICON = icon32;
 export const AIPROXY_FAVICON_16 = icon16;
 export const AIPROXY_FAVICON_32 = icon32;

@@ -25,7 +25,7 @@ function configureDocumentIdentity() {
   document.documentElement.setAttribute('translate', 'no');
   document.documentElement.classList.add('notranslate');
 
-  // Imagine-generated PNG favicons only (no hand SVG mark).
+  // Target-sized PNG favicons rendered from the vector master.
   upsertIcon({ type: 'image/png', sizes: '32x32', href: AIPROXY_FAVICON_32 });
   upsertIcon({ type: 'image/png', sizes: '16x16', href: AIPROXY_FAVICON_16 });
 

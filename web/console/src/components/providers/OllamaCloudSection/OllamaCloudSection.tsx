@@ -5,7 +5,9 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { IconCheck, IconX } from '@/components/ui/icons';
-import iconOllama from '@/assets/icons/ollama.svg';
+import iconOllamaLight from '@/assets/icons/ollama-light.svg';
+import iconOllamaDark from '@/assets/icons/ollama-dark.svg';
+import { useThemeStore } from '@/stores';
 import type { OpenAIProviderConfig, UpstreamConcurrencyConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
 import { statusBarDataFromRecentRequests } from '@/utils/recentRequests';
@@ -52,6 +54,8 @@ export function OllamaCloudSection({
   onToggle,
 }: OllamaCloudSectionProps) {
   const { t } = useTranslation();
+  const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
+  const iconOllama = resolvedTheme === 'dark' ? iconOllamaDark : iconOllamaLight;
   const actionsDisabled = disableControls || loading || isSwitching;
   const toggleDisabled = disableControls || loading || isSwitching;
 

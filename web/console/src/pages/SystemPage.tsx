@@ -26,7 +26,8 @@ import iconQwen from '@/assets/icons/qwen.svg';
 import iconKimiLight from '@/assets/icons/kimi-light.svg';
 import iconKimiDark from '@/assets/icons/kimi-dark.svg';
 import iconGlm from '@/assets/icons/glm.svg';
-import iconGrok from '@/assets/icons/grok.svg';
+import iconGrokLight from '@/assets/icons/grok-light.svg';
+import iconGrokDark from '@/assets/icons/grok-dark.svg';
 import iconDeepseek from '@/assets/icons/deepseek.svg';
 import iconMinimax from '@/assets/icons/minimax.svg';
 import { WorkspacePage } from '@/components/workspace/WorkspacePage';
@@ -39,7 +40,7 @@ const MODEL_CATEGORY_ICONS: Record<string, string | { light: string; dark: strin
   qwen: iconQwen,
   kimi: { light: iconKimiLight, dark: iconKimiDark },
   glm: iconGlm,
-  grok: iconGrok,
+  grok: { light: iconGrokLight, dark: iconGrokDark },
   deepseek: iconDeepseek,
   minimax: iconMinimax,
 };

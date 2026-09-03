@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 64" role="img" aria-label="AIPROXY" fill="none">
-  <rect x="0" y="0" width="64" height="64" rx="14" fill="#0D1114"/>
-  <rect x="10" y="10" width="28" height="28" rx="6" fill="#1A2227"/>
-  <rect x="26" y="26" width="28" height="28" rx="6" fill="#13191D"/>
-  <path d="M20 18v18h20" stroke="#D3A84C" stroke-width="6" stroke-linecap="square" stroke-linejoin="miter"/>
-  <path d="M40 28l10 8-10 8v-16z" fill="#D3A84C"/>
-  <text x="80" y="42" fill="#E7ECEA" font-family="Bahnschrift, 'Segoe UI', 'Arial Narrow', Arial, sans-serif" font-size="28" font-weight="600" letter-spacing="2.5">AIPROXY</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 292 64" role="img" aria-label="AIPROXY">
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="#0D1114"/>
+  <path d="M30 12h17a7 7 0 0 1 7 7v20a7 7 0 0 1-7 7H30a7 7 0 0 1-7-7V19a7 7 0 0 1 7-7Z" fill="#1A2227" stroke="#58636A" stroke-width="2"/>
+  <path d="M17 25h19a7 7 0 0 1 7 7v15a7 7 0 0 1-7 7H17a7 7 0 0 1-7-7V32a7 7 0 0 1 7-7Z" fill="#13191D" stroke="#8A9498" stroke-width="2"/>
+  <path d="M16 43h15V29h13" fill="none" stroke="#D3A84C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m42 22 9 7-9 7Z" fill="#D3A84C"/>
+  <text x="82" y="43" fill="#E7ECEA" font-family="Bahnschrift, 'Segoe UI', Arial, sans-serif" font-size="30" font-weight="650" letter-spacing="3">AIPROXY</text>
 </svg>

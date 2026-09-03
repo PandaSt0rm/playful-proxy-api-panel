@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="AIPROXY premium mark">
+  <defs>
+    <radialGradient id="canvas" cx="50%" cy="44%" r="68%">
+      <stop offset="0" stop-color="#1A2227"/>
+      <stop offset="1" stop-color="#080C0F"/>
+    </radialGradient>
+    <linearGradient id="route" x1="212" y1="688" x2="814" y2="338" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B8862C"/>
+      <stop offset=".52" stop-color="#D3A84C"/>
+      <stop offset="1" stop-color="#F2CF72"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect x="32" y="32" width="960" height="960" rx="256" fill="url(#canvas)"/>
+  <path d="M478 192h274c62 0 112 50 112 112v320c0 62-50 112-112 112H478c-62 0-112-50-112-112V304c0-62 50-112 112-112Z" fill="#1A2227" stroke="#58636A" stroke-width="24"/>
+  <path d="M270 400h306c62 0 112 50 112 112v240c0 62-50 112-112 112H270c-62 0-112-50-112-112V512c0-62 50-112 112-112Z" fill="#13191D" stroke="#8A9498" stroke-width="24"/>
+  <path d="M254 688h242V464h208" fill="none" stroke="url(#route)" stroke-width="72" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+  <path d="m672 352 144 112-144 112Z" fill="url(#route)" filter="url(#glow)"/>
+</svg>

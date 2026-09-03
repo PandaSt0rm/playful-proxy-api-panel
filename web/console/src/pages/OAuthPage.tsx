@@ -15,7 +15,8 @@ import iconClaude from '@/assets/icons/claude.svg';
 import iconAntigravity from '@/assets/icons/antigravity.svg';
 import iconKimiLight from '@/assets/icons/kimi-light.svg';
 import iconKimiDark from '@/assets/icons/kimi-dark.svg';
-import iconGrok from '@/assets/icons/grok.svg';
+import iconGrokLight from '@/assets/icons/grok-light.svg';
+import iconGrokDark from '@/assets/icons/grok-dark.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
 
 interface ProviderState {
@@ -94,7 +95,7 @@ const PROVIDERS: {
     titleKey: 'auth_login.xai_oauth_title',
     hintKey: 'auth_login.xai_oauth_hint',
     urlLabelKey: 'auth_login.xai_oauth_url_label',
-    icon: iconGrok,
+    icon: { light: iconGrokLight, dark: iconGrokDark },
   },
   {
     id: 'kimi',

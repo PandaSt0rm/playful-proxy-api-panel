@@ -9,8 +9,12 @@ import iconCodex from '@/assets/icons/codex.svg';
 import iconClaude from '@/assets/icons/claude.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
 import iconGlm from '@/assets/icons/glm.svg';
-import iconOpenRouter from '@/assets/icons/openrouter.svg';
-import iconOllama from '@/assets/icons/ollama.svg';
+import iconGrokLight from '@/assets/icons/grok-light.svg';
+import iconGrokDark from '@/assets/icons/grok-dark.svg';
+import iconOpenRouterLight from '@/assets/icons/openrouter-light.svg';
+import iconOpenRouterDark from '@/assets/icons/openrouter-dark.svg';
+import iconOllamaLight from '@/assets/icons/ollama-light.svg';
+import iconOllamaDark from '@/assets/icons/ollama-dark.svg';
 import styles from './ProviderNav.module.scss';
 
 export type ProviderId =
@@ -38,13 +42,21 @@ const PROVIDERS: ProviderNavItem[] = [
   {
     id: 'xai',
     label: 'xAI',
-    getIcon: (theme) => (theme === 'dark' ? iconOpenaiDark : iconOpenaiLight),
+    getIcon: (theme) => (theme === 'dark' ? iconGrokDark : iconGrokLight),
   },
   { id: 'claude', label: 'Claude', getIcon: () => iconClaude },
   { id: 'vertex', label: 'Vertex', getIcon: () => iconVertex },
   { id: 'zai', label: 'Z.AI', getIcon: () => iconGlm },
-  { id: 'openrouter', label: 'OpenRouter', getIcon: () => iconOpenRouter },
-  { id: 'ollama', label: 'Ollama Cloud', getIcon: () => iconOllama },
+  {
+    id: 'openrouter',
+    label: 'OpenRouter',
+    getIcon: (theme) => (theme === 'dark' ? iconOpenRouterDark : iconOpenRouterLight),
+  },
+  {
+    id: 'ollama',
+    label: 'Ollama Cloud',
+    getIcon: (theme) => (theme === 'dark' ? iconOllamaDark : iconOllamaLight),
+  },
   {
     id: 'openai',
     label: 'OpenAI',
